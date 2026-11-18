@@ -83,7 +83,7 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid 
 #banner .big{font-weight:700;font-size:clamp(28px,4.4vw,52px);letter-spacing:.2em}
 #banner .small{font-family:var(--f-body);font-size:14px;color:var(--ink-dim);margin-top:6px;letter-spacing:.08em}
 
-#vitals{position:absolute;left:calc(18px + env(safe-area-inset-left,0px));bottom:calc(18px + env(safe-area-inset-bottom,0px));width:280px;display:flex;flex-direction:column;gap:6px;text-shadow:0 1px 2px rgba(0,0,0,.7)}
+#vitals{position:absolute;left:calc(18px + env(safe-area-inset-left,0px));bottom:calc(18px + env(safe-area-inset-bottom,0px));width:295px;display:flex;flex-direction:column;gap:6px;text-shadow:0 1px 2px rgba(0,0,0,.7)}
 #vitals .row{display:flex;align-items:center;gap:10px}
 #vitals .lbl{width:34px;font-size:12px;letter-spacing:.12em;color:var(--ink-dim)}
 #vitals .bar{flex:1;height:8px;background:rgba(255,255,255,.1);position:relative;overflow:hidden;clip-path:polygon(0 0,100% 0,calc(100% - 6px) 100%,0 100%)}
@@ -144,8 +144,13 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid 
 .item .scan{position:absolute;left:0;bottom:-3px;height:3px;background:var(--amber);width:0}
 .btn{pointer-events:auto;cursor:pointer;padding:9px 16px;border:1px solid var(--line);background:rgba(255,255,255,.06);font-family:var(--f-display);font-weight:600;letter-spacing:.1em;font-size:13.5px}
 .btn:hover{background:rgba(255,255,255,.12)}
+.btn:disabled{opacity:.42;cursor:default}
+.btn:disabled:hover{background:rgba(255,255,255,.06)}
 .btn.primary{background:var(--amber);border-color:var(--amber);color:#1a1205}
 .btn.primary:hover{background:#ffc366}
+.btn.amberOutline{border-color:rgba(255,178,63,.55);color:var(--amber);background:rgba(255,178,63,.08)}
+.btn.amberOutline:hover{background:rgba(255,178,63,.16)}
+.btn.signal{border-color:rgba(111,226,168,.55);color:var(--signal);background:rgba(111,226,168,.08)}
 .btn.danger{border-color:rgba(255,84,64,.6);color:var(--danger)}
 .cap{font-family:var(--f-mono);font-size:13px;color:var(--ink-dim)}
 #bagPanel{left:50%;top:50%;transform:translate(-50%,-50%);width:min(720px,calc(100vw - 32px));max-height:calc(100vh - 60px);display:flex;flex-direction:column}
@@ -157,19 +162,21 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid 
 /* ---------- menus ---------- */
 .screen{position:absolute;inset:0;display:flex;pointer-events:auto}
 #menu{background:linear-gradient(90deg,rgba(6,8,7,.88) 0,rgba(6,8,7,.55) 42%,rgba(6,8,7,0) 75%);align-items:stretch}
-#menu .col{display:flex;flex-direction:column;justify-content:flex-start;gap:22px;padding-block:32px;padding-left:max(48px,calc(env(safe-area-inset-left,0px) + 24px));padding-right:24px;width:min(520px,100%);box-sizing:border-box;overflow:auto}
+#menu .col{display:flex;flex-direction:column;justify-content:flex-start;gap:18px;padding-block:28px;padding-left:max(48px,calc(env(safe-area-inset-left,0px) + 24px));padding-right:24px;width:min(520px,100%);box-sizing:border-box;overflow:auto}
 .brand .eyebrow{font-family:var(--f-mono);font-size:12px;letter-spacing:.3em;color:var(--amber)}
 .brand h1{margin:6px 0 0;font-family:var(--f-display);font-weight:700;font-size:clamp(44px,7vw,84px);line-height:.95;letter-spacing:.04em;text-wrap:balance}
 .brand h1 span{display:block;font-size:.34em;letter-spacing:.42em;color:var(--ink-dim);margin-top:10px;font-weight:600}
-.brief{font-size:14px;line-height:1.75;color:var(--ink-dim);max-width:42ch}
+.brief{font-size:14px;line-height:1.75;color:var(--ink-dim);max-width:42ch;margin:0}
 .stash{display:flex;gap:26px;flex-wrap:wrap}
 .stash div{display:flex;flex-direction:column;gap:2px}
 .stash small{font-size:11px;letter-spacing:.18em;color:var(--ink-dim)}
 .stash b{font-family:var(--f-mono);font-weight:400;font-size:22px;color:var(--ink)}
 .stash b.amber{color:var(--amber)}
-.menuBtns{display:flex;flex-direction:column;gap:10px;max-width:340px}
-.menuBtns .btn{text-align:left;padding:13px 18px;font-size:15px;display:flex;justify-content:space-between;align-items:center}
-.menuBtns .btn em{font-style:normal;font-family:var(--f-mono);font-size:11px;letter-spacing:.1em;opacity:.7}
+.loadoutBar{display:flex;flex-wrap:wrap;gap:6px 12px;padding:9px 12px;border:1px solid var(--line);background:rgba(14,17,16,.65);font-size:12px;color:var(--ink-dim);max-width:380px}
+.loadoutBar span b{color:var(--ink);font-weight:500}
+.menuBtns{display:flex;flex-direction:column;gap:9px;max-width:340px}
+.menuBtns .btn{text-align:left;padding:12px 18px;font-size:15px;display:flex;justify-content:space-between;align-items:center}
+.menuBtns .btn em{font-style:normal;font-family:var(--f-mono);font-size:11px;letter-spacing:.1em;opacity:.75}
 .seg{display:flex;gap:0;border:1px solid var(--line);width:max-content;max-width:100%;flex-wrap:wrap}
 .seg button{background:transparent;border:0;padding:8px 13px;cursor:pointer;font-family:var(--f-body);font-size:13px;color:var(--ink-dim);border-right:1px solid var(--line)}
 .seg button:last-child{border-right:0}
@@ -178,7 +185,7 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid 
 .field>label,.field>.fl{font-size:11.5px;letter-spacing:.16em;color:var(--ink-dim)}
 .field .hint{font-size:12px;color:var(--ink-dim);line-height:1.5}
 input[type=range]{width:100%;accent-color:var(--amber)}
-.overlayDim{background:rgba(5,6,6,.62);align-items:center;justify-content:center}
+.overlayDim{background:rgba(5,6,6,.68);align-items:center;justify-content:center;z-index:10}
 .dialog{width:min(560px,calc(100vw - 32px));max-height:calc(100vh - 40px);overflow:auto;background:var(--panel-solid);border:1px solid var(--line);padding:22px 22px 18px;display:flex;flex-direction:column;gap:16px;box-sizing:border-box}
 .dialog h2{margin:0;font-family:var(--f-display);letter-spacing:.14em;font-size:20px}
 .row2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
@@ -193,6 +200,33 @@ input[type=range]{width:100%;accent-color:var(--amber)}
 .stats div{border:1px solid var(--line);padding:10px}
 .stats small{display:block;font-size:11px;letter-spacing:.14em;color:var(--ink-dim)}
 .stats b{font-family:var(--f-mono);font-weight:400;font-size:20px}
+
+/* ---------- armory / shop ---------- */
+#armoryPanel .dialog{width:min(860px,calc(100vw - 28px));max-height:calc(100vh - 32px);gap:14px}
+.armHead{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.armBal{display:flex;align-items:baseline;gap:8px;padding:6px 12px;border:1px solid rgba(255,178,63,.35);background:rgba(255,178,63,.08)}
+.armBal small{font-size:11px;letter-spacing:.14em;color:var(--ink-dim)}
+.armBal b{font-family:var(--f-mono);font-size:20px;color:var(--amber);font-weight:400}
+.armLoadout{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+@media (max-width:680px){.armLoadout{grid-template-columns:repeat(2,1fr)}}
+.armSlot{padding:8px 10px;border:1px solid var(--line);background:rgba(255,255,255,.03)}
+.armSlot small{display:block;font-size:10.5px;letter-spacing:.12em;color:var(--ink-dim)}
+.armSlot b{display:block;font-size:13px;margin-top:2px;color:var(--ink);font-weight:500}
+.armGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px;overflow-y:auto;padding-right:2px}
+.armCard{border:1px solid var(--line);border-left:3px solid var(--ac,var(--line));background:rgba(255,255,255,.03);padding:12px;display:flex;flex-direction:column;gap:7px}
+.armCard.equipped{border-color:rgba(255,178,63,.55);background:rgba(255,178,63,.06)}
+.armCard.activePerk{border-color:rgba(111,226,168,.5);background:rgba(111,226,168,.05)}
+.armCardTop{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.armCardTop .title{font-weight:700;font-size:14.5px;font-family:var(--f-display);letter-spacing:.04em}
+.armCardTop .tag{font-family:var(--f-mono);font-size:11px;padding:2px 6px;border:1px solid var(--line);color:var(--ink-dim);white-space:nowrap}
+.armStats{display:flex;flex-wrap:wrap;gap:5px}
+.armStats span{font-family:var(--f-mono);font-size:11px;padding:2px 6px;background:rgba(0,0,0,.35);color:var(--amber)}
+.armDesc{font-size:12px;line-height:1.55;color:var(--ink-dim);flex:1}
+.armFoot{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:4px;padding-top:8px;border-top:1px solid rgba(255,255,255,.06)}
+.armPrice{font-family:var(--f-mono);font-size:14px;color:var(--amber)}
+.armPrice.owned{color:var(--signal)}
+.armFoot .btn{padding:6px 12px;font-size:12.5px}
+
 #loading{background:var(--bg);align-items:center;justify-content:center;flex-direction:column;gap:18px;z-index:20}
 #loading .t{font-family:var(--f-display);font-weight:700;letter-spacing:.3em;font-size:22px}
 #loading .bar{width:min(340px,70vw);height:3px;background:rgba(255,255,255,.1)}
@@ -226,7 +260,7 @@ input[type=range]{width:100%;accent-color:var(--amber)}
 @media (orientation:portrait) and (pointer:coarse){#rotateHint{display:block}}
 @media (max-height:520px){#minimapWrap{width:130px;height:130px}#killfeed{top:160px}#weaponInfo .ammo{font-size:34px}#vitals{width:220px}}
 #menu .col>:first-child{margin-top:auto}#menu .col>:last-child{margin-bottom:auto}
-@media (max-height:860px){#menu .col{gap:14px}.brand h1{font-size:clamp(38px,6vw,64px)}}
+@media (max-height:860px){#menu .col{gap:12px}.brand h1{font-size:clamp(38px,6vw,64px)}}
 @media (max-height:780px){.brief{display:none}}
 @media (prefers-reduced-motion:reduce){#killfeed div,#toasts div{animation-duration:.01s;animation-delay:0s;opacity:1}}
 </style>
@@ -284,6 +318,7 @@ input[type=range]{width:100%;accent-color:var(--amber)}
     <button class="tbtn m" id="tReload" style="right:calc(182px + env(safe-area-inset-right,0px));bottom:calc(60px + env(safe-area-inset-bottom,0px))">换弹</button>
     <button class="tbtn s" id="tSwap" style="right:calc(240px + env(safe-area-inset-right,0px));bottom:calc(130px + env(safe-area-inset-bottom,0px))">切枪</button>
     <button class="tbtn s" id="tHeal" style="right:calc(250px + env(safe-area-inset-right,0px));bottom:calc(66px + env(safe-area-inset-bottom,0px))">治疗</button>
+    <button class="tbtn s" id="tPlate" style="right:calc(298px + env(safe-area-inset-right,0px));bottom:calc(102px + env(safe-area-inset-bottom,0px))" hidden>插板</button>
     <button class="tbtn m" id="tInteract" style="left:calc(50% + 90px);top:calc(50% + 40px)">搜索</button>
     <button class="tbtn s sq" id="tBag" style="right:calc(212px + env(safe-area-inset-right,0px));top:calc(18px + env(safe-area-inset-top,0px))">背包</button>
     <button class="tbtn s sq" id="tMap" style="right:calc(212px + env(safe-area-inset-right,0px));top:calc(72px + env(safe-area-inset-top,0px))">地图</button>
@@ -320,11 +355,13 @@ input[type=range]{width:100%;accent-color:var(--amber)}
         <div><small>成功撤离</small><b id="stashRuns">0</b></div>
         <div><small>累计击杀</small><b id="stashKills">0</b></div>
       </div>
+      <div class="loadoutBar" id="menuLoadout"></div>
       <div class="field"><span class="fl">行动难度</span>
         <div class="seg" id="diffSeg"><button data-v="easy">新兵</button><button data-v="normal">老兵</button><button data-v="hard">精英</button></div>
       </div>
       <div class="menuBtns">
         <button class="btn primary" id="btnDeploy">开始行动 <em>DEPLOY</em></button>
+        <button class="btn amberOutline" id="btnArmory">军需整备库 <em id="armoryTag">ARMORY</em></button>
         <button class="btn" id="btnSettings">画质与操作 <em>SETTINGS</em></button>
         <button class="btn" id="btnHelp">操作说明 <em>CONTROLS</em></button>
       </div>
@@ -346,6 +383,30 @@ input[type=range]{width:100%;accent-color:var(--amber)}
         <div class="members" id="roomMembers"></div>
         <div class="hint" id="roomHint"></div>
         <div class="coopRow"><button class="btn primary" id="btnStartCoop">开始联机行动</button><button class="btn" id="btnCopyLink" hidden>复制邀请链接</button><button class="btn" id="btnLeave">离开房间</button></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="armoryPanel" class="screen overlayDim" hidden>
+    <div class="dialog">
+      <div class="armHead">
+        <div>
+          <h2>军需整备库 · ARMORY</h2>
+          <div class="sub" style="color:var(--ink-dim);font-size:12.5px">使用撤离变现的资金解锁新武器、高阶防具、永久战术改装与出战补给</div>
+        </div>
+        <div class="armBal"><small>可用资金</small><b id="armBalance">¥0</b></div>
+      </div>
+      <div class="armLoadout" id="armLoadout"></div>
+      <div class="seg" id="armTabs">
+        <button class="on" data-tab="weapons">武器军械</button>
+        <button data-tab="protection">护甲与背包</button>
+        <button data-tab="perks">战术改装（永久）</button>
+        <button data-tab="supplies">战备补给（单局）</button>
+      </div>
+      <div class="armGrid" id="armGrid"></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+        <span class="hint" style="font-size:12px;color:var(--ink-dim)">已解锁武器与防具可随时免费切换；单局战备补给将在下次开始行动时自动带入。</span>
+        <button class="btn primary" id="armoryClose">整备完成</button>
       </div>
     </div>
   </div>
@@ -403,6 +464,7 @@ input[type=range]{width:100%;accent-color:var(--amber)}
           <kbd>B</kbd><span>切换射击模式</span>
           <kbd>F</kbd><span>搜索 / 拾取</span>
           <kbd>H</kbd><span>使用医疗包</span>
+          <kbd>G</kbd><span>使用护甲板</span>
           <kbd>Tab</kbd><span>背包</span>
           <kbd>M</kbd><span>地图</span>
           <kbd>Esc</kbd><span>暂停</span>
@@ -424,7 +486,10 @@ input[type=range]{width:100%;accent-color:var(--amber)}
         <div><small>存活时间</small><b id="resTime">0:00</b></div>
       </div>
       <div class="grid" id="resItems"></div>
-      <div style="display:flex;justify-content:flex-end;gap:8px"><button class="btn primary" id="resBack">返回大厅</button></div>
+      <div style="display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap">
+        <button class="btn amberOutline" id="resArmory">前往整备库</button>
+        <button class="btn primary" id="resBack">返回大厅</button>
+      </div>
     </div>
   </div>
 
@@ -492,6 +557,61 @@ const DIFF = {
   hard:   { acc: 1.45, react: 0.7, dmg: 1.3, hp: 1.15, label: '精英' },
 };
 
+// ================= armory / gear catalog & persistence =================
+const ARMORY_CATALOG = {
+  weapons: [
+    { id: 'k7', slot: 'primary', name: 'K7 突击步枪', short: 'K7', price: 0, tag: '1号位 · 突击步枪', stats: ['伤害 34', '射速 720', '弹匣 30'], desc: '模块化 5.56mm 卡宾枪，配备全息瞄准镜，中近距离稳定可靠。' },
+    { id: 'mp5', slot: 'primary', name: 'V-9 战术冲锋枪', short: 'V-9', price: 28000, tag: '1号位 · 冲锋枪', stats: ['伤害 26', '射速 920', '弹匣 35', '机动 +8%'], desc: '超高射速近战利器，腰射散布极小，携带时提升移动速度。' },
+    { id: 'akm', slot: 'primary', name: 'AK-103 重型步枪', short: 'AK-103', price: 85000, tag: '1号位 · 重型步枪', stats: ['伤害 46', '射速 600', '弹匣 30'], desc: '7.62mm 大口径步枪，单发停止力极强，适合穿透重甲目标。' },
+    { id: 'sr9', slot: 'secondary', name: 'SR-9 精确射手步枪', short: 'SR-9', price: 0, tag: '2号位 · 射手步枪', stats: ['伤害 76', '射速 260', '高倍镜'], desc: '半自动精确步枪，配备高倍光学瞄准镜，擅长远程点杀。' },
+    { id: 'm110', slot: 'secondary', name: 'M110-S 消音狙击步枪', short: 'M110-S', price: 160000, tag: '2号位 · 消音狙击', stats: ['伤害 92', '射速 300', '一体消音'], desc: '特种消音狙击系统，枪声传播范围骤减 60%，暗杀敌方哨兵而不惊动全区。' },
+  ],
+  protection: [
+    { id: 'armor_1', kind: 'armor', name: '标准防弹背心 (II级)', price: 0, tag: '基础护甲', maxArmor: 100, startArmor: 80, mit: 0.55, headMit: 0, stats: ['初始护甲 80', '上限 100', '减伤 55%'], desc: '常规凯夫拉防弹衣，可抵御普通手枪与流弹伤害。' },
+    { id: 'armor_2', kind: 'armor', name: '战术陶瓷插板甲 (IV级)', price: 45000, tag: '进阶护甲', maxArmor: 135, startArmor: 135, mit: 0.65, headMit: 0.1, stats: ['初始护甲 135', '减伤 65%', '防爆头 +10%'], desc: '前后双面碳化硼陶瓷插板，大幅吸收突击步枪连续命中伤害。' },
+    { id: 'armor_3', kind: 'armor', name: '「铁砧」重型防爆装甲 (VI级)', price: 180000, tag: '顶级重甲', maxArmor: 190, startArmor: 190, mit: 0.74, headMit: 0.25, stats: ['初始护甲 190', '减伤 74%', '防爆头 +25%'], desc: '灰隼指挥官同款重型复合装甲，正面对枪拥有压倒性生存优势。' },
+    { id: 'bag_1', kind: 'bag', name: '标准突击背包', price: 0, tag: '基础背具', cap: 24, stats: ['容量 24 格'], desc: '常规单兵战术背包，足以装下基础战利品。' },
+    { id: 'bag_2', kind: 'bag', name: '野战侦察大背包', price: 55000, tag: '扩容背具', cap: 32, stats: ['容量 32 格 (+8)'], desc: '多隔层扩容战术包，能多带走两件大型高价值设备。' },
+    { id: 'bag_3', kind: 'bag', name: '军用重型远征包', price: 210000, tag: '超大背具', cap: 42, stats: ['容量 42 格 (+18)'], desc: '特制重型背负系统，横扫全图保险柜不再受空间限制。' },
+  ],
+  perks: [
+    { id: 'perk_search', name: '快速搜刮战术手套', price: 32000, tag: '永久改装', stats: ['搜索鉴定速度 +45%'], desc: '指尖防滑感应织物，大幅缩短翻找保险柜与容器的鉴定时间。' },
+    { id: 'perk_med', name: '战地快速急救包', price: 48000, tag: '永久改装', stats: ['治疗耗时 1.8s', '回复 +65 HP'], desc: '优化医疗包内注射器与止血带布局，交火间隙快速重返战斗。' },
+    { id: 'perk_extract', name: '加密撤离信标', price: 95000, tag: '永久改装', stats: ['撤离读秒 8s → 5s'], desc: '提前向撤离载具发送加密身份频段，缩短撤离点暴露等待时间。' },
+    { id: 'perk_mag', name: '大容量战术弹挂', price: 110000, tag: '永久改装', stats: ['随身备弹量 +50%'], desc: '扩充胸挂弹匣袋位，无需频繁搜刮弹药箱也能火力全开。' },
+    { id: 'perk_sprint', name: '轻量化外骨骼护膝', price: 140000, tag: '永久改装', stats: ['冲刺速度 +12%', '移动噪音 -40%'], desc: '碳纤维助力结构，在港区长距离转点与静步潜行时优势显著。' },
+  ],
+  supplies: [
+    { id: 'sup_med', name: '战地医疗包 (额外携带)', price: 3500, tag: '单局补给', stats: ['开局医疗包 +1'], desc: '购入仓库库存后，每次开始行动自动消耗 1 件并额外带入 1 个医疗包。' },
+    { id: 'sup_armor', name: '陶瓷护甲修复板', price: 5000, tag: '单局补给', stats: ['开局护甲板 +1', '[G] 修复 +60'], desc: '行动中按 [G] 键可随时更换受损插板，立即恢复 60 点护甲值。' },
+    { id: 'sup_stim', name: '战斗肾上腺素注射剂', price: 8000, tag: '单局补给', stats: ['最大生命 125', '持续微量回血'], desc: '出发前注射，本局生命上限提升至 125 点并持续缓慢恢复生命。' },
+    { id: 'sup_insure', name: '黑市物资撤离保险', price: 15000, tag: '单局保险', stats: ['阵亡/超时赔付 50%'], desc: '若本局不幸阵亡或超时，黑市回收队将按背包物资总价值的 50% 进行现金理赔。' },
+  ],
+};
+
+function getGear() {
+  const saved = store.get('gear', {});
+  return {
+    unlocked: Array.isArray(saved.unlocked) ? saved.unlocked : ['k7', 'sr9', 'armor_1', 'bag_1'],
+    primary: saved.primary || 'k7',
+    secondary: saved.secondary || 'sr9',
+    armor: saved.armor || 'armor_1',
+    bag: saved.bag || 'bag_1',
+    perks: Array.isArray(saved.perks) ? saved.perks : [],
+    stock: Object.assign({ sup_med: 0, sup_armor: 0, sup_stim: 0, sup_insure: 0 }, saved.stock || {}),
+  };
+}
+function saveGear(g) { store.set('gear', g); }
+function getEquippedArmor() {
+  const g = getGear();
+  return ARMORY_CATALOG.protection.find((x) => x.id === g.armor) || ARMORY_CATALOG.protection[0];
+}
+function getEquippedBag() {
+  const g = getGear();
+  return ARMORY_CATALOG.protection.find((x) => x.id === g.bag) || ARMORY_CATALOG.protection[3];
+}
+function hasPerk(id) { return getGear().perks.includes(id); }
+
 function setLoad(p, text) { $('loadBar').style.width = Math.round(p * 100) + '%'; if (text) $('loadText').textContent = text; }
 
 // ================= renderer / scene =================
@@ -538,13 +658,12 @@ function vnoise(x, y, period, seed) {
   const a = hash2(x0, y0, seed), b = hash2(x1, y0, seed), c = hash2(x0, y1, seed), d = hash2(x1, y1, seed);
   return a + (b - a) * ux + (c - a) * uy + (a - b - c + d) * ux * uy;
 }
-// u,v in [0,1); base = lattice cells per tile (tileable)
 function fbm(u, v, base, oct, seed) {
   let s = 0, a = 0.5, f = base, n = 0;
   for (let i = 0; i < oct; i++) { s += a * vnoise(u * f, v * f, f, seed + i * 17); n += a; a *= 0.5; f *= 2; }
   return s / n;
 }
-function fbm2(u, v, bu, bv, oct, seed) { // anisotropic
+function fbm2(u, v, bu, bv, oct, seed) {
   let s = 0, a = 0.5, n = 0, fu = bu, fv = bv;
   for (let i = 0; i < oct; i++) {
     const x = u * fu, y = v * fv;
@@ -694,7 +813,6 @@ async function buildTextures() {
     await yieldUI();
     TEX[steps[i][0]] = steps[i][1]();
   }
-  // puddle mask (single channel)
   {
     const s = 256, d = new Uint8ClampedArray(s * s * 4);
     for (let y = 0; y < s; y++) for (let x = 0; x < s; x++) {
@@ -739,9 +857,6 @@ async function buildTextures() {
 }
 
 // ================= materials & shader patches =================
-// Static geometry carries a baked per-vertex sky-visibility term ("skyvis") that occludes image-based
-// light inside buildings — a cheap stand-in for ray-traced ambient occlusion / GI.
-// Dynamic objects sample a 2D sky-visibility map by world position.
 const ALLMATS = [];
 const SKYMAP_EXT = 140;
 const skyUniforms = {
@@ -779,7 +894,7 @@ function mat(opts, kind = 'static') {
   return m;
 }
 const MAT = {};
-const MATSCALE = {}; // metres per texture tile
+const MATSCALE = {};
 function buildMaterials() {
   const set = (t, ns = 1) => ({ map: t.map, normalMap: t.normal, roughnessMap: t.rough, metalnessMap: t.rough, normalScale: new THREE.Vector2(ns, ns) });
   MAT.ground = mat({ ...set(TEX.slab, 0.9), vertexColors: true, roughness: 1, metalness: 0 }); MATSCALE.ground = 4;
@@ -801,7 +916,6 @@ function buildMaterials() {
   MAT.paintYellow = new THREE.MeshStandardMaterial({ color: 0xe0a92a, roughness: 0.7, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
   ALLMATS.push(MAT.heli, MAT.paintLine, MAT.paintYellow);
 
-  // dynamic (sampled sky-visibility)
   MAT.d_cloth = mat({ color: 0x55593f, ...set(TEX.fabric, 0.8), roughness: 1, metalness: 0, metalnessMap: null }, 'dyn');
   MAT.d_cloth2 = mat({ color: 0x2c2f33, ...set(TEX.fabric, 0.8), roughness: 1, metalness: 0, metalnessMap: null }, 'dyn');
   MAT.d_vest = mat({ color: 0x8a7a58, ...set(TEX.fabric, 1.0), roughness: 1, metalness: 0, metalnessMap: null }, 'dyn');
@@ -836,13 +950,13 @@ function buildMaterials() {
 }
 
 // ================= world geometry, colliders =================
-const STATIC = [];      // { g, mat, shadow }
-const COLLIDERS = [];   // AABBs
-const NOAO = [];        // objects hidden from the GTAO g-buffer
-const POI = [];         // map labels
+const STATIC = [];
+const COLLIDERS = [];
+const NOAO = [];
+const POI = [];
 const LAMPS = [];
-const CONTAINER_SPOTS = []; // loot spawn spots {x,y,z,type,rot}
-const PATROLS = [];     // enemy groups
+const CONTAINER_SPOTS = [];
+const PATROLS = [];
 const MAP_X0 = -122, MAP_X1 = 109, MAP_Z0 = -122, MAP_Z1 = 122;
 
 function addCollider(x0, y0, z0, x1, y1, z1, flags) {
@@ -889,7 +1003,6 @@ function addBox(cx, cz, w, d, h, y0, matName, o = {}) {
     } else addCollider(cx - w / 2, y0, cz - d / 2, cx + w / 2, y0 + h, cz + d / 2, { mat: matName, ...o.cf });
   }
 }
-// box by min/max
 function boxMM(x0, y0, z0, x1, y1, z1, matName, o) { addBox((x0 + x1) / 2, (z0 + z1) / 2, Math.abs(x1 - x0), Math.abs(z1 - z0), Math.abs(y1 - y0), Math.min(y0, y1), matName, o); }
 function addCyl(cx, cz, r, h, y0, matName, o = {}) {
   const seg = o.seg || 20;
@@ -917,7 +1030,6 @@ function subtractRange(ranges, a, b) {
   }
   return out;
 }
-// wall along axis 'x' (at z=c) or 'z' (at x=c), with holes {a,b,y0,y1}
 function wall(axis, c, a0, a1, y0, y1, t, matName, holes = [], o = {}) {
   const pts = [a0, a1];
   for (const h of holes) { pts.push(clamp(h.a, a0, a1), clamp(h.b, a0, a1)); }
@@ -934,7 +1046,6 @@ function wall(axis, c, a0, a1, y0, y1, t, matName, holes = [], o = {}) {
       else addBox(c, mid, t, e - s, r1 - r0, r0, matName, o);
     }
   }
-  // frames around windows
   if (o.frames) for (const h of holes) {
     if (h.y0 <= y0 + 0.01) continue;
     const fm = 'paint', fc = { color: [0.18, 0.19, 0.2], collide: false, bake: false };
@@ -942,12 +1053,10 @@ function wall(axis, c, a0, a1, y0, y1, t, matName, holes = [], o = {}) {
     else { addBox(c, (h.a + h.b) / 2, t + 0.1, h.b - h.a + 0.16, 0.08, h.y0 - 0.08, fm, fc); addBox(c, (h.a + h.b) / 2, t + 0.06, h.b - h.a + 0.16, 0.06, h.y1, fm, fc); }
   }
 }
-// slab with rectangular holes [{x0,z0,x1,z1}]
 function slab(x0, z0, x1, z1, y, th, matName, holes = [], o = {}) {
   const xs = [...new Set([x0, x1, ...holes.flatMap((h) => [h.x0, h.x1])])].filter((v) => v >= x0 && v <= x1).sort((a, b) => a - b);
   const zs = [...new Set([z0, z1, ...holes.flatMap((h) => [h.z0, h.z1])])].filter((v) => v >= z0 && v <= z1).sort((a, b) => a - b);
   for (let i = 0; i < xs.length - 1; i++) {
-    // merge cells along z when not in hole
     let start = null;
     for (let j = 0; j <= zs.length - 1; j++) {
       const inHole = j < zs.length - 1 && holes.some((h) => (xs[i] + xs[i + 1]) / 2 > h.x0 && (xs[i] + xs[i + 1]) / 2 < h.x1 && (zs[j] + zs[j + 1]) / 2 > h.z0 && (zs[j] + zs[j + 1]) / 2 < h.z1);
@@ -958,7 +1067,6 @@ function slab(x0, z0, x1, z1, y, th, matName, holes = [], o = {}) {
   }
 }
 function stairs(x0, z0, x1, z1, yA, yB, dir, matName, o = {}) {
-  // dir: '+x','-x','+z','-z' = direction of ascent
   const len = dir[1] === 'x' ? Math.abs(x1 - x0) : Math.abs(z1 - z0);
   const n = Math.max(2, Math.round((yB - yA) / 0.24));
   const run = len / n;
@@ -979,13 +1087,11 @@ function railing(axis, c, a0, a1, y, o = {}) {
   for (let i = 0; i <= n; i++) { const a = a0 + L * i / n; if (axis === 'x') addBox(a, c, 0.06, 0.06, 1.1, y, 'paint', { ...fc, collide: false }); else addBox(c, a, 0.06, 0.06, 1.1, y, 'paint', { ...fc, collide: false }); }
 }
 
-// ---------- props ----------
 const CONT_COLORS = [[0.62, 0.16, 0.1], [0.12, 0.3, 0.55], [0.2, 0.42, 0.3], [0.85, 0.83, 0.78], [0.82, 0.42, 0.1], [0.42, 0.44, 0.46], [0.55, 0.12, 0.16], [0.15, 0.5, 0.55]];
 function container(cx, cz, len, y0, alongX, color, o = {}) {
   const w = 2.44, h = 2.59;
   const W = alongX ? len : w, D = alongX ? w : len;
   if (o.open) {
-    // open-door container you can walk into: floor, roof, two long walls, back wall
     const t = 0.08;
     const x0 = cx - W / 2, x1 = cx + W / 2, z0 = cz - D / 2, z1 = cz + D / 2;
     boxMM(x0, y0, z0, x1, y0 + 0.12, z1, 'wood', { color: [0.6, 0.55, 0.5] });
@@ -1000,7 +1106,6 @@ function container(cx, cz, len, y0, alongX, color, o = {}) {
     return;
   }
   addBox(cx, cz, W, D, h, y0, 'container', { color, collide: o.collide });
-  // corner castings / frame rails
   const fc = { color: color.map((v) => v * 0.6), collide: false, bake: false };
   if (alongX) { addBox(cx, cz - D / 2, W, 0.06, 0.16, y0 + h - 0.16, 'container', fc); addBox(cx, cz + D / 2, W, 0.06, 0.16, y0 + h - 0.16, 'container', fc); addBox(cx, cz - D / 2, W, 0.06, 0.14, y0, 'container', fc); addBox(cx, cz + D / 2, W, 0.06, 0.14, y0, 'container', fc); }
   else { addBox(cx - W / 2, cz, 0.06, D, 0.16, y0 + h - 0.16, 'container', fc); addBox(cx + W / 2, cz, 0.06, D, 0.16, y0 + h - 0.16, 'container', fc); addBox(cx - W / 2, cz, 0.06, D, 0.14, y0, 'container', fc); addBox(cx + W / 2, cz, 0.06, D, 0.14, y0, 'container', fc); }
@@ -1036,8 +1141,6 @@ function pallet(cx, cz, y0 = 0) {
 }
 function barrel(cx, cz, color = [0.2, 0.32, 0.5]) { addCyl(cx, cz, 0.3, 0.9, 0, 'paint', { color, seg: 14 }); }
 function truck(cx, cz, alongX = true, color = [0.32, 0.36, 0.28]) {
-  // cab + flatbed + wheels
-  const s = alongX ? 1 : 0;
   const P = (a, b) => (alongX ? [cx + a, cz + b] : [cx + b, cz + a]);
   let [x, z] = P(3.2, 0); addBox(x, z, alongX ? 2.2 : 2.4, alongX ? 2.4 : 2.2, 1.6, 0.9, 'paint', { color });
   [x, z] = P(3.3, 0); addBox(x, z, alongX ? 1.6 : 2.3, alongX ? 2.3 : 1.6, 0.9, 2.5, 'paint', { color });
@@ -1049,7 +1152,6 @@ function truck(cx, cz, alongX = true, color = [0.32, 0.36, 0.28]) {
     addCyl(x, z, 0.5, 0.38, 0.5 - 0.19, 'paint', { color: [0.06, 0.06, 0.06], rotZ: alongX ? 0 : Math.PI / 2, rotX: alongX ? Math.PI / 2 : 0, collide: false, seg: 14 });
   }
   [x, z] = P(0.0, 0); addCollider(x - (alongX ? 4.4 : 1.2), 0, z - (alongX ? 1.2 : 4.4), x + (alongX ? 4.4 : 1.2), 2.8, z + (alongX ? 1.2 : 4.4));
-  void s;
 }
 function lampPost(cx, cz, dirX = 0, dirZ = 1) {
   addCyl(cx, cz, 0.09, 7, 0, 'steel', { color: [0.5, 0.5, 0.5], seg: 8, colR: 0.15 });
@@ -1066,12 +1168,9 @@ function hangingLamp(x, z, y, color = 0xffc98a, intensity = 0) {
   if (intensity > 0) LAMPS.push({ x, y: y - 1.7, z, color, intensity });
 }
 
-// ---------- map layout ----------
 function buildMap() {
   R = mulberry32(73019);
-  // ground collider (whole land) — invisible
   addCollider(-400, -3, -400, 109, 0, 400, { ground: true, nobake: true });
-  // perimeter wall
   const PW = (axis, c, a0, a1, holes = []) => {
     wall(axis, c, a0, a1, 0, 4.6, 0.5, 'concrete', holes, { color: [0.86, 0.84, 0.8] });
     const L = a1 - a0, n = Math.round(L / 8);
@@ -1084,28 +1183,24 @@ function buildMap() {
   PW('x', MAP_Z0, MAP_X0, MAP_X1, [{ a: -5, b: 5, y0: 0, y1: 9 }]);
   PW('x', MAP_Z1, MAP_X0, MAP_X1);
   PW('z', MAP_X0, MAP_Z0, MAP_Z1);
-  // quay edge railing on the east (water side), gap for pier
   railing('z', MAP_X1 - 0.3, MAP_Z0, -72.2, 0, { color: [0.85, 0.75, 0.2] });
   railing('z', MAP_X1 - 0.3, -59.8, MAP_Z1, 0, { color: [0.85, 0.75, 0.2] });
   boxMM(MAP_X1 - 0.6, -2.2, MAP_Z0, MAP_X1, 0, MAP_Z1, 'concrete', { color: [0.6, 0.58, 0.55], collide: false });
   for (let z = MAP_Z0 + 6; z < MAP_Z1; z += 14) if (z < -74 || z > -58) addCyl(MAP_X1 - 1.2, z, 0.25, 0.6, 0, 'paint', { color: [0.12, 0.12, 0.12], seg: 10 });
-  // pier
   boxMM(MAP_X1, -1.6, -72, 146, 0, -60, 'wood', { color: [0.62, 0.55, 0.48], cf: { ground: false } });
   railing('x', -71.7, MAP_X1, 146, 0, { color: [0.85, 0.75, 0.2] });
   railing('x', -60.3, MAP_X1, 146, 0, { color: [0.85, 0.75, 0.2] });
   railing('z', 145.7, -72, -60, 0, { color: [0.85, 0.75, 0.2] });
   for (let x = MAP_X1 + 3; x < 146; x += 6) { addCyl(x, -72.3, 0.3, 3, -3, 'wood', { color: [0.4, 0.33, 0.28], collide: false, seg: 8 }); addCyl(x, -59.7, 0.3, 3, -3, 'wood', { color: [0.4, 0.33, 0.28], collide: false, seg: 8 }); }
-  // patrol boat moored at pier
   boxMM(126, -1.4, -80, 142, 0.6, -75, 'paint', { color: [0.3, 0.33, 0.35], collide: false });
   boxMM(132, 0.6, -79.3, 138, 2.4, -75.7, 'paint', { color: [0.82, 0.8, 0.76], collide: false });
   boxMM(137.95, 1.5, -79, 138.05, 2.2, -76, 'glass', { collide: false });
 
-  // north gate pen (extraction)
   wall('z', -8, -134, MAP_Z0, 0, 4.6, 0.5, 'concrete', [], { color: [0.86, 0.84, 0.8] });
   wall('z', 8, -134, MAP_Z0, 0, 4.6, 0.5, 'concrete', [], { color: [0.86, 0.84, 0.8] });
   wall('x', -134, -8, 8, 0, 4.6, 0.5, 'concrete', [], { color: [0.86, 0.84, 0.8] });
   boxMM(-5.5, 0, -119, -5, 4.2, -116, 'concrete', { color: [0.7, 0.68, 0.64] });
-  boxMM(-11, 0, -119, -7, 2.8, -114.5, 'concrete', { color: [0.75, 0.72, 0.62] }); // guard booth
+  boxMM(-11, 0, -119, -7, 2.8, -114.5, 'concrete', { color: [0.75, 0.72, 0.62] });
   boxMM(-11.2, 2.8, -119.2, -6.8, 3.0, -114.3, 'steel', { color: [0.3, 0.3, 0.3] });
   boxMM(-9.8, 1.0, -114.55, -8.2, 2.1, -114.45, 'glass', { collide: false });
   addBox(-1.6, -118.6, 6.4, 0.12, 0.12, 1.0, 'hazard', { collide: false });
@@ -1113,7 +1208,6 @@ function buildMap() {
   sandbags(5, -116, 3, false, 3);
   POI.push({ name: '北门', x: 0, z: -118 });
 
-  // ---------- roads & markings ----------
   const road = (x0, z0, x1, z1) => boxMM(x0, -0.02, z0, x1, 0.012, z1, 'asphalt', { collide: false, shadow: false });
   road(-5, MAP_Z0 - 12, 5, MAP_Z1); road(MAP_X0, -30, MAP_X1, -22); road(MAP_X0, 56, MAP_X1, 64);
   const dash = (x0, z0, x1, z1) => { const g = new THREE.PlaneGeometry(Math.abs(x1 - x0), Math.abs(z1 - z0)); g.rotateX(-Math.PI / 2); g.translate((x0 + x1) / 2, 0.016, (z0 + z1) / 2); return g; };
@@ -1123,7 +1217,7 @@ function buildMap() {
   ylines.push(dash(-4.85, MAP_Z0, -4.7, MAP_Z1), dash(4.7, MAP_Z0, 4.85, MAP_Z1));
   ROADLINES.push(new THREE.Mesh(mergeGeometries(lines), MAT.paintLine), new THREE.Mesh(mergeGeometries(ylines), MAT.paintYellow));
 
-  // ---------- Warehouse A (big, skylights, mezzanine) ----------
+  // Warehouse A
   {
     const x0 = -62, x1 = -22, z0 = -10, z1 = 20, H = 10, t = 0.4;
     const wc = { color: [0.55, 0.6, 0.55] };
@@ -1131,14 +1225,10 @@ function buildMap() {
     wall('x', z1, x0, x1, 0, H, t, 'siding', [{ a: -36, b: -31, y0: 0, y1: 3.8 }, { a: -56, b: -50, y0: 7, y1: 8.6 }], wc);
     wall('z', x0, z0 + t / 2, z1 - t / 2, 0, H, t, 'siding', [{ a: 10, b: 13, y0: 0, y1: 3.2 }], wc);
     wall('z', x1, z0 + t / 2, z1 - t / 2, 0, H, t, 'siding', [{ a: 0, b: 8, y0: 0, y1: 6 }], wc);
-    // big door frame + hazard
     addBox(x1 + 0.25, 4, 0.2, 8.4, 0.3, 6, 'hazard', { collide: false });
     slab(x0, z0, x1, z1, H, 0.35, 'siding', [{ x0: -53, z0: 2, x1: -48, z1: 8 }, { x0: -37, z0: 2, x1: -32, z1: 8 }], { color: [0.45, 0.47, 0.45] });
-    // roof trusses
     for (let x = x0 + 4; x < x1; x += 5) addBox(x, (z0 + z1) / 2, 0.25, z1 - z0 - 0.8, 0.5, H - 0.5, 'steel', { color: [0.5, 0.36, 0.2], collide: false });
-    // floor paint lines
     addBox(-42, 3.5, 38, 0.12, 0.012, 0.005, 'hazard', { collide: false, shadow: false });
-    // racks
     const rack = (rx0, rx1, rz) => {
       const d = 1.2, hh = 4.6, oc = { color: [0.9, 0.42, 0.08], collide: false, bake: false };
       for (let x = rx0; x <= rx1 + 0.01; x += (rx1 - rx0) / 3) { addBox(x, rz - d / 2, 0.1, 0.1, hh, 0, 'paint', oc); addBox(x, rz + d / 2, 0.1, 0.1, hh, 0, 'paint', oc); }
@@ -1155,7 +1245,6 @@ function buildMap() {
       addCollider(rx0 - 0.1, 0, rz - d / 2 - 0.05, rx1 + 0.1, hh, rz + d / 2 + 0.05);
     };
     rack(-58, -50, 1); rack(-46, -38, 1); rack(-58, -50, 7); rack(-46, -38, 7); rack(-58, -50, 13); rack(-46, -38, 13);
-    // mezzanine along north wall
     const my = 4;
     boxMM(x0 + t / 2, my - 0.25, z0 + t / 2, -40, my, -5.5, 'steel', { color: [0.45, 0.45, 0.45] });
     railing('x', -5.6, x0 + 0.2, -42.6, my, { color: [0.95, 0.75, 0.1] });
@@ -1163,11 +1252,10 @@ function buildMap() {
     for (const x of [-56, -48, -41]) addBox(x, -5.8, 0.25, 0.25, my - 0.25, 0, 'steel', { color: [0.5, 0.36, 0.2] });
     stairs(-40, -9.7, -33.4, -7.4, 0, my, '-x', 'steel', { color: [0.42, 0.42, 0.42] });
     railing('x', -7.3, -40, -33.4, 0, { color: [0.95, 0.75, 0.1] });
-    // manager's office on mezzanine
     wall('z', -54, z0 + t / 2, -5.5, my, my + 3, 0.15, 'concrete', [{ a: -8, b: -6.6, y0: my, y1: my + 2.2 }], { color: [0.85, 0.82, 0.74] });
     wall('x', -5.6, x0 + t / 2, -54, my, my + 3, 0.15, 'concrete', [{ a: -60, b: -56, y0: my + 1.1, y1: my + 2.3 }], { color: [0.85, 0.82, 0.74], frames: true });
     boxMM(x0 + 0.2, my + 3, z0 + 0.2, -54, my + 3.12, -5.5, 'concrete', { color: [0.8, 0.8, 0.8] });
-    boxMM(-60.5, my, -9.4, -57.5, my + 0.75, -8.2, 'wood', { color: [0.55, 0.42, 0.32] }); // desk
+    boxMM(-60.5, my, -9.4, -57.5, my + 0.75, -8.2, 'wood', { color: [0.55, 0.42, 0.32] });
     hangingLamp(-42, -1, H, 0xffc58a, 260);
     hangingLamp(-42, 14, H, 0xffc58a, 0);
     hangingLamp(-55, 10, H, 0xffc58a, 0);
@@ -1181,7 +1269,7 @@ function buildMap() {
     POI.push({ name: 'A 号仓库', x: -42, z: 5 });
   }
 
-  // ---------- Office (2 floors) ----------
+  // Office
   {
     const x0 = -60, x1 = -38, z0 = -72, z1 = -52, FH = 3.6, t = 0.3;
     const wc = { color: [0.82, 0.79, 0.72], frames: true };
@@ -1194,17 +1282,14 @@ function buildMap() {
     slab(x0 - 0.2, z0 - 0.2, x1 + 0.2, z1 + 0.2, FH * 2, 0.3, 'concrete', [], { color: [0.6, 0.6, 0.58] });
     wall('x', z0 - 0.05, x0, x1, FH * 2 + 0.3, FH * 2 + 1.1, 0.25, 'concrete', [], { color: [0.7, 0.68, 0.62] });
     wall('x', z1 + 0.05, x0, x1, FH * 2 + 0.3, FH * 2 + 1.1, 0.25, 'concrete', [], { color: [0.7, 0.68, 0.62] });
-    // stairs inside (ascend toward north)
     stairs(-41.8, -71.6, -38.4, -64, 0, FH + 0.25, '-z', 'concrete', { color: [0.66, 0.65, 0.62] });
     railing('z', -42.3, -69.2, -63.6, FH + 0.25, { color: [0.3, 0.3, 0.3] });
     railing('x', -63.4, -42.2, -38.4, FH + 0.25, { color: [0.3, 0.3, 0.3] });
-    // partitions
     for (const f of [0, 1]) {
       wall('z', -49, z0 + t / 2, z1 - t / 2, f * FH + (f ? 0.25 : 0), (f + 1) * FH, 0.14, 'concrete', [{ a: -63, b: -61.6, y0: 0, y1: f * FH + 2.3 }, { a: -57, b: -55.6, y0: 0, y1: f * FH + 2.3 }], { color: [0.88, 0.86, 0.8] });
       boxMM(-58.5, f * FH + (f ? 0.25 : 0), -70.5, -55.5, f * FH + 0.95, -69.5, 'wood', { color: [0.6, 0.45, 0.33] });
       boxMM(-47, f * FH + (f ? 0.25 : 0), -58, -44, f * FH + 0.95, -56.8, 'wood', { color: [0.6, 0.45, 0.33] });
     }
-    // rooftop AC units
     boxMM(-56, FH * 2 + 0.3, -68, -53, FH * 2 + 1.6, -65, 'steel', { color: [0.7, 0.7, 0.7], collide: false });
     boxMM(-46, FH * 2 + 0.3, -62, -43.5, FH * 2 + 1.4, -59.5, 'steel', { color: [0.7, 0.7, 0.7], collide: false });
     LAMPS.push({ x: -53, y: FH - 0.4, z: -62, color: 0xdfe6ff, intensity: 70 });
@@ -1215,7 +1300,7 @@ function buildMap() {
     POI.push({ name: '行政楼', x: -49, z: -62 });
   }
 
-  // ---------- Fuel depot (NW) ----------
+  // Fuel depot
   {
     for (const [x, z] of [[-104, -104], [-88, -104], [-104, -88], [-88, -88]]) {
       addCyl(x, z, 6, 9, 0, 'paint', { color: [0.86, 0.85, 0.82], seg: 32, colR: 5.4 });
@@ -1227,7 +1312,6 @@ function buildMap() {
     boxMM(-82, 0, -79, -76, 3, -74, 'concrete', { color: [0.75, 0.72, 0.62] });
     boxMM(-82.2, 3, -79.2, -75.8, 3.2, -73.8, 'steel', { color: [0.35, 0.35, 0.35] });
     boxMM(-81.5, 1.1, -73.95, -79.5, 2.3, -73.85, 'glass', { collide: false });
-    // chain-link fence
     const fence = (axis, c, a0, a1, holes = []) => {
       let segs = [[a0, a1]];
       for (const h of holes) segs = subtractRange(segs, h[0], h[1]);
@@ -1249,14 +1333,14 @@ function buildMap() {
     POI.push({ name: '油料库', x: -96, z: -96 });
   }
 
-  // ---------- Container yard ----------
+  // Container yard
   {
     const xs = [24, 37.5, 51, 64.5, 78, 91.5];
     const zs = [-108, -104.6, -96, -92.6, -84, -80.6, -72, -68.6, -60, -56.6, -48, -44.6];
     const openSpots = new Set(['2,4', '4,9', '0,10', '5,3']);
     for (let i = 0; i < xs.length; i++) for (let j = 0; j < zs.length; j++) {
       const key = i + ',' + j;
-      if ((i === 2 || i === 3) && (j === 6 || j === 7)) continue; // crane clearing
+      if ((i === 2 || i === 3) && (j === 6 || j === 7)) continue;
       let stack = R() < 0.12 ? 0 : 1 + Math.floor(R() * 2.4);
       if (openSpots.has(key)) {
         container(xs[i], zs[j], 12.2, 0, true, pick(CONT_COLORS, R), { open: j % 2 ? 1 : -1 });
@@ -1265,7 +1349,6 @@ function buildMap() {
       }
       for (let k = 0; k < stack; k++) container(xs[i] + rr(-0.06, 0.06), zs[j], 12.2, k * 2.6, true, pick(CONT_COLORS, R));
     }
-    // gantry crane
     const cy = 21;
     for (const x of [44.25, 71.25]) for (const z of [-78.6, -62]) addBox(x, z, 1.1, 1.1, cy, 0, 'paint', { color: [0.85, 0.6, 0.1] });
     addBox(57.75, -78.6, 29, 1.6, 2, cy, 'paint', { color: [0.85, 0.6, 0.1], collide: false });
@@ -1275,7 +1358,6 @@ function buildMap() {
     addBox(56, -70.5, 4, 5, 3, cy - 3, 'paint', { color: [0.3, 0.3, 0.3], collide: false });
     addBox(56, -70.5, 0.1, 0.1, 9, cy - 12, 'steel', { collide: false });
     container(56, -70.5, 6.1, cy - 14.6, true, [0.12, 0.3, 0.55], { collide: false });
-    // watchtower at yard edge
     watchtower(14, -42);
     sandbags(30, -38, 5, true, 3); sandbags(70, -38, 5, true, 3);
     truck(68, -35, true);
@@ -1284,7 +1366,7 @@ function buildMap() {
     POI.push({ name: '集装箱区', x: 58, z: -76 });
   }
 
-  // ---------- Ship-to-shore crane (landmark) ----------
+  // Ship-to-shore crane
   {
     const c = [0.78, 0.18, 0.12], wc = [0.9, 0.88, 0.85];
     for (const x of [96, 106]) for (const z of [-20, -6]) addBox(x, z, 1.4, 1.4, 34, 0, 'paint', { color: (x + z) % 2 ? c : wc });
@@ -1296,7 +1378,7 @@ function buildMap() {
     POI.push({ name: '岸桥', x: 101, z: -13 });
   }
 
-  // ---------- Warehouse B ----------
+  // Warehouse B
   {
     const x0 = 26, x1 = 56, z0 = 6, z1 = 30, H = 8, t = 0.35;
     const wc = { color: [0.7, 0.55, 0.42] };
@@ -1316,7 +1398,7 @@ function buildMap() {
     POI.push({ name: 'B 号仓库', x: 41, z: 18 });
   }
 
-  // ---------- Helipad & control hut (NE→ SE corner) ----------
+  // Helipad
   {
     const g = new THREE.PlaneGeometry(22, 22); g.rotateX(-Math.PI / 2); g.translate(76, 0.02, 92);
     const pad = new THREE.Mesh(g, MAT.heli); pad.receiveShadow = true; DECOR.push(pad);
@@ -1333,7 +1415,7 @@ function buildMap() {
     POI.push({ name: '直升机坪', x: 76, z: 92 });
   }
 
-  // ---------- Garage (SW) ----------
+  // Garage
   {
     const x0 = -110, x1 = -84, z0 = 70, z1 = 86, H = 6, t = 0.35;
     const wc = { color: [0.75, 0.74, 0.7] };
@@ -1346,14 +1428,13 @@ function buildMap() {
     truck(-104.5, 78.5, false, [0.25, 0.3, 0.26]);
     hangingLamp(-89, 80, H, 0xfff0d0, 0);
     CONTAINER_SPOTS.push({ x: -97, z: 84, type: 'tool' }, { x: -88, z: 84.5, type: 'weapon' }, { x: -86, z: 72.5, type: 'medical' });
-    // fortified position in front
     sandbags(-96, 62, 8, true, 4); sandbags(-78, 70, 6, false, 4);
     truck(-70, 78, false, [0.4, 0.35, 0.25]);
     PATROLS.push({ pts: [[-114, 66], [-76, 66], [-76, 92], [-114, 92]], n: 2 });
     POI.push({ name: '车辆库', x: -97, z: 78 });
   }
 
-  // ---------- radio mast & plaza ----------
+  // Radio mast & plaza
   {
     const mx = -18, mz = -40, H = 26;
     for (const [dx, dz] of [[-1.4, -1.4], [1.4, -1.4], [-1.4, 1.4], [1.4, 1.4]]) addBox(mx + dx, mz + dz, 0.18, 0.18, H, 0, 'paint', { color: (dx > 0 ? [0.85, 0.2, 0.15] : [0.92, 0.9, 0.88]), collide: false });
@@ -1365,7 +1446,6 @@ function buildMap() {
     CONTAINER_SPOTS.push({ x: -23.5, z: -42.8, type: 'computer' });
   }
 
-  // ---------- scattered cover, lamps, trees ----------
   for (const [x, z, ax] of [[12, -18, true], [-12, -34, true], [16, 42, false], [-14, 46, false], [20, 70, true], [-30, 70, true], [-60, 40, true], [-70, -30, false], [80, 20, false], [86, 48, true], [-34, -90, true], [-6, 92, true], [50, 100, false], [100, 60, false]]) jersey(x, z, ax);
   for (const [x, z] of [[-12, 20], [14, -8], [-75, 30], [10, 100], [-40, 100], [-60, -100], [28, -16], [-8, -82]]) { crate(x, z, 1.2, 0, { rotY: rr(0, 1) }); crate(x + 1.3, z + rr(-0.2, 0.2), 1.1); if (R() < 0.6) crate(x + 0.6, z, 1.0, 1.15); }
   sandbags(-8, -60, 5, false, 3); sandbags(8, 30, 5, false, 3); sandbags(-70, 6, 4, false, 3); sandbags(-30, 40, 6, true, 3);
@@ -1378,7 +1458,6 @@ function buildMap() {
   CONTAINER_SPOTS.push({ x: 140, z: -64, type: 'tool' }, { x: 10, z: -15, type: 'ammo' }, { x: -74, z: 33, type: 'tool' }, { x: 6, z: 103, type: 'medical' }, { x: -10, z: -112, type: 'cabinet' });
   PATROLS.push({ pts: [[-2, -100], [-2, -60], [2, -60], [2, -100]], n: 1 }, { pts: [[-10, 10], [-10, 50], [10, 50], [10, 10]], n: 1 }, { pts: [[120, -66], [140, -66]], n: 1 }, { pts: [[-84, 40], [-84, -15], [-70, -15]], n: 1 });
 
-  // ---------- distant skyline (outside walls) ----------
   for (let i = 0; i < 40; i++) {
     const a = rr(0, Math.PI * 2), d = rr(230, 380);
     const x = Math.cos(a) * d, z = Math.sin(a) * d;
@@ -1440,7 +1519,6 @@ function gridQuery(x0, z0, x1, z1, out) {
 }
 const _cand = [];
 const HIT = { t: 0, c: null, nx: 0, ny: 0, nz: 0 };
-// returns distance or Infinity; fills HIT. opts: bullets ignore 'pass'
 function rayBox(ox, oy, oz, ix, iy, iz, c, tmax) {
   let t1 = (c.x0 - ox) * ix, t2 = (c.x1 - ox) * ix;
   let tn = t1 < t2 ? t1 : t2, tf = t1 < t2 ? t2 : t1, ax = 0;
@@ -1467,7 +1545,6 @@ function raycast(ox, oy, oz, dx, dy, dz, tmax, bullet = false) {
     const t = rayBox(ox, oy, oz, ix, iy, iz, c, best);
     if (t < best) { best = t; bc = c; bax = RAXIS; }
   }
-  // water plane (east of quay)
   if (dy < 0 && oy > -1.3) { const tw = (-1.3 - oy) / dy; if (tw < best && ox + dx * tw > MAP_X1) { best = tw; bc = { water: true }; bax = 1; } }
   HIT.t = best; HIT.c = bc;
   HIT.nx = bax === 0 ? -Math.sign(dx) : 0; HIT.ny = bax === 1 ? -Math.sign(dy) : 0; HIT.nz = bax === 2 ? -Math.sign(dz) : 0;
@@ -1479,14 +1556,13 @@ function losClear(ax, ay, az, bx, by, bz) {
   return raycast(ax, ay, az, dx / L, dy / L, dz / L, L - 0.05, true) === Infinity;
 }
 
-// ================= sky visibility bake (pseudo ray-traced AO) =================
+// ================= sky visibility bake =================
 const BAKE_DIRS = (() => {
   const out = [], N = 12;
   for (let i = 0; i < N; i++) { const u = (i + 0.5) / N, r = Math.sqrt(u), th = i * 2.399963; out.push([r * Math.cos(th), Math.sqrt(1 - u), r * Math.sin(th)]); }
   return out;
 })();
 function skyVisAt(px, py, pz, nx, ny, nz, cand) {
-  // tangent frame
   let tx, ty, tz;
   if (Math.abs(ny) < 0.9) { tx = nz; ty = 0; tz = -nx; } else { tx = 1; ty = 0; tz = 0; }
   let l = Math.hypot(tx, ty, tz); tx /= l; ty /= l; tz /= l;
@@ -1529,7 +1605,6 @@ async function bakeSkyMap() {
     setLoad(0.42 + 0.12 * (by / N), '烘焙环境光遮蔽 · 天空可见度');
     await yieldUI();
   }
-  // dilate invalid texels
   for (let pass = 0; pass < 3; pass++) for (let i = 0; i < N * N; i++) {
     if (valid[i]) continue;
     const x = i % N, y = (i / N) | 0; let s = 0, n = 0;
@@ -1586,7 +1661,7 @@ async function bakeStatic() {
 // ================= sky, sun, environment =================
 const SUN_ELEV = 17, SUN_AZ = 232;
 const sunDir = new V3().setFromSphericalCoords(1, THREE.MathUtils.degToRad(90 - SUN_ELEV), THREE.MathUtils.degToRad(SUN_AZ));
-let sky, sun, waterMesh, groundMesh;
+let sky, sun, waterMesh;
 function buildSky() {
   sky = new Sky();
   sky.scale.setScalar(4000);
@@ -1594,13 +1669,11 @@ function buildSky() {
   u.turbidity.value = 6; u.rayleigh.value = 2.4; u.mieCoefficient.value = 0.0045; u.mieDirectionalG.value = 0.86;
   u.sunPosition.value.copy(sunDir);
   scene.add(sky);
-  // IBL from the same sky
   const pm = new THREE.PMREMGenerator(renderer);
   const envScene = new THREE.Scene();
   const sky2 = new Sky(); sky2.scale.setScalar(4000);
   Object.keys(u).forEach((k) => { if (sky2.material.uniforms[k]) sky2.material.uniforms[k].value = u[k].value; });
   envScene.add(sky2);
-  // a dark ground disc so the lower hemisphere isn't sky-bright
   const gd = new THREE.Mesh(new THREE.CircleGeometry(1500, 32), new THREE.MeshBasicMaterial({ color: 0x2a2622 }));
   gd.rotation.x = -Math.PI / 2; gd.position.y = -5; envScene.add(gd);
   const envRT = pm.fromScene(envScene, 0.02, 0.1, 5000);
@@ -1623,7 +1696,6 @@ const _tmpV = new V3(), _tmpV2 = new V3();
 function updateSunShadow(focus) {
   const r = Q.shadowRange, cam = sun.shadow.camera;
   if (cam.right !== r) { cam.left = -r; cam.right = r; cam.top = r; cam.bottom = -r; cam.near = 1; cam.far = 420; cam.updateProjectionMatrix(); }
-  // snap to texel grid in light space to stop shimmering
   const texel = (2 * r) / sun.shadow.mapSize.x;
   const m = new THREE.Matrix4().lookAt(sunDir, new V3(0, 0, 0), new V3(0, 1, 0));
   _lightQ.setFromRotationMatrix(m);
@@ -1636,14 +1708,12 @@ function updateSunShadow(focus) {
 }
 
 function buildGroundAndWater() {
-  // inner ground with baked vertex sky visibility
   const W = MAP_X1 + 4 - (MAP_X0 - 4), D = MAP_Z1 - MAP_Z0 + 8;
   const sx = Math.round(W / 2), sz = Math.round(D / 2);
   const g = new THREE.PlaneGeometry(W, D, sx, sz);
   g.rotateX(-Math.PI / 2);
   g.translate((MAP_X1 + 4 + MAP_X0 - 4) / 2 - 2, 0, (MAP_Z0 + MAP_Z1) / 2);
   const p = g.attributes.position;
-  // clamp east edge to quay
   for (let i = 0; i < p.count; i++) if (p.getX(i) > MAP_X1) p.setX(i, MAP_X1);
   const uv = g.attributes.uv; for (let i = 0; i < p.count; i++) uv.setXY(i, p.getX(i) / 4, -p.getZ(i) / 4);
   const col = [];
@@ -1655,11 +1725,9 @@ function buildGroundAndWater() {
   }
   pushStatic(g, 'ground', { shadow: false });
   STATIC[STATIC.length - 1].g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
-  // outer land
   const og = new THREE.PlaneGeometry(900, 900, 4, 4); og.rotateX(-Math.PI / 2); og.translate(109 - 450, -0.05, 0);
   const ouv = og.attributes.uv, op = og.attributes.position; for (let i = 0; i < ouv.count; i++) ouv.setXY(i, op.getX(i) / 4, op.getZ(i) / 4);
   pushStatic(og, 'ground', { shadow: false, bake: false, color: [0.7, 0.68, 0.62] });
-  // sea
   const wg = new THREE.PlaneGeometry(1400, 1400); wg.rotateX(-Math.PI / 2); wg.translate(MAP_X1 + 700, -1.3, 0);
   waterMesh = new THREE.Mesh(wg, MAT.water); waterMesh.receiveShadow = true;
   scene.add(waterMesh);
@@ -1680,7 +1748,7 @@ function mergeStatic() {
   for (const [key, list] of groups) {
     const [m, sh] = key.split('|');
     const g = mergeGeometries(list, false);
-    if (!g) { console.warn('merge failed', key); continue; }
+    if (!g) continue;
     g.computeBoundingSphere();
     const mesh = new THREE.Mesh(g, MAT[m]);
     mesh.castShadow = sh === '1' && m !== 'lamp';
@@ -2149,10 +2217,10 @@ function sfxGun(kind, pos = null) {
   let pan = 0, dist = 0;
   if (pos) ({ pan, dist } = panFor(pos));
   const t = ctx.currentTime + dist / 343;
-  const vol = pos ? clamp(1.4 / (1 + dist / 12), 0.03, 0.9) : 1;
+  const vol = (pos ? clamp(1.4 / (1 + dist / 12), 0.03, 0.9) : 1) * (kind === 'sup' ? 0.4 : 1);
   const o = out(pan, dist);
   o.input.gain.value = vol;
-  const big = kind === 'dmr';
+  const big = kind === 'dmr' || kind === 'akm' || kind === 'sup';
   noiseBurst(t, o.input, { f: big ? 1400 : 1900, q: 0.6, a: 0.0008, d: big ? 0.11 : 0.075, g: 0.9 });
   noiseBurst(t, o.input, { f: big ? 700 : 900, q: 0.5, type: 'lowpass', a: 0.002, d: big ? 0.3 : 0.18, g: 0.7 });
   tone(t, o.input, { f0: big ? 110 : 140, f1: 38, a: 0.001, d: big ? 0.2 : 0.12, g: big ? 0.9 : 0.6 });
@@ -2266,6 +2334,7 @@ const PLAYER = {
   pos: new V3(), vel: new V3(), r: 0.34, h: 1.75, onGround: true, groundY: 0, ceilY: Infinity, landV: 0,
   yaw: 0, pitch: 0, crouch: 0, crouchWant: false, lean: 0, eyeY: 1.62, camY: 1.62,
   hp: 100, armor: 80, maxArmor: 100, alive: true, meds: 2, healT: 0,
+  maxHp: 100, healAmt: 45, healDur: 3, plates: 0, stim: false, insured: false, armorMit: 0.55, headMit: 0, perks: new Set(),
   recoilP: 0, recoilY: 0, stepT: 0, sprinting: false, speed: 0, noise: 0,
   lastHurt: -10, hurtDir: [], lookDX: 0, lookDY: 0, bob: 0, bobAmt: 0, deathT: 0, inWater: false, lastSafe: new V3(),
   kills: 0, heads: 0, startTime: 0,
@@ -2307,9 +2376,10 @@ function playerUpdate(dt) {
   const sprintKey = (key('ShiftLeft') || INPUT.tSprint) && fz < -0.3 && P.crouch < 0.3 && WEAPON.adsT < 0.2 && P.healT <= 0;
   P.sprinting = sprintKey && len > 0.3 && P.onGround;
   let speed = 4.1;
-  if (P.sprinting) speed = 6.5;
+  if (P.sprinting) speed = 6.5 * (P.perks.has('perk_sprint') ? 1.12 : 1);
   speed = lerp(speed, 2.0, P.crouch);
   speed *= lerp(1, 0.55, WEAPON.adsT);
+  if (WEAPON.cur && WEAPON.cur.def.speedMul) speed *= WEAPON.cur.def.speedMul;
   if (P.healT > 0) speed *= 0.5;
   if (P.inWater) speed *= 0.5;
   const s = Math.sin(P.yaw), c = Math.cos(P.yaw);
@@ -2328,6 +2398,7 @@ function playerUpdate(dt) {
 
   P.speed = Math.hypot(P.vel.x, P.vel.z);
   P.noise = P.speed < 0.5 ? 0 : P.sprinting ? 24 : P.crouch > 0.5 ? 3 : 10;
+  if (P.perks.has('perk_sprint')) P.noise *= 0.6;
 
   // ---- footsteps / bob ----
   if (P.onGround && P.speed > 0.6) {
@@ -2345,8 +2416,9 @@ function playerUpdate(dt) {
   // ---- heal ----
   if (P.healT > 0) {
     P.healT -= dt;
-    if (P.healT <= 0) { P.hp = Math.min(100, P.hp + 45); toast('使用医疗包 · 生命 +45', 'var(--signal)'); }
+    if (P.healT <= 0) { P.hp = Math.min(P.maxHp, P.hp + P.healAmt); toast('使用医疗包 · 生命 +' + P.healAmt, 'var(--signal)'); }
   }
+  if (P.stim && P.hp < P.maxHp) P.hp = Math.min(P.maxHp, P.hp + 0.8 * dt);
   // ---- camera ----
   const eyeTarget = P.pos.y + lerp(1.62, 1.05, P.crouch);
   P.camY = Math.abs(P.camY - eyeTarget) > 1.2 ? eyeTarget : damp(P.camY, eyeTarget, 18, dt);
@@ -2381,8 +2453,8 @@ function damagePlayer(dmg, fromPos, kind = 'bullet', head = false) {
   if (!P.alive || STATE.mode !== 'playing') return;
   let d = dmg;
   if (kind === 'bullet') {
-    if (head) d *= 1.6;
-    else if (P.armor > 0) { const ab = Math.min(P.armor, d * 0.55); P.armor = Math.max(0, P.armor - ab * 0.9); d -= ab; }
+    if (head) d *= 1.6 * (P.armor > 0 ? 1 - P.headMit : 1);
+    else if (P.armor > 0) { const ab = Math.min(P.armor, d * P.armorMit); P.armor = Math.max(0, P.armor - ab * 0.9); d -= ab; }
   }
   P.hp -= d;
   P.lastHurt = TIME;
@@ -2397,11 +2469,15 @@ function damagePlayer(dmg, fromPos, kind = 'bullet', head = false) {
 
 // ================= weapons & first-person viewmodel =================
 const WDEFS = [
-  { id: 'ar', name: 'K7 突击步枪', short: 'K7', rpm: 720, dmg: 34, mag: 30, reserve: 150, reload: 2.2, modes: ['全自动', '单发'], hip: 0.03, ads: 0.0032, recoilV: 0.0105, recoilH: 0.0055, adsFov: 54, adsSens: 0.72, hipPos: [0.12, -0.13, -0.29], adsPos: [0, -0.0384, -0.15], range: [45, 0.75], bloomAdd: 0.12 },
-  { id: 'dmr', name: 'SR-9 精确射手步枪', short: 'SR-9', rpm: 260, dmg: 76, mag: 10, reserve: 50, reload: 2.7, modes: ['半自动'], hip: 0.045, ads: 0.0004, recoilV: 0.034, recoilH: 0.009, adsFov: 19, adsSens: 0.33, scope: true, hipPos: [0.12, -0.135, -0.3], adsPos: [0, -0.0432, -0.1], range: [120, 0.85], bloomAdd: 0.5 },
+  { id: 'ar', name: 'K7 突击步枪', short: 'K7', rpm: 720, dmg: 34, mag: 30, reserve: 150, reload: 2.2, modes: ['全自动', '单发'], hip: 0.03, ads: 0.0032, recoilV: 0.0105, recoilH: 0.0055, adsFov: 54, adsSens: 0.72, hipPos: [0.12, -0.13, -0.29], adsPos: [0, -0.0384, -0.15], range: [45, 0.75], bloomAdd: 0.12, ammoBox: 60 },
+  { id: 'dmr', name: 'SR-9 精确射手步枪', short: 'SR-9', rpm: 260, dmg: 76, mag: 10, reserve: 50, reload: 2.7, modes: ['半自动'], hip: 0.045, ads: 0.0004, recoilV: 0.034, recoilH: 0.009, adsFov: 19, adsSens: 0.33, scope: true, hipPos: [0.12, -0.135, -0.3], adsPos: [0, -0.0432, -0.1], range: [120, 0.85], bloomAdd: 0.5, big: true },
+  { id: 'smg', name: 'V-9 战术冲锋枪', short: 'V-9', rpm: 920, dmg: 26, mag: 35, reserve: 175, reload: 1.9, modes: ['全自动', '单发'], hip: 0.022, ads: 0.0035, recoilV: 0.0072, recoilH: 0.0045, adsFov: 58, adsSens: 0.8, hipPos: [0.12, -0.13, -0.28], adsPos: [0, -0.0384, -0.15], range: [28, 0.7], bloomAdd: 0.08, speedMul: 1.08, ammoBox: 90 },
+  { id: 'akm', name: 'AK-103 重型步枪', short: 'AK-103', rpm: 600, dmg: 46, mag: 30, reserve: 120, reload: 2.5, modes: ['全自动', '单发'], hip: 0.034, ads: 0.0034, recoilV: 0.0165, recoilH: 0.0085, adsFov: 56, adsSens: 0.72, hipPos: [0.12, -0.13, -0.29], adsPos: [0, -0.0384, -0.15], range: [55, 0.8], bloomAdd: 0.16, ammoBox: 60 },
+  { id: 'm110', name: 'M110-S 消音狙击步枪', short: 'M110-S', rpm: 300, dmg: 92, mag: 10, reserve: 50, reload: 2.8, modes: ['半自动'], hip: 0.045, ads: 0.0004, recoilV: 0.036, recoilH: 0.009, adsFov: 19, adsSens: 0.33, scope: true, hipPos: [0.12, -0.135, -0.3], adsPos: [0, -0.0432, -0.1], range: [140, 0.9], bloomAdd: 0.5, big: true, snd: 'sup', noiseR: 38 },
 ];
+const CAT2DEF = { k7: 'ar', mp5: 'smg', akm: 'akm', sr9: 'dmr', m110: 'm110' };
 const WEAPON = {
-  list: [], idx: 0, cur: null, adsT: 0, firingT: 9, cd: 0, bloom: 0, shotN: 0,
+  list: [], pool: {}, idx: 0, cur: null, adsT: 0, firingT: 9, cd: 0, bloom: 0, shotN: 0,
   kickZ: 0, kickY: 0, kickRot: 0, swayX: 0, swayY: 0, switchT: 0, trigPrev: false, flashT: 0, block: 0,
   root: new THREE.Group(),
 };
@@ -2490,13 +2566,16 @@ let vmFlash;
 function buildWeapons() {
   camera.add(WEAPON.root);
   WEAPON.root.scale.setScalar(0.6);
-  const models = [buildRifle(), buildDMR()];
-  WEAPON.list = WDEFS.map((def, i) => {
-    const m = models[i];
+  const tint = (m, from, to) => { m.g.traverse((o) => { if (o.isMesh && o.material === from) o.material = to; }); return m; };
+  const suppDMR = () => { const m = buildDMR(); vmMesh(m.g, CY(0.03, 0.03, 0.36, 14), MAT.d_helmetB, 0, 0.002, -1.17); m.muzzle.position.z = -1.38; return m; };
+  const models = { ar: buildRifle(), smg: tint(buildRifle(), MAT.d_tan, MAT.d_poly), akm: tint(buildRifle(), MAT.d_tan, MAT.d_wood), dmr: buildDMR(), m110: suppDMR() };
+  for (const def of WDEFS) {
+    const m = models[def.id];
     m.g.visible = false;
     WEAPON.root.add(m.g);
-    return { def, model: m, mag: def.mag, reserve: def.reserve, mode: 0, reloadT: 0 };
-  });
+    WEAPON.pool[def.id] = { def, model: m };
+  }
+  applyLoadout();
   const fm = new THREE.MeshBasicMaterial({ map: TEX.flash, color: new THREE.Color(4, 3, 2), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide });
   vmFlash = new THREE.Group();
   const p1 = new THREE.Mesh(new THREE.PlaneGeometry(0.16, 0.16), fm);
@@ -2506,8 +2585,15 @@ function buildWeapons() {
   vmFlash.visible = false;
   equip(0, true);
 }
+function applyLoadout() {
+  const G = getGear();
+  const ids = [CAT2DEF[G.primary] || 'ar', CAT2DEF[G.secondary] || 'dmr'];
+  for (const k in WEAPON.pool) WEAPON.pool[k].model.g.visible = false;
+  const magMul = PLAYER.perks.has('perk_mag') ? 1.5 : 1;
+  WEAPON.list = ids.map((id) => { const e = WEAPON.pool[id]; return { def: e.def, model: e.model, mag: e.def.mag, reserve: Math.round(e.def.reserve * magMul), mode: 0, reloadT: 0 }; });
+}
 function resetWeapons() {
-  for (const w of WEAPON.list) { w.mag = w.def.mag; w.reserve = w.def.reserve; w.reloadT = 0; w.mode = 0; }
+  applyLoadout();
   WEAPON.adsT = 0; WEAPON.bloom = 0; equip(0, true);
 }
 function equip(i, instant = false) {
@@ -2561,19 +2647,19 @@ function fireShot() {
     sfxImpact(_hp, kind);
   }
   w.model.muzzle.getWorldPosition(_mz);
-  if (def.id === 'dmr' || WEAPON.shotN % 2 === 0) spawnTracer(_mz, _hp, 520, def.id === 'dmr' ? 0.024 : 0.018);
+  if (def.big || WEAPON.shotN % 2 === 0) spawnTracer(_mz, _hp, 520, def.big ? 0.024 : 0.018);
   // recoil
   const rk = (1 - WEAPON.adsT * 0.25) * lerp(1, 0.8, P.crouch) * rnd(0.85, 1.15);
   P.recoilP += def.recoilV * rk;
   P.recoilY += (rnd(-1, 1) + 0.25) * def.recoilH * rk;
-  WEAPON.kickZ += def.id === 'dmr' ? 0.04 : 0.02;
-  WEAPON.kickRot += def.id === 'dmr' ? 0.12 : 0.05;
+  WEAPON.kickZ += def.big ? 0.04 : 0.02;
+  WEAPON.kickRot += def.big ? 0.12 : 0.05;
   WEAPON.flashT = 0.045;
   vmFlash.rotation.z = Math.random() * 6.28; const fs = rnd(0.8, 1.25); vmFlash.scale.set(fs, fs, fs);
   flashLight.position.copy(_mz); flashLight.intensity = 30;
   fxMuzzleSmoke(_mz.x, _mz.y, _mz.z);
-  sfxGun(def.id);
-  noiseEvent(o, 95);
+  sfxGun(def.snd || def.id);
+  noiseEvent(o, def.noiseR || 95);
   if (NET.rm && NET.inRaid) netEvent('s', r2(_mz.x), r2(_mz.y), r2(_mz.z), r2(_hp.x), r2(_hp.y), r2(_hp.z), WEAPON.idx);
   // shell ejection
   w.model.ejector.getWorldPosition(_ej);
@@ -3227,7 +3313,7 @@ function takeItemInner(c, it) {
   if (d.c) {
     it.taken = true;
     if (d.c === 'med') { PLAYER.meds++; toast('获得 医疗包（' + PLAYER.meds + '）', 'var(--signal)'); }
-    else if (d.c === 'ammo') { for (const w of WEAPON.list) w.reserve += w.def.id === 'ar' ? 60 : 20; toast('获得 弹药补给', 'var(--amber)'); updateWeaponHUD(); }
+    else if (d.c === 'ammo') { for (const w of WEAPON.list) w.reserve += w.def.ammoBox || 20; toast('获得 弹药补给', 'var(--amber)'); updateWeaponHUD(); }
     else if (d.c === 'armor') { PLAYER.armor = Math.min(PLAYER.maxArmor, PLAYER.armor + 60); toast('护甲修复 +60', '#7fb7ff'); }
     sfxPickup(1);
     return true;
@@ -3424,7 +3510,7 @@ function lootTick(dt) {
   if (c.pos.distanceTo(PLAYER.pos) > 3.2 || !PLAYER.alive) { closePanels(false); return; }
   const idx = c.items.findIndex((i) => !i.revealed);
   if (idx < 0) return;
-  c.searchT += dt;
+  c.searchT += dt * (PLAYER.perks.has('perk_search') ? 1.45 : 1);
   const T = revealTime(c.items[idx]);
   const bar = document.getElementById('scan' + idx); if (bar) bar.style.width = Math.min(100, c.searchT / T * 100) + '%';
   if (c.searchT >= T) { c.searchT = 0; c.items[idx].revealed = true; const d = ITEMS[c.items[idx].id]; if (d.r >= 4) sfxPickup(d.r); else sfxClick(1800 + d.r * 300, 0.06); renderLoot(); }
@@ -3455,10 +3541,11 @@ $('mapClose').addEventListener('click', () => closePanels());
 let hudAcc = 0;
 function updateHUD(dt) {
   const P = PLAYER;
-  $('hpBar').style.width = P.hp + '%'; $('hpNum').textContent = Math.ceil(P.hp);
+  $('hpBar').style.width = (P.hp / P.maxHp * 100) + '%'; $('hpNum').textContent = Math.ceil(P.hp);
   $('armorBar').style.width = (P.armor / P.maxArmor * 100) + '%'; $('armorNum').textContent = Math.ceil(P.armor);
   $('bagValue').querySelector('span').textContent = fmtMoney(bagValue());
-  $('meds').textContent = P.healT > 0 ? `治疗中… ${P.healT.toFixed(1)}s` : `医疗包 ×${P.meds}${IS_TOUCH ? '' : ' · [H] 使用'}`;
+  $('meds').textContent = P.healT > 0 ? `治疗中… ${P.healT.toFixed(1)}s` : `医疗包 ×${P.meds}${IS_TOUCH ? '' : ' · [H]'}${P.plates > 0 ? ` · 护甲板 ×${P.plates}${IS_TOUCH ? '' : ' [G]'}` : ''}`;
+  $('tPlate').hidden = P.plates <= 0;
   const tl = STATE.timeLeft;
   $('timer').textContent = fmtTime(tl); $('timer').classList.toggle('warn', tl < 120);
   $('lowhp').style.opacity = P.hp < 40 ? String((1 - P.hp / 40) * 0.9) : '0';
@@ -3498,6 +3585,7 @@ function refreshMenu() {
   const s = stash();
   $('stashVal').textContent = fmtMoney(s.value); $('stashRuns').textContent = s.runs; $('stashKills').textContent = s.kills;
   segSet('diffSeg', SETTINGS.difficulty);
+  renderMenuLoadout();
 }
 function segSet(id, v) { for (const b of $(id).children) b.classList.toggle('on', b.dataset.v === String(v)); }
 function showScreen(id) { for (const s of ['menu', 'pause', 'result']) $(s).hidden = s !== id; }
@@ -3514,7 +3602,7 @@ function startRaid(opts = {}) {
   P.pos.set(sp[0] + (slot % 2 ? 1.6 : 0) * (slot > 1 ? -1 : 1), 0, sp[1] + (slot ? 1.6 : 0)); P.vel.set(0, 0, 0); P.pitch = 0;
   P.yaw = Math.atan2(-(-10 - sp[0]), -(0 - sp[1]));
   STATE.coopPause = false;
-  P.hp = 100; P.armor = 80; P.alive = true; P.meds = 2; P.healT = 0; P.crouch = 0; P.crouchWant = false; P.lean = 0; P.recoilP = P.recoilY = 0; P.kills = 0; P.heads = 0; P.camY = 1.62; P.deathT = 0;
+  applyGearToPlayer(P); P.alive = true; P.healT = 0; P.crouch = 0; P.crouchWant = false; P.lean = 0; P.recoilP = P.recoilY = 0; P.kills = 0; P.heads = 0; P.camY = 1.62; P.deathT = 0;
   P.lastSafe.copy(P.pos);
   camera.rotation.set(0, P.yaw, 0, 'YXZ');
   BAG.items.length = 0;
@@ -3580,12 +3668,14 @@ function endRaid(kind) {
   $('hud').hidden = true; $('touch').hidden = true;
   const s = stash();
   const val = kind === 'extracted' ? bagValue() : 0;
+  const refund = (kind === 'dead' || kind === 'mia') && PLAYER.insured ? Math.round(bagValue() * 0.5) : 0;
   s.raids++; s.kills += PLAYER.kills;
   if (kind === 'extracted') { s.value += val; s.runs++; sfxExtract(); }
+  else if (refund > 0) s.value += refund;
   store.set('stash', s);
   const T = { extracted: ['撤离成功', 'ok', '物资已转入仓库。'], dead: ['行动失败', 'bad', '阵亡 · 本局携带物资全部丢失。'], mia: ['失踪 MIA', 'bad', '未能在时限内撤离 · 物资全部丢失。'], abort: ['放弃行动', 'bad', '你中止了本次行动。'] }[kind];
   $('resTitle').textContent = T[0]; $('resTitle').className = 'resTitle ' + T[1];
-  $('resSub').textContent = T[2] + `  仓库资产：${fmtMoney(s.value)}`;
+  $('resSub').textContent = T[2] + (refund > 0 ? ` 黑市保险理赔 ${fmtMoney(refund)}。` : '') + `  仓库资产：${fmtMoney(s.value)}`;
   $('resValue').textContent = fmtMoney(kind === 'extracted' ? val : bagValue());
   if (kind !== 'extracted') $('resValue').style.textDecoration = 'line-through'; else $('resValue').style.textDecoration = 'none';
   $('resKills').textContent = PLAYER.kills; $('resHead').textContent = PLAYER.heads;
@@ -3630,6 +3720,7 @@ addEventListener('keydown', (e) => {
       if (UI.panelOpen || !P.alive) return;
       if (e.code === 'KeyR') startReload();
       else if (e.code === 'KeyH') useMed();
+      else if (e.code === 'KeyG') usePlate();
       else if (e.code === 'KeyB') cycleMode();
       else if (e.code === 'Digit1') equip(0);
       else if (e.code === 'Digit2') equip(1);
@@ -3662,8 +3753,15 @@ function useMed() {
   const P = PLAYER;
   if (P.healT > 0) return;
   if (P.meds <= 0) { toast('没有医疗包', 'var(--danger)'); return; }
-  if (P.hp >= 100) { toast('生命值已满', 'var(--ink-dim)'); return; }
-  P.meds--; P.healT = 3.0; WEAPON.cur.reloadT = 0; sfxRummage();
+  if (P.hp >= P.maxHp) { toast('生命值已满', 'var(--ink-dim)'); return; }
+  P.meds--; P.healT = P.healDur; WEAPON.cur.reloadT = 0; sfxRummage();
+}
+function usePlate() {
+  const P = PLAYER;
+  if (!P.alive || P.healT > 0) return;
+  if (P.plates <= 0) { toast('没有护甲修复板', 'var(--danger)'); return; }
+  if (P.armor >= P.maxArmor) { toast('护甲已满', 'var(--ink-dim)'); return; }
+  P.plates--; P.armor = Math.min(P.maxArmor, P.armor + 60); toast('护甲修复 +60', '#7fb7ff'); sfxRummage();
 }
 function cycleMode() { const w = WEAPON.cur; if (w.def.modes.length < 2) return; w.mode = (w.mode + 1) % w.def.modes.length; sfxClick(2000, 0.1); updateWeaponHUD(); }
 function findInteract() {
@@ -3707,6 +3805,7 @@ tapBtn('tCrouch', () => { INPUT.tCrouch = !INPUT.tCrouch; $('tCrouch').classList
 tapBtn('tReload', () => startReload());
 tapBtn('tSwap', () => equip(WEAPON.idx === 0 ? 1 : 0));
 tapBtn('tHeal', () => useMed());
+tapBtn('tPlate', () => usePlate());
 tapBtn('tInteract', () => doInteract());
 tapBtn('tBag', () => { if (UI.panelOpen === 'bag') closePanels(); else if (!UI.panelOpen) openBag(); });
 tapBtn('tMap', () => { if (UI.panelOpen === 'map') closePanels(); else if (!UI.panelOpen) openMap(); });
@@ -3762,6 +3861,84 @@ $('btnResume').addEventListener('click', resume);
 $('btnAbort').addEventListener('click', () => { STATE.mode = 'playing'; endRaid('abort'); });
 $('resBack').addEventListener('click', () => { STATE.mode = 'menu'; refreshMenu(); showScreen('menu'); WEAPON.root.visible = false; if (NET.rm) { NET.myState = 'lobby'; renderCoopUI(); } sfxUI(); });
 
+// ================= armory: gear application & UI =================
+function applyGearToPlayer(P) {
+  const G = getGear(), arm = getEquippedArmor(), bag = getEquippedBag();
+  const use = (id) => { if (G.stock[id] > 0) { G.stock[id]--; return true; } return false; };
+  P.perks = new Set(G.perks);
+  P.maxArmor = arm.maxArmor; P.armor = arm.startArmor; P.armorMit = arm.mit; P.headMit = arm.headMit || 0;
+  P.stim = use('sup_stim'); P.maxHp = P.stim ? 125 : 100; P.hp = P.maxHp;
+  P.meds = 2 + (use('sup_med') ? 1 : 0);
+  P.plates = use('sup_armor') ? 1 : 0;
+  P.insured = use('sup_insure');
+  P.healAmt = P.perks.has('perk_med') ? 65 : 45; P.healDur = P.perks.has('perk_med') ? 1.8 : 3.0;
+  BAG.cap = bag.cap;
+  saveGear(G);
+}
+const ARM = { tab: 'weapons' };
+const allArm = () => [...ARMORY_CATALOG.weapons, ...ARMORY_CATALOG.protection, ...ARMORY_CATALOG.perks, ...ARMORY_CATALOG.supplies];
+const armName = (id) => (allArm().find((x) => x.id === id) || {}).name || id;
+function renderMenuLoadout() {
+  const G = getGear(), arm = getEquippedArmor(), bag = getEquippedBag();
+  const sh = (id) => (ARMORY_CATALOG.weapons.find((x) => x.id === id) || {}).short || id;
+  const sup = Object.values(G.stock).reduce((a, b) => a + b, 0);
+  $('menuLoadout').innerHTML = `<span>主武器 <b>${sh(G.primary)}</b></span><span>副武器 <b>${sh(G.secondary)}</b></span><span>护甲 <b>${arm.maxArmor}</b></span><span>背包 <b>${bag.cap} 格</b></span><span>改装 <b>${G.perks.length}</b></span><span>补给 <b>${sup}</b></span>`;
+}
+function renderArmory() {
+  const G = getGear(), bal = stash().value;
+  $('armBalance').textContent = fmtMoney(bal);
+  $('armLoadout').innerHTML = [['主武器', G.primary], ['副武器', G.secondary], ['护甲', G.armor], ['背包', G.bag]].map(([k, id]) => `<div class="armSlot"><small>${k}</small><b>${armName(id)}</b></div>`).join('');
+  for (const b of $('armTabs').children) b.classList.toggle('on', b.dataset.tab === ARM.tab);
+  const colors = { weapons: '#ffb23f', protection: '#4c9bff', perks: '#6fe2a8', supplies: '#b46bff' };
+  const equippedIds = [G.primary, G.secondary, G.armor, G.bag];
+  $('armGrid').innerHTML = ARMORY_CATALOG[ARM.tab].map((it) => {
+    const perk = ARM.tab === 'perks', sup = ARM.tab === 'supplies';
+    const owned = perk ? G.perks.includes(it.id) : G.unlocked.includes(it.id);
+    const equipped = equippedIds.includes(it.id);
+    const afford = bal >= it.price;
+    let price, btn;
+    if (sup) {
+      const n = G.stock[it.id] || 0;
+      price = `<span class="armPrice">${fmtMoney(it.price)} · 库存 ×${n}</span>`;
+      btn = `<button class="btn" data-act="buy" data-id="${it.id}" ${!afford || n >= 9 ? 'disabled' : ''}>购买 +1</button>`;
+    } else if (owned && perk) {
+      price = '<span class="armPrice owned">已激活</span>'; btn = '<button class="btn" disabled>已拥有</button>';
+    } else if (owned) {
+      price = '<span class="armPrice owned">已解锁</span>';
+      btn = equipped ? '<button class="btn" disabled>已装备</button>' : `<button class="btn signal" data-act="equip" data-id="${it.id}">装备</button>`;
+    } else {
+      price = `<span class="armPrice">${fmtMoney(it.price)}</span>`;
+      btn = `<button class="btn amberOutline" data-act="buy" data-id="${it.id}" ${afford ? '' : 'disabled'}>购买</button>`;
+    }
+    return `<div class="armCard${equipped ? ' equipped' : ''}${perk && owned ? ' activePerk' : ''}" style="--ac:${colors[ARM.tab]}"><div class="armCardTop"><span class="title">${it.name}</span><span class="tag">${it.tag}</span></div><div class="armStats">${it.stats.map((x) => `<span>${x}</span>`).join('')}</div><div class="armDesc">${it.desc}</div><div class="armFoot">${price}${btn}</div></div>`;
+  }).join('');
+}
+function equipGear(G, it) {
+  if (it.slot === 'primary') G.primary = it.id; else if (it.slot === 'secondary') G.secondary = it.id;
+  else if (it.kind === 'armor') G.armor = it.id; else if (it.kind === 'bag') G.bag = it.id;
+}
+$('armGrid').addEventListener('click', (e) => {
+  const b = e.target.closest('button[data-act]'); if (!b || b.disabled) return;
+  const it = allArm().find((x) => x.id === b.dataset.id); if (!it) return;
+  const G = getGear();
+  if (b.dataset.act === 'equip') { equipGear(G, it); saveGear(G); sfxUI(); }
+  else if (b.dataset.act === 'buy') {
+    const s = stash();
+    if (s.value < it.price) { sfxEmpty(); return; }
+    s.value -= it.price; store.set('stash', s);
+    if (ARMORY_CATALOG.supplies.includes(it)) G.stock[it.id] = (G.stock[it.id] || 0) + 1;
+    else if (ARMORY_CATALOG.perks.includes(it)) G.perks.push(it.id);
+    else { G.unlocked.push(it.id); equipGear(G, it); }
+    saveGear(G); sfxPickup(2);
+  }
+  renderArmory(); refreshMenu();
+});
+$('armTabs').addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; ARM.tab = b.dataset.tab; sfxUI(); renderArmory(); });
+function openArmory() { initAudio(); renderArmory(); $('armoryPanel').hidden = false; sfxUI(); }
+$('btnArmory').addEventListener('click', openArmory);
+$('armoryClose').addEventListener('click', () => { $('armoryPanel').hidden = true; refreshMenu(); sfxUI(); });
+$('resArmory').addEventListener('click', () => { $('resBack').click(); openArmory(); });
+
 // ================= main loop =================
 const perf = { acc: 0, n: 0, t: 0, fpsAcc: 0, fpsN: 0, lastAdj: 0 };
 let heartT = 0;
@@ -3789,10 +3966,11 @@ function gameUpdate(dt) {
   for (const e of STATE.extracts) { if (Math.hypot(P.pos.x - e.x, P.pos.z - e.z) < 4.5 && Math.abs(P.pos.y - e.y) < 2) inZone = e; }
   const pg = $('progress');
   if (inZone && P.alive) {
+    const XT = P.perks.has('perk_extract') ? 5 : 8;
     STATE.extractT += dt; pg.hidden = false;
-    pg.querySelector('.label').textContent = `撤离中 · ${inZone.name} · ${Math.max(0, 8 - STATE.extractT).toFixed(1)}s`;
-    pg.querySelector('i').style.width = Math.min(100, STATE.extractT / 8 * 100) + '%';
-    if (STATE.extractT >= 8) { endRaid('extracted'); return; }
+    pg.querySelector('.label').textContent = `撤离中 · ${inZone.name} · ${Math.max(0, XT - STATE.extractT).toFixed(1)}s`;
+    pg.querySelector('i').style.width = Math.min(100, STATE.extractT / XT * 100) + '%';
+    if (STATE.extractT >= XT) { endRaid('extracted'); return; }
   } else { STATE.extractT = 0; pg.hidden = true; }
   // heartbeat & ambience
   if (P.hp < 35 && P.alive) { heartT -= dt; if (heartT <= 0) { sfxHeart(); heartT = 0.9; } }
@@ -3884,7 +4062,7 @@ async function init() {
   frame();
 }
 init().catch((err) => { console.error(err); $('loadText').textContent = '加载失败：' + (err && err.message ? err.message : err); });
-window.__ashfall = { PLAYER, ENEMIES, STATE, CONTAINERS, WEAPON, camera, openLoot, BAG, get NET() { return NET; }, netEvent: (...a) => netEvent(...a), takeItem: (c, i) => takeItem(c, i) };
+window.__ashfall = { startRaid, endRaid, getGear, saveGear, store, applyLoadout, usePlate, useMed, PLAYER, ENEMIES, STATE, CONTAINERS, WEAPON, camera, openLoot, BAG, get NET() { return NET; }, netEvent: (...a) => netEvent(...a), takeItem: (c, i) => takeItem(c, i) };
 
 // ================= co-op (up to 3) over the artifact `room` capability =================
 // Everything travels in each player's room *presence* (works for every viewer, any share level):
