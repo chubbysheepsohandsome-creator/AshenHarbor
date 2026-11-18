@@ -38,7 +38,7 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid 
 
 /* ---------- HUD ---------- */
 #hud{position:absolute;inset:0;pointer-events:none;font-family:var(--f-display)}
-#vignette{position:absolute;inset:0;background:radial-gradient(ellipse at center,transparent 55%,rgba(0,0,0,.45) 100%);transition:background .3s}
+#vignette{position:absolute;inset:0;background:radial-gradient(ellipse at center,transparent 55%,rgba(0,0,0,.45) 100%)}
 #lowhp{position:absolute;inset:0;opacity:0;background:radial-gradient(ellipse at center,transparent 40%,rgba(150,0,0,.55) 100%);transition:opacity .25s}
 #dmgFlash{position:absolute;inset:0;opacity:0;background:rgba(255,40,20,.18)}
 #scope{position:absolute;inset:0;background:radial-gradient(circle at center,transparent 0,transparent 31vmin,rgba(0,0,0,.98) 31.4vmin)}
@@ -66,8 +66,18 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid 
 #hitmarker::before,#hitmarker::after{content:"";position:absolute;left:50%;top:0;width:2px;height:100%;margin-left:-1px;background:linear-gradient(to bottom,currentColor 0 34%,transparent 34% 66%,currentColor 66%);}
 #hitmarker::before{transform:rotate(45deg)}#hitmarker::after{transform:rotate(-45deg)}
 #hitmarker{color:#fff}#hitmarker.kill{color:var(--danger)}#hitmarker.head{color:var(--amber)}
+#hitmarker.pop{animation:hmPop .14s ease-out}
+#hitmarker.kill.pop{animation:hmPopK .3s ease-out}
+@keyframes hmPop{0%{transform:scale(1.7)}100%{transform:scale(1)}}
+@keyframes hmPopK{0%{transform:scale(2.3) rotate(12deg)}60%{transform:scale(1.2)}100%{transform:scale(1.35)}}
+#crosshair.hit i{background:#ff6a4d}
+#killTag{position:absolute;left:50%;top:calc(50% + 34px);transform:translateX(-50%);font-family:var(--f-display);font-weight:700;letter-spacing:.18em;font-size:15px;color:var(--danger);text-shadow:0 0 6px rgba(0,0,0,.9);opacity:0;pointer-events:none;white-space:nowrap}
+#killTag.head{color:var(--amber)}
+#killTag.show{animation:killTag .9s ease-out forwards}
+@keyframes killTag{0%{opacity:0;transform:translateX(-50%) scale(1.5)}12%{opacity:1;transform:translateX(-50%) scale(1)}70%{opacity:1}100%{opacity:0;transform:translateX(-50%) translateY(-8px)}}
+button:focus-visible,.btn:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
 #dmgInd{position:absolute;left:50%;top:50%;width:0;height:0}
-#dmgInd .arc{position:absolute;left:-90px;top:-90px;width:180px;height:180px;border-radius:50%;border-top:5px solid rgba(255,60,40,.85);border-left:5px solid transparent;border-right:5px solid transparent;border-bottom:5px solid transparent;filter:drop-shadow(0 0 6px rgba(255,40,20,.7));transition:opacity .6s}
+#dmgInd .arc{will-change:transform;position:absolute;left:-90px;top:-90px;width:180px;height:180px;border-radius:50%;border-top:5px solid rgba(255,60,40,.85);border-left:5px solid transparent;border-right:5px solid transparent;border-bottom:5px solid transparent;transition:opacity .6s}
 #prompt{position:absolute;left:50%;top:calc(50% + 70px);transform:translateX(-50%);padding:7px 14px;background:var(--panel);border:1px solid var(--line);font-family:var(--f-body);font-size:14px;white-space:nowrap}
 #prompt kbd{display:inline-block;min-width:18px;padding:0 5px;margin-right:8px;border:1px solid var(--amber);color:var(--amber);font-family:var(--f-mono);text-align:center}
 #progress{position:absolute;left:50%;top:calc(50% + 110px);transform:translateX(-50%);width:260px;text-align:center}
@@ -114,13 +124,17 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid 
 #stick i{position:absolute;left:50%;top:50%;width:54px;height:54px;margin:-27px;border-radius:50%;background:rgba(255,255,255,.35)}
 #stick.on{opacity:1}
 #stick.sprint{border-color:var(--amber)}
-.tbtn{position:absolute;pointer-events:auto;border-radius:50%;border:1.5px solid rgba(255,255,255,.35);background:rgba(10,12,11,.38);display:flex;align-items:center;justify-content:center;font-family:var(--f-display);font-size:13px;font-weight:600;letter-spacing:.04em;color:rgba(255,255,255,.9);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px)}
+.tbtn{position:absolute;pointer-events:auto;border-radius:50%;border:1.5px solid rgba(255,255,255,.35);background:rgba(10,12,11,.5);display:flex;align-items:center;justify-content:center;font-family:var(--f-display);font-size:13px;font-weight:600;letter-spacing:.04em;color:rgba(255,255,255,.9);touch-action:none;-webkit-tap-highlight-color:transparent;transform:translateZ(0)}
 .tbtn.on{border-color:var(--amber);color:var(--amber)}
 .tbtn:active,.tbtn.press{background:rgba(255,178,63,.25)}
 .tbtn.fire{width:88px;height:88px;font-size:15px;border-color:rgba(255,120,90,.7)}
 .tbtn.m{width:60px;height:60px}
 .tbtn.s{width:46px;height:46px;font-size:11.5px}
 .tbtn.sq{border-radius:10px}
+.tbtn svg{width:46%;height:46%;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;pointer-events:none;filter:none}
+.tbtn.fire svg{width:44%;height:44%}
+.tbtn.s svg{width:52%;height:52%}
+.tbtn svg .f{fill:currentColor;stroke:none}
 #tInteract{display:none}
 #tInteract.show{display:flex;border-color:var(--signal);color:var(--signal)}
 
@@ -355,6 +369,7 @@ input[type=range]{width:100%;accent-color:var(--amber)}
     <div id="minimapWrap"><canvas id="minimap" width="360" height="360"></canvas></div>
     <div id="crosshair"><i class="t"></i><i class="b"></i><i class="l"></i><i class="r"></i><i class="dot"></i></div>
     <div id="hitmarker"></div>
+    <div id="killTag"></div>
     <div id="dmgInd"></div>
     <div id="banner"><div class="big"></div><div class="small"></div></div>
     <div id="prompt" hidden></div>
@@ -382,19 +397,19 @@ input[type=range]{width:100%;accent-color:var(--amber)}
     <div class="zone" id="moveZone"></div>
     <div class="zone" id="lookZone"></div>
     <div id="stick"><i></i></div>
-    <button class="tbtn fire" id="tFire" style="right:calc(48px + env(safe-area-inset-right,0px));bottom:calc(110px + env(safe-area-inset-bottom,0px))">开火</button>
-    <button class="tbtn m" id="tFire2" style="left:calc(28px + env(safe-area-inset-left,0px));top:calc(42% - 30px)">开火</button>
-    <button class="tbtn m" id="tAds" style="right:calc(158px + env(safe-area-inset-right,0px));bottom:calc(150px + env(safe-area-inset-bottom,0px))">瞄准</button>
-    <button class="tbtn m" id="tJump" style="right:calc(34px + env(safe-area-inset-right,0px));bottom:calc(28px + env(safe-area-inset-bottom,0px))">跳</button>
-    <button class="tbtn m" id="tCrouch" style="right:calc(108px + env(safe-area-inset-right,0px));bottom:calc(22px + env(safe-area-inset-bottom,0px))">蹲</button>
-    <button class="tbtn m" id="tReload" style="right:calc(182px + env(safe-area-inset-right,0px));bottom:calc(60px + env(safe-area-inset-bottom,0px))">换弹</button>
-    <button class="tbtn s" id="tSwap" style="right:calc(240px + env(safe-area-inset-right,0px));bottom:calc(130px + env(safe-area-inset-bottom,0px))">切枪</button>
-    <button class="tbtn s" id="tHeal" style="right:calc(250px + env(safe-area-inset-right,0px));bottom:calc(66px + env(safe-area-inset-bottom,0px))">治疗</button>
-    <button class="tbtn s" id="tPlate" style="right:calc(298px + env(safe-area-inset-right,0px));bottom:calc(102px + env(safe-area-inset-bottom,0px))" hidden>插板</button>
-    <button class="tbtn m" id="tInteract" style="left:calc(50% + 90px);top:calc(50% + 40px)">搜索</button>
-    <button class="tbtn s sq" id="tBag" style="right:calc(212px + env(safe-area-inset-right,0px));top:calc(18px + env(safe-area-inset-top,0px))">背包</button>
-    <button class="tbtn s sq" id="tMap" style="right:calc(212px + env(safe-area-inset-right,0px));top:calc(72px + env(safe-area-inset-top,0px))">地图</button>
-    <button class="tbtn s sq" id="tPause" style="left:50%;margin-left:-23px;top:calc(62px + env(safe-area-inset-top,0px))">暂停</button>
+    <button aria-label="开火" class="tbtn fire" id="tFire" style="right:calc(48px + env(safe-area-inset-right,0px));bottom:calc(110px + env(safe-area-inset-bottom,0px))"><svg viewBox="0 0 24 24"><path d="M12 2.5c2.2 2 3.2 4.6 3.2 7.2V18H8.8V9.7c0-2.6 1-5.2 3.2-7.2z"/><path d="M8.8 13h6.4"/><path d="M7.5 21.5h9"/></svg></button>
+    <button aria-label="开火" class="tbtn m" id="tFire2" style="left:calc(28px + env(safe-area-inset-left,0px));top:calc(42% - 30px)"><svg viewBox="0 0 24 24"><path d="M12 2.5c2.2 2 3.2 4.6 3.2 7.2V18H8.8V9.7c0-2.6 1-5.2 3.2-7.2z"/><path d="M8.8 13h6.4"/><path d="M7.5 21.5h9"/></svg></button>
+    <button aria-label="瞄准" class="tbtn m" id="tAds" style="right:calc(158px + env(safe-area-inset-right,0px));bottom:calc(150px + env(safe-area-inset-bottom,0px))"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="7"/><path d="M12 1.5v5M12 17.5v5M1.5 12h5M17.5 12h5"/><circle class="f" cx="12" cy="12" r="1.6"/></svg></button>
+    <button aria-label="跳" class="tbtn m" id="tJump" style="right:calc(34px + env(safe-area-inset-right,0px));bottom:calc(28px + env(safe-area-inset-bottom,0px))"><svg viewBox="0 0 24 24"><path d="M5 12l7-7 7 7"/><path d="M5 19l7-7 7 7"/></svg></button>
+    <button aria-label="蹲" class="tbtn m" id="tCrouch" style="right:calc(108px + env(safe-area-inset-right,0px));bottom:calc(22px + env(safe-area-inset-bottom,0px))"><svg viewBox="0 0 24 24"><path d="M5 5l7 7 7-7"/><path d="M5 12l7 7 7-7"/></svg></button>
+    <button aria-label="换弹" class="tbtn m" id="tReload" style="right:calc(182px + env(safe-area-inset-right,0px));bottom:calc(60px + env(safe-area-inset-bottom,0px))"><svg viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.4-5.7"/><path d="M20.5 3.5v5h-5"/></svg></button>
+    <button aria-label="切枪" class="tbtn s" id="tSwap" style="right:calc(240px + env(safe-area-inset-right,0px));bottom:calc(130px + env(safe-area-inset-bottom,0px))"><svg viewBox="0 0 24 24"><path d="M4 8h15l-4-4"/><path d="M20 16H5l4 4"/></svg></button>
+    <button aria-label="治疗" class="tbtn s" id="tHeal" style="right:calc(250px + env(safe-area-inset-right,0px));bottom:calc(66px + env(safe-area-inset-bottom,0px))"><svg viewBox="0 0 24 24"><path d="M9.5 3.5h5v6h6v5h-6v6h-5v-6h-6v-5h6z"/></svg></button>
+    <button aria-label="插板" class="tbtn s" id="tPlate" style="right:calc(298px + env(safe-area-inset-right,0px));bottom:calc(102px + env(safe-area-inset-bottom,0px))" hidden><svg viewBox="0 0 24 24"><path d="M12 2.5l8 3v6.2c0 4.6-3.4 8.4-8 9.8-4.6-1.4-8-5.2-8-9.8V5.5z"/><path d="M8.5 12h7"/></svg></button>
+    <button aria-label="搜索" class="tbtn m" id="tInteract" style="left:calc(50% + 90px);top:calc(50% + 40px)"><svg viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6"/><path d="M15 15l6 6"/></svg></button>
+    <button aria-label="背包" class="tbtn s sq" id="tBag" style="right:calc(212px + env(safe-area-inset-right,0px));top:calc(18px + env(safe-area-inset-top,0px))"><svg viewBox="0 0 24 24"><rect x="5" y="7" width="14" height="14" rx="3"/><path d="M9 7V5.5a3 3 0 0 1 6 0V7"/><path d="M8.5 13.5h7v4h-7z"/></svg></button>
+    <button aria-label="地图" class="tbtn s sq" id="tMap" style="right:calc(212px + env(safe-area-inset-right,0px));top:calc(72px + env(safe-area-inset-top,0px))"><svg viewBox="0 0 24 24"><path d="M3 6l6-2.5 6 2.5 6-2.5v14.5l-6 2.5-6-2.5-6 2.5z"/><path d="M9 3.5v14.5M15 6v14.5"/></svg></button>
+    <button aria-label="暂停" class="tbtn s sq" id="tPause" style="left:50%;margin-left:-23px;top:calc(62px + env(safe-area-inset-top,0px))"><svg viewBox="0 0 24 24"><path d="M8.5 5v14M15.5 5v14"/></svg></button>
   </div>
 
   <div id="lootPanel" class="sheet" hidden>
@@ -520,6 +535,10 @@ input[type=range]{width:100%;accent-color:var(--amber)}
         <div class="field"><span class="fl">动态分辨率</span><div class="seg" id="dynSeg"><button data-v="1">开启</button><button data-v="0">关闭</button></div></div>
         <div class="field"><span class="fl">帧率显示</span><div class="seg" id="fpsSeg"><button data-v="1">显示</button><button data-v="0">隐藏</button></div></div>
       </div>
+      <div class="field"><span class="fl">电脑操作方式</span>
+        <div class="seg" id="ctrlSeg"><button data-v="mouse">键盘 + 鼠标</button><button data-v="keys">纯键盘</button></div>
+        <div class="hint" id="ctrlHint"></div>
+      </div>
       <div style="display:flex;justify-content:flex-end"><button class="btn primary" id="settingsClose">完成</button></div>
     </div>
   </div>
@@ -550,6 +569,7 @@ input[type=range]{width:100%;accent-color:var(--amber)}
         </div>
       </div>
       <div class="hint" style="font-size:13px;color:var(--ink-dim);line-height:1.7">iPad / 触屏：左半屏任意位置按下出现摇杆，推到边缘自动冲刺；右半屏滑动转视角；按住开火键时也可以拖动瞄准。建议横屏并添加到主屏幕全屏游玩。</div>
+      <div class="hint" style="font-size:13px;color:var(--ink-dim);line-height:1.7;margin-top:6px">纯键盘模式（设置 → 电脑操作方式）：<b>方向键</b> 转视角，<b>J</b> 射击，<b>K</b> 按住瞄准，其余按键不变；菜单里用方向键选择、回车确认、Esc 返回。</div>
       <div style="display:flex;justify-content:flex-end"><button class="btn primary" id="helpClose">明白</button></div>
     </div>
   </div>
@@ -618,14 +638,14 @@ const store = {
 const IS_TOUCH = (window.matchMedia && matchMedia('(pointer: coarse)').matches) || ('ontouchstart' in window && navigator.maxTouchPoints > 0);
 const DPR = window.devicePixelRatio || 1;
 const SETTINGS = Object.assign({
-  quality: IS_TOUCH ? (Math.min(screen.width, screen.height) < 600 ? 'low' : 'medium') : 'high', sens: 1, touchSens: 1, fov: 78, volume: 0.8, showFps: false, dynRes: true, difficulty: 'normal',
+  quality: IS_TOUCH ? (Math.min(screen.width, screen.height) < 600 ? 'low' : 'medium') : 'high', sens: 1, touchSens: 1, fov: 78, volume: 0.8, showFps: false, dynRes: true, difficulty: 'normal', ctrl: 'mouse',
 }, store.get('settings', {}));
 function saveSettings() { store.set('settings', SETTINGS); }
 
 const QUALITY = {
   low:    { pr: 0.7,  shadows: false, shadowSize: 1024, shadowRange: 45,  bloom: false, ao: false, refl: false, reflScale: 0,    msaa: 0, hint: '关闭阴影、反射与后期，适合老款平板或核显。' },
-  medium: { pr: 1.0,  shadows: true,  shadowSize: 1024, shadowRange: 60,  bloom: true,  ao: false, refl: false, reflScale: 0,    msaa: 4, hint: '软阴影 + 泛光 + 环境光照烘焙。iPad 推荐。' },
-  high:   { pr: 1.35, shadows: true,  shadowSize: 2048, shadowRange: 80,  bloom: true,  ao: false, refl: true,  reflScale: 0.5,  msaa: 4, hint: '加入实时平面反射（积水/湿地面），2K 阴影。M 系列 iPad 与独显电脑可用。' },
+  medium: { pr: 1.0,  shadows: true,  shadowSize: 1024, shadowRange: 60,  bloom: true,  ao: false, refl: false, reflScale: 0,    msaa: IS_TOUCH ? 2 : 4, hint: '软阴影 + 泛光 + 环境光照烘焙。iPad 推荐。' },
+  high:   { pr: 1.35, shadows: true,  shadowSize: 2048, shadowRange: 80,  bloom: true,  ao: false, refl: true,  reflScale: 0.5,  msaa: IS_TOUCH ? 2 : 4, hint: '加入实时平面反射（积水/湿地面），2K 阴影。M 系列 iPad 与独显电脑可用。' },
   ultra:  { pr: 2.0,  shadows: true,  shadowSize: 4096, shadowRange: 110, bloom: true,  ao: true,  refl: true,  reflScale: 0.75, msaa: 4, hint: '光追级：GTAO 地平线环境光遮蔽 + 高精度实时反射 + 4K 软阴影 + 原生分辨率。需要较强显卡。' },
 };
 if (!QUALITY[SETTINGS.quality]) SETTINGS.quality = 'medium';
@@ -2033,7 +2053,7 @@ function applyQuality(rebuild = true) {
   if (dustPoints) dustPoints.material.uniforms.uScale.value = innerHeight * basePR();
 }
 function setDynRes(s) {
-  drScale = clamp(s, 0.55, 1);
+  drScale = clamp(s, 0.5, 1);
   const pr = basePR() * drScale;
   renderer.setPixelRatio(pr);
   composer.setPixelRatio(pr);
@@ -2307,7 +2327,7 @@ function sfxGun(kind, pos = null) {
   noiseBurst(t, o.input, { f: big ? 1400 : 1900, q: 0.6, a: 0.0008, d: big ? 0.11 : 0.075, g: 0.9 });
   noiseBurst(t, o.input, { f: big ? 700 : 900, q: 0.5, type: 'lowpass', a: 0.002, d: big ? 0.3 : 0.18, g: 0.7 });
   tone(t, o.input, { f0: big ? 110 : 140, f1: 38, a: 0.001, d: big ? 0.2 : 0.12, g: big ? 0.9 : 0.6 });
-  if (!pos) noiseBurst(t + 0.005, o.input, { f: 5200, q: 2, a: 0.0005, d: 0.02, g: 0.25 }); // mechanism
+  if (!pos) { noiseBurst(t + 0.005, o.input, { f: 5200, q: 2, a: 0.0005, d: 0.02, g: 0.25 }); tone(t, o.input, { f0: big ? 70 : 85, f1: 32, a: 0.0008, d: big ? 0.16 : 0.09, g: kind === 'sup' ? 0.5 : big ? 0.85 : 0.55 }); } // mechanism + chest thump
   const send = ctx.createGain(); send.gain.value = (pos ? 0.55 : 0.32) * vol; o.input.connect(send); send.connect(AU.verb);
 }
 function sfxClick(f = 2600, g = 0.12, delay = 0) { if (!AU.ctx) return; const t = AU.ctx.currentTime + delay; noiseBurst(t, AU.master, { f, q: 6, a: 0.0005, d: 0.025, g }); tone(t, AU.master, { f0: f * 0.6, type: 'triangle', a: 0.0005, d: 0.03, g: g * 0.5 }); }
@@ -2328,9 +2348,16 @@ function sfxStep(sprint, surface = 'concrete') {
 function sfxHit(head, kill) {
   if (!AU.ctx) return;
   const t = AU.ctx.currentTime;
-  if (head) { tone(t, AU.master, { f0: 1700, a: 0.001, d: 0.22, g: 0.18 }); tone(t, AU.master, { f0: 2550, a: 0.001, d: 0.16, g: 0.1 }); }
-  else noiseBurst(t, AU.master, { f: 2600, q: 3, a: 0.0005, d: 0.03, g: 0.22 });
-  if (kill) { tone(t + 0.05, AU.master, { f0: 220, f1: 90, type: 'triangle', a: 0.002, d: 0.25, g: 0.22 }); }
+  // crisp tick + body thud on every hit
+  noiseBurst(t, AU.master, { f: 3400, q: 2.5, a: 0.0004, d: 0.025, g: 0.26 });
+  tone(t, AU.master, { f0: 180, f1: 70, type: 'sine', a: 0.001, d: 0.07, g: 0.32 });
+  noiseBurst(t + 0.004, AU.master, { f: 520, q: 0.9, type: 'lowpass', a: 0.001, d: 0.06, g: 0.3 });
+  if (head) { tone(t, AU.master, { f0: 1700, a: 0.001, d: 0.26, g: 0.2 }); tone(t, AU.master, { f0: 2550, a: 0.001, d: 0.18, g: 0.12 }); tone(t + 0.002, AU.master, { f0: 3400, a: 0.001, d: 0.08, g: 0.06 }); }
+  if (kill) {
+    tone(t + 0.04, AU.master, { f0: 240, f1: 70, type: 'triangle', a: 0.002, d: 0.3, g: 0.28 });
+    noiseBurst(t + 0.03, AU.master, { f: 900, q: 0.7, type: 'lowpass', a: 0.002, d: 0.18, g: 0.35 });
+    tone(t + 0.07, AU.master, { f0: 1250, a: 0.001, d: 0.09, g: 0.09 }); tone(t + 0.13, AU.master, { f0: 1650, a: 0.001, d: 0.12, g: 0.09 });
+  }
 }
 function sfxHurt() { if (!AU.ctx) return; const t = AU.ctx.currentTime; tone(t, AU.master, { f0: 90, f1: 40, a: 0.002, d: 0.25, g: 0.6 }); noiseBurst(t, AU.master, { f: 400, type: 'lowpass', a: 0.002, d: 0.15, g: 0.4 }); }
 function sfxWhiz(pan) {
@@ -2423,6 +2450,8 @@ const PLAYER = {
   kills: 0, heads: 0, startTime: 0,
 };
 const camBase = new V3();
+const KLOOK = { vx: 0, vy: 0, hx: 0, hy: 0 };
+const FEEL = { shake: 0, roll: 0, fovK: 0, xhT: 0 };
 function playerUpdate(dt) {
   const P = PLAYER;
   if (!P.alive) {
@@ -2440,7 +2469,17 @@ function playerUpdate(dt) {
     const ts = 0.0052 * SETTINGS.touchSens * adsK;
     P.yaw -= INPUT.tLookX * ts; P.pitch -= INPUT.tLookY * ts;
     P.lookDX = INPUT.mdx * ms + INPUT.tLookX * ts; P.lookDY = INPUT.mdy * ms + INPUT.tLookY * ts;
-  } else { P.lookDX = P.lookDY = 0; }
+    if (SETTINGS.ctrl === 'keys') {
+      const kx = (key('ArrowRight') ? 1 : 0) - (key('ArrowLeft') ? 1 : 0), ky = (key('ArrowDown') ? 1 : 0) - (key('ArrowUp') ? 1 : 0);
+      // short taps = fine aim, holding ramps up to full turn speed
+      KLOOK.hx = kx ? KLOOK.hx + dt : 0; KLOOK.hy = ky ? KLOOK.hy + dt : 0;
+      const rampX = 0.28 + 0.72 * smooth(0.05, 0.45, KLOOK.hx), rampY = 0.28 + 0.72 * smooth(0.05, 0.45, KLOOK.hy);
+      KLOOK.vx = damp(KLOOK.vx, kx * rampX, kx ? 14 : 22, dt); KLOOK.vy = damp(KLOOK.vy, ky * rampY, ky ? 14 : 22, dt);
+      const rate = 2.5 * SETTINGS.sens * adsK;
+      const ddx = KLOOK.vx * rate * dt, ddy = KLOOK.vy * rate * 0.7 * dt;
+      P.yaw -= ddx; P.pitch -= ddy; P.lookDX += ddx; P.lookDY += ddy;
+    }
+  } else { P.lookDX = P.lookDY = 0; KLOOK.vx = KLOOK.vy = 0; }
   INPUT.mdx = INPUT.mdy = 0; INPUT.tLookX = INPUT.tLookY = 0;
   P.pitch = clamp(P.pitch, -1.48, 1.48);
 
@@ -2518,11 +2557,14 @@ function playerUpdate(dt) {
   // recoil recovers when not firing
   const rec = WEAPON.firingT > 0.12 ? 1.2 : 7;
   P.recoilP = damp(P.recoilP, 0, rec, dt); P.recoilY = damp(P.recoilY, 0, rec, dt);
-  camera.rotation.set(clamp(P.pitch + P.recoilP, -1.5, 1.5), P.yaw + P.recoilY, -P.lean * 0.14 - (fx * 0.012 * P.bobAmt), 'YXZ');
+  FEEL.shake = damp(FEEL.shake, 0, 16, dt); FEEL.roll = damp(FEEL.roll, 0, 12, dt); FEEL.fovK = damp(FEEL.fovK, 0, 14, dt);
+  const shk = FEEL.shake * FEEL.shake * 0.0045;
+  camera.rotation.set(clamp(P.pitch + P.recoilP + (Math.random() - 0.5) * shk, -1.5, 1.5), P.yaw + P.recoilY + (Math.random() - 0.5) * shk, -P.lean * 0.14 - (fx * 0.012 * P.bobAmt) + FEEL.roll, 'YXZ');
+  if (FEEL.xhT > 0) { FEEL.xhT -= dt; if (FEEL.xhT <= 0) UI.cross.classList.remove('hit'); }
   // FOV
   const def = WEAPON.cur && WEAPON.cur.def;
   const baseF = SETTINGS.fov * (P.sprinting ? 1.06 : 1);
-  const fov = def ? lerp(baseF, def.adsFov, WEAPON.adsT) : baseF;
+  const fov = (def ? lerp(baseF, def.adsFov, WEAPON.adsT) : baseF) + FEEL.fovK * (1 - WEAPON.adsT * 0.7);
   if (Math.abs(camera.fov - fov) > 0.01) { camera.fov = fov; camera.updateProjectionMatrix(); }
 }
 function surfaceUnder(p) {
@@ -2722,7 +2764,9 @@ function fireShot() {
     const mult = bpart === 'head' ? 3.2 : bpart === 'legs' ? 0.72 : 1;
     if (be.puppet) { showHitmarker(bpart === 'head', false); sfxHit(bpart === 'head', false); netEvent('h', be.idx, Math.round(def.dmg * fall * mult * 10) / 10, bpart === 'head' ? 'head' : bpart === 'legs' ? 'legs' : 'body'); }
     else be.damage(def.dmg * fall * mult, bpart, o);
+    be.flinch = Math.min(1.2, (be.flinch || 0) + (bpart === 'head' ? 1 : 0.6)); be.flinchS = Math.random() < 0.5 ? -1 : 1;
     fxBlood(_hp.x, _hp.y, _hp.z, _dir.x, _dir.y, _dir.z);
+    if (bpart === 'head') fxBlood(_hp.x, _hp.y, _hp.z, _dir.x * 0.6, _dir.y + 0.3, _dir.z * 0.6);
   } else if (tw !== Infinity) {
     const kind = wc.water ? 'water' : surfKind(wc);
     fxImpact(_hp.x, _hp.y, _hp.z, wnx, wny, wnz, kind);
@@ -2735,8 +2779,11 @@ function fireShot() {
   const rk = (1 - WEAPON.adsT * 0.25) * lerp(1, 0.8, P.crouch) * rnd(0.85, 1.15);
   P.recoilP += def.recoilV * rk;
   P.recoilY += (rnd(-1, 1) + 0.25) * def.recoilH * rk;
-  WEAPON.kickZ += def.big ? 0.04 : 0.02;
-  WEAPON.kickRot += def.big ? 0.12 : 0.05;
+  WEAPON.kickZ += def.big ? 0.055 : 0.028;
+  WEAPON.kickRot += def.big ? 0.15 : 0.065;
+  FEEL.shake = Math.min(1, FEEL.shake + (def.big ? 0.9 : def.id === 'akm' ? 0.5 : 0.32));
+  FEEL.roll += rnd(-1, 1) * (def.big ? 0.014 : 0.005);
+  FEEL.fovK = Math.min(3, FEEL.fovK + (def.big ? 1.6 : 0.45));
   WEAPON.flashT = 0.045;
   vmFlash.rotation.z = Math.random() * 6.28; const fs = rnd(0.8, 1.25); vmFlash.scale.set(fs, fs, fs);
   flashLight.position.copy(_mz); flashLight.intensity = 30;
@@ -2774,10 +2821,11 @@ function weaponUpdate(dt) {
     if (w.reloadT <= 0) { const need = def.mag - w.mag, take = Math.min(need, w.reserve); w.mag += take; w.reserve -= take; w.reloadT = 0; updateWeaponHUD(); }
   }
   const canAct = P.alive && !ui && WEAPON.switchT <= 0 && STATE.mode === 'playing';
-  const adsWant = canAct && (INPUT.mouseAds || INPUT.tAds) && !P.sprinting && w.reloadT <= 0 && P.healT <= 0;
+  const kb = SETTINGS.ctrl === 'keys';
+  const adsWant = canAct && (INPUT.mouseAds || INPUT.tAds || (kb && key('KeyK'))) && !P.sprinting && w.reloadT <= 0 && P.healT <= 0;
   WEAPON.adsT = damp(WEAPON.adsT, adsWant ? 1 : 0, def.scope ? 11 : 14, dt);
   if (WEAPON.adsT < 0.002) WEAPON.adsT = 0;
-  const trig = canAct && (INPUT.mouseFire || INPUT.tFire > 0);
+  const trig = canAct && (INPUT.mouseFire || INPUT.tFire > 0 || (kb && key('KeyJ')));
   const auto = def.modes[w.mode] === '全自动';
   if (trig && WEAPON.cd <= 0 && !P.sprinting && w.reloadT <= 0 && P.healT <= 0) {
     if (auto || !WEAPON.trigPrev) {
@@ -3160,6 +3208,13 @@ class Enemy {
     } else if (this.state === 'investigate') aimP = 0.25;
     this.aimPitch = damp(this.aimPitch, aimP, 8, dt);
     animateSoldier(this.s, dt, this.vel.x, this.vel.z, this.yaw, this.crouch, this.aimPitch, this.state === 'combat' ? 0 : 0.35);
+    this.applyFlinch(dt);
+  }
+  applyFlinch(dt) {
+    if (!(this.flinch > 0)) return;
+    this.flinch = Math.max(0, this.flinch - dt * 6);
+    const f = Math.sin(Math.min(1, this.flinch) * Math.PI * 0.5);
+    this.s.upper.rotation.x -= f * 0.32; this.s.upper.rotation.z += f * 0.14 * (this.flinchS || 1);
   }
   deathAnim(dt) {
     if (this.deathT < 1) { this.deathT += dt; animateDeath(this.s, smooth(0, 0.7, this.deathT), this.fallDir || 1, this.pos.y); }
@@ -3185,6 +3240,7 @@ class Enemy {
     this.root.visible = this.pos.distanceTo(camera.position) < 190;
     this.root.position.copy(this.pos); this.root.rotation.y = this.yaw;
     animateSoldier(this.s, dt, this.vel.x, this.vel.z, this.yaw, this.crouch, this.aimPitch, st === 2 ? 0 : 0.35);
+    this.applyFlinch(dt);
   }
   hear(pos, jitter) {
     if (this.state === 'combat') return;
@@ -3423,8 +3479,15 @@ function toast(text, color) {
 function killfeed(text) { const d = document.createElement('div'); d.textContent = text; $('killfeed').prepend(d); setTimeout(() => d.remove(), 5100); }
 function showHitmarker(head, kill) {
   const h = UI.hm; h.className = kill ? 'kill' : head ? 'head' : '';
+  void h.offsetWidth; h.classList.add('pop');
   h.style.transition = 'none'; h.style.opacity = '1'; h.style.transform = kill ? 'scale(1.35)' : 'scale(1)';
-  UI.hmT = kill ? 0.35 : 0.14;
+  UI.hmT = kill ? 0.4 : head ? 0.22 : 0.16;
+  UI.cross.classList.add('hit'); FEEL.xhT = 0.09;
+  if (kill) {
+    const k = $('killTag'); k.className = head ? 'head' : ''; k.textContent = head ? '✕  爆头击杀' : '✕  击杀';
+    void k.offsetWidth; k.classList.add('show');
+    FEEL.fovK = Math.min(3, FEEL.fovK + 0.8);
+  }
 }
 function addDamageIndicator(from) {
   const d = document.createElement('div'); d.className = 'arc';
@@ -3473,10 +3536,14 @@ const EXTRACTS = [
   { id: 'gate', name: '北门', x: 0, z: -128, y: 0 },
   { id: 'heli', name: '直升机坪', x: 76, z: 92, y: 0 },
 ];
+let _cmpHead = -1;
 function drawCompass() {
   const g = UI.compass, W = g.canvas.width, H = g.canvas.height;
-  g.clearRect(0, 0, W, H);
   const head = ((-PLAYER.yaw * 180 / Math.PI) % 360 + 360) % 360;
+  const ck = Math.round(head * 4) + '|' + Math.floor(performance.now() / 250) + '|' + (UI.dmgInd ? UI.dmgInd.childElementCount : 0);
+  if (ck === _cmpHead) return;
+  _cmpHead = ck;
+  g.clearRect(0, 0, W, H);
   const span = 150, ppd = W / span;
   const grad = g.createLinearGradient(0, 0, W, 0);
   grad.addColorStop(0, 'rgba(0,0,0,0)'); grad.addColorStop(0.15, 'rgba(0,0,0,.35)'); grad.addColorStop(0.85, 'rgba(0,0,0,.35)'); grad.addColorStop(1, 'rgba(0,0,0,0)');
@@ -3624,30 +3691,34 @@ function openMap() { UI.panelOpen = 'map'; $('mapPanel').hidden = false; drawBig
 $('mapClose').addEventListener('click', () => closePanels());
 
 let hudAcc = 0;
+const HC = {};
+const hset = (k, v, fn) => { if (HC[k] !== v) { HC[k] = v; fn(v); } };
 function updateHUD(dt) {
   const P = PLAYER;
-  $('hpBar').style.width = (P.hp / P.maxHp * 100) + '%'; $('hpNum').textContent = Math.ceil(P.hp);
-  $('armorBar').style.width = (P.armor / P.maxArmor * 100) + '%'; $('armorNum').textContent = Math.ceil(P.armor);
-  $('bagValue').querySelector('span').textContent = fmtMoney(bagValue());
-  $('meds').textContent = P.healT > 0 ? `治疗中… ${P.healT.toFixed(1)}s` : `医疗包 ×${P.meds}${IS_TOUCH ? '' : ' · [H]'}${P.plates > 0 ? ` · 护甲板 ×${P.plates}${IS_TOUCH ? '' : ' [G]'}` : ''}`;
-  $('tPlate').hidden = P.plates <= 0;
+  hset('hpW', (P.hp / P.maxHp * 100).toFixed(1), (v) => { $('hpBar').style.width = v + '%'; });
+  hset('hpN', Math.ceil(P.hp), (v) => { $('hpNum').textContent = v; });
+  hset('arW', (P.armor / P.maxArmor * 100).toFixed(1), (v) => { $('armorBar').style.width = v + '%'; });
+  hset('arN', Math.ceil(P.armor), (v) => { $('armorNum').textContent = v; });
+  hset('bag', bagValue(), (v) => { $('bagValue').querySelector('span').textContent = fmtMoney(v); });
+  hset('meds', P.healT > 0 ? `治疗中… ${P.healT.toFixed(1)}s` : `医疗包 ×${P.meds}${IS_TOUCH ? '' : ' · [H]'}${P.plates > 0 ? ` · 护甲板 ×${P.plates}${IS_TOUCH ? '' : ' [G]'}` : ''}`, (v) => { $('meds').textContent = v; });
+  hset('plate', P.plates <= 0, (v) => { $('tPlate').hidden = v; });
   const tl = STATE.timeLeft;
-  $('timer').textContent = fmtTime(tl); $('timer').classList.toggle('warn', tl < 120);
-  $('lowhp').style.opacity = P.hp < 40 ? String((1 - P.hp / 40) * 0.9) : '0';
-  $('vignette').style.background = `radial-gradient(ellipse at center,transparent ${55 - STATE.suppress * 25}%,rgba(0,0,0,${0.45 + STATE.suppress * 0.35}) 100%)`;
-  $('sprintTag').style.opacity = P.sprinting ? '0.8' : '0';
+  hset('timer', fmtTime(tl), (v) => { $('timer').textContent = v; $('timer').classList.toggle('warn', tl < 120); });
+  hset('lowhp', P.hp < 40 ? ((1 - P.hp / 40) * 0.9).toFixed(2) : '0', (v) => { $('lowhp').style.opacity = v; });
+  hset('vig', Math.round(STATE.suppress * 20), (v) => { const k = v / 20; $('vignette').style.background = `radial-gradient(ellipse at center,transparent ${55 - k * 25}%,rgba(0,0,0,${0.45 + k * 0.35}) 100%)`; });
+  hset('spr', !!P.sprinting, (v) => { $('sprintTag').style.opacity = v ? '0.8' : '0'; });
   // crosshair spread
   const w = WEAPON.cur;
   if (w) {
     const sp = lerp(w.def.hip, w.def.ads, WEAPON.adsT) * (1 + P.speed * 0.16 + (P.onGround ? 0 : 2.5) + WEAPON.bloom) * lerp(1, 0.72, P.crouch);
     const px = 4 + sp / Math.tan(camera.fov * Math.PI / 360) * innerHeight / 2;
-    const ch = UI.cross.children;
-    ch[0].style.top = (-px - 9) + 'px'; ch[1].style.top = px + 'px'; ch[2].style.left = (-px - 9) + 'px'; ch[3].style.left = px + 'px';
+    hset('xh', Math.round(px), (q) => { const ch = UI.cross.children; ch[0].style.top = (-q - 9) + 'px'; ch[1].style.top = q + 'px'; ch[2].style.left = (-q - 9) + 'px'; ch[3].style.left = q + 'px'; });
   }
   if (UI.hmT > 0) { UI.hmT -= dt; if (UI.hmT <= 0) { UI.hm.style.transition = 'opacity .18s'; UI.hm.style.opacity = '0'; } }
   // damage indicators rotate toward source
   const head = -P.yaw;
-  for (const el of $('dmgInd').children) {
+  const dmgKids = UI.dmgInd || (UI.dmgInd = $('dmgInd'));
+  if (dmgKids.firstChild) for (const el of dmgKids.children) {
     const dx = el.dataset.x - P.pos.x, dz = el.dataset.z - P.pos.z;
     const a = Math.atan2(dx, -dz) - head;
     el.style.transform = `rotate(${a}rad)`;
@@ -3707,6 +3778,7 @@ function showScreen(id) { for (const s of ['menu', 'pause', 'result']) $(s).hidd
 // opts (co-op): { seed, ex: [extract ids], players, slot, puppet, diff }
 function startRaid(opts = {}) {
   initAudio(); sfxUI();
+  if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
   const seed = opts.seed ?? ((Math.random() * 2 ** 31) | 0);
   RAID_DIFF = DIFF[opts.diff] ? opts.diff : SETTINGS.difficulty;
   PLAYER.bossKills = 0; PLAYER.looted = 0;
@@ -3835,7 +3907,9 @@ function endRaid(kind) {
 }
 
 // ================= pointer lock =================
+const KB_ONLY = () => SETTINGS.ctrl === 'keys' && !touchMode;
 function lockPointer() {
+  if (SETTINGS.ctrl === 'keys') { if (document.pointerLockElement) document.exitPointerLock(); gameEl.classList.add('locked'); return; }
   if (touchMode || INPUT.freeMouse || STATE.mode !== 'playing') return;
   const el = renderer.domElement;
   try { const p = el.requestPointerLock(); if (p && p.catch) p.catch(() => { INPUT.freeMouse = true; }); } catch (e) { INPUT.freeMouse = true; }
@@ -3844,16 +3918,54 @@ function releasePointer() { if (document.pointerLockElement) document.exitPointe
 document.addEventListener('pointerlockchange', () => {
   INPUT.locked = document.pointerLockElement === renderer.domElement;
   gameEl.classList.toggle('locked', INPUT.locked);
-  if (!INPUT.locked && STATE.mode === 'playing' && !UI.panelOpen && PLAYER.alive && !STATE.coopPause) pause();
+  if (!INPUT.locked && SETTINGS.ctrl !== 'keys' && STATE.mode === 'playing' && !UI.panelOpen && PLAYER.alive && !STATE.coopPause) pause();
 });
 document.addEventListener('pointerlockerror', () => { INPUT.freeMouse = true; gameEl.classList.add('locked'); });
 
 // ================= keyboard & mouse =================
+function menuScope() {
+  const ov = [...document.querySelectorAll('.overlayDim')].filter((o) => !o.hidden && o.getClientRects().length);
+  if (ov.length) return ov[ov.length - 1];
+  for (const id of ['result', 'pause', 'menu']) { const el = $(id); if (el && !el.hidden) return el; }
+  return null;
+}
+function menuNav(e) {
+  const tgt = e.target;
+  if (tgt && (tgt.tagName === 'INPUT' || tgt.tagName === 'TEXTAREA' || tgt.isContentEditable)) {
+    if (e.code === 'Escape' || e.code === 'Enter') tgt.blur();
+    if (!(tgt.type === 'range' && (e.code === 'ArrowUp' || e.code === 'ArrowDown'))) return false;
+  }
+  const scope = menuScope(); if (!scope) return false;
+  if (e.code === 'Escape') {
+    const close = scope.querySelector('#settingsClose,#helpClose,#armoryClose');
+    if (close) { close.click(); return true; }
+    return false;
+  }
+  const dirs = { ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0] };
+  const d = dirs[e.code]; if (!d) return false;
+  const cands = [...scope.querySelectorAll('button,input[type=range],input[type=text],a[href],[tabindex]:not([tabindex="-1"])')].filter((b) => !b.disabled && b.getClientRects().length && getComputedStyle(b).visibility !== 'hidden');
+  if (!cands.length) return false;
+  e.preventDefault();
+  const cur = document.activeElement;
+  if (!cur || !cands.includes(cur)) { (scope.querySelector('.btn.primary') || cands[0]).focus(); return true; }
+  const r0 = cur.getBoundingClientRect(), cx = r0.left + r0.width / 2, cy = r0.top + r0.height / 2;
+  let best = null, bs = Infinity;
+  for (const b of cands) {
+    if (b === cur) continue;
+    const r = b.getBoundingClientRect(), dx = r.left + r.width / 2 - cx, dy = r.top + r.height / 2 - cy;
+    const along = dx * d[0] + dy * d[1]; if (along <= 4) continue;
+    const across = Math.abs(dx * d[1] - dy * d[0]);
+    const sc = along + across * 2.2;
+    if (sc < bs) { bs = sc; best = b; }
+  }
+  if (best) { best.focus(); best.scrollIntoView && best.scrollIntoView({ block: 'nearest' }); }
+  return true;
+}
 addEventListener('keydown', (e) => {
-  if (e.code === 'Tab') e.preventDefault();
-  if ((STATE.mode === 'paused' || STATE.coopPause) && e.code === 'Escape') { resume(); return; }
-  if (STATE.mode !== 'playing' || STATE.coopPause) return;
-  if (['Space', 'ArrowUp', 'ArrowDown'].includes(e.code)) e.preventDefault();
+  if (e.code === 'Tab' && STATE.mode === 'playing') e.preventDefault();
+  if ((STATE.mode === 'paused' || STATE.coopPause) && e.code === 'Escape' && [null, $('pause')].includes(menuScope())) { resume(); return; }
+  if (STATE.mode !== 'playing' || STATE.coopPause || UI.modalOpen) { menuNav(e); return; }
+  if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) e.preventDefault();
   INPUT.keys.add(e.code);
   if (e.repeat) return;
   const P = PLAYER;
@@ -3881,12 +3993,12 @@ addEventListener('blur', () => { INPUT.keys.clear(); INPUT.mouseFire = INPUT.mou
 document.addEventListener('visibilitychange', () => { if (document.hidden && STATE.mode === 'playing') pause(); });
 addEventListener('mousemove', (e) => {
   if (STATE.mode !== 'playing' || UI.panelOpen || STATE.coopPause) return;
-  if (!(INPUT.locked || INPUT.freeMouse)) return;
+  if (!(INPUT.locked || INPUT.freeMouse) || SETTINGS.ctrl === 'keys') return;
   if (Math.abs(e.movementX) > 350 || Math.abs(e.movementY) > 350) return;
   INPUT.mdx += e.movementX; INPUT.mdy += e.movementY;
 });
 renderer.domElement.addEventListener('mousedown', (e) => {
-  if (STATE.mode !== 'playing' || STATE.coopPause) return;
+  if (STATE.mode !== 'playing' || STATE.coopPause || SETTINGS.ctrl === 'keys') return;
   touchMode = false; $('touch').hidden = true;
   if (!INPUT.locked && !INPUT.freeMouse) { lockPointer(); return; }
   if (e.button === 0) INPUT.mouseFire = true;
@@ -3992,6 +4104,7 @@ function openSettings() {
   $('settingsPanel').hidden = false;
   segSet('qualSeg', SETTINGS.quality); $('qualHint').textContent = QUALITY[SETTINGS.quality].hint;
   segSet('dynSeg', SETTINGS.dynRes ? 1 : 0); segSet('fpsSeg', SETTINGS.showFps ? 1 : 0);
+  segSet('ctrlSeg', SETTINGS.ctrl); $('ctrlHint').textContent = CTRL_HINT[SETTINGS.ctrl] || '';
   for (const [id, k, f] of [['sSens', 'sens', (v) => v.toFixed(2)], ['sTouch', 'touchSens', (v) => v.toFixed(2)], ['sFov', 'fov', (v) => v | 0], ['sVol', 'volume', (v) => Math.round(v * 100) + '%']]) {
     $(id).value = SETTINGS[k]; $(id + 'V').textContent = f(SETTINGS[k]);
     $(id).oninput = () => { SETTINGS[k] = parseFloat($(id).value); $(id + 'V').textContent = f(SETTINGS[k]); if (k === 'volume') setVolume(SETTINGS[k]); saveSettings(); };
@@ -4002,6 +4115,8 @@ $('btnSettings2').addEventListener('click', openSettings);
 $('settingsClose').addEventListener('click', () => { $('settingsPanel').hidden = true; sfxUI(); });
 $('qualSeg').addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; SETTINGS.quality = b.dataset.v; saveSettings(); segSet('qualSeg', b.dataset.v); $('qualHint').textContent = QUALITY[b.dataset.v].hint; applyQuality(); sfxUI(); });
 $('dynSeg').addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; SETTINGS.dynRes = b.dataset.v === '1'; saveSettings(); segSet('dynSeg', b.dataset.v); if (!SETTINGS.dynRes) setDynRes(1); });
+const CTRL_HINT = { mouse: '鼠标转视角，左键射击，右键瞄准。', keys: '不需要鼠标：方向键转视角（鼠标灵敏度滑块同时控制转速），J 射击，K 瞄准，菜单用方向键 + 回车。' };
+$('ctrlSeg').addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; SETTINGS.ctrl = b.dataset.v; saveSettings(); segSet('ctrlSeg', b.dataset.v); $('ctrlHint').textContent = CTRL_HINT[b.dataset.v]; if (SETTINGS.ctrl === 'keys') releasePointer(); sfxUI(); });
 $('fpsSeg').addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; SETTINGS.showFps = b.dataset.v === '1'; saveSettings(); segSet('fpsSeg', b.dataset.v); $('fps').hidden = !SETTINGS.showFps; });
 const openHelp = () => { $('help').hidden = false; sfxUI(); };
 $('btnHelp').addEventListener('click', openHelp); $('btnHelp2').addEventListener('click', openHelp);
@@ -4172,9 +4287,10 @@ function frame() {
   if (perf.fpsAcc > 0.5) {
     const ms = perf.fpsAcc / perf.fpsN * 1000;
     if (SETTINGS.showFps) { $('fps').hidden = false; $('fps').textContent = `${(1000 / ms).toFixed(0)} FPS · ${ms.toFixed(1)}ms · 渲染 ${(drScale * 100).toFixed(0)}% · ${renderer.info.render.calls} DC`; }
-    if (SETTINGS.dynRes && STATE.mode === 'playing' && TIME - perf.lastAdj > 2) {
-      if (ms > 24 && drScale > 0.56) { setDynRes(drScale - 0.1); perf.lastAdj = TIME; }
-      else if (ms < 14.5 && drScale < 1) { setDynRes(drScale + 0.05); perf.lastAdj = TIME; }
+    if (SETTINGS.dynRes && STATE.mode === 'playing' && TIME - perf.lastAdj > (IS_TOUCH ? 1 : 2)) {
+      const hi = IS_TOUCH ? 19 : 24, lo = IS_TOUCH ? 13.5 : 14.5;
+      if (ms > hi && drScale > 0.5) { setDynRes(drScale - (ms > 30 ? 0.15 : 0.1)); perf.lastAdj = TIME; }
+      else if (ms < lo && drScale < 1) { setDynRes(drScale + 0.05); perf.lastAdj = TIME; }
     }
     perf.fpsAcc = 0; perf.fpsN = 0;
   }
