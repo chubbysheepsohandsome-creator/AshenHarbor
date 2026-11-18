@@ -259,9 +259,81 @@ input[type=range]{width:100%;accent-color:var(--amber)}
 #rotateHint{position:absolute;inset:auto 0 0 0;padding:10px;text-align:center;font-size:13px;background:var(--panel);display:none;z-index:30}
 @media (orientation:portrait) and (pointer:coarse){#rotateHint{display:block}}
 @media (max-height:520px){#minimapWrap{width:130px;height:130px}#killfeed{top:160px}#weaponInfo .ammo{font-size:34px}#vitals{width:220px}}
-#menu .col>:first-child{margin-top:auto}#menu .col>:last-child{margin-bottom:auto}
+#menu .col>:first-child,.colA>:first-child{margin-top:auto}#menu .col>:last-child,.colB>:last-child{margin-bottom:auto}
+.colA,.colB{display:contents}
+.col,.dialog,.armGrid,.pBody{touch-action:pan-y;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+/* bounty contracts & streak */
+.streakBadge{display:inline-flex;align-items:center;gap:6px;padding:3px 9px;border:1px solid rgba(255,178,63,.5);background:rgba(255,178,63,.12);font-family:var(--f-mono);font-size:12px;color:var(--amber);letter-spacing:0}
+.contractBox{display:flex;flex-direction:column;gap:6px;max-width:380px;padding:10px 12px;border:1px solid var(--line);background:rgba(14,17,16,.65)}
+.contractBox .ctHead{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:11.5px;letter-spacing:.14em;color:var(--ink-dim)}
+#contractList{display:flex;flex-direction:column;gap:5px}
+.ctItem{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:12.5px;padding:5px 8px;background:rgba(255,255,255,.03);border-left:2px solid var(--signal)}
+.ctItem b{font-family:var(--f-mono);color:var(--amber);font-weight:400;white-space:nowrap}
+.resBreakdown{display:flex;flex-direction:column;gap:5px;padding:10px 12px;border:1px solid var(--line);background:rgba(255,255,255,.03);font-size:13px}
+.resBreakdown:empty{display:none}
+.resBreakdown div{display:flex;justify-content:space-between;gap:10px}
+.resBreakdown div.tot{border-top:1px solid var(--line);padding-top:6px;margin-top:2px;font-weight:700;color:var(--amber);font-family:var(--f-mono)}
 @media (max-height:860px){#menu .col{gap:12px}.brand h1{font-size:clamp(38px,6vw,64px)}}
 @media (max-height:780px){.brief{display:none}}
+/* ---------- phones (landscape, short screens) ---------- */
+@media (max-height:540px) and (min-width:600px){
+  #menu{background:linear-gradient(90deg,rgba(6,8,7,.92) 0,rgba(6,8,7,.78) 62%,rgba(6,8,7,.35) 100%)}
+  #menu .col{flex-direction:row;align-items:flex-start;gap:18px;width:min(940px,100%);padding:max(12px,env(safe-area-inset-top,0px)) max(14px,env(safe-area-inset-right,0px)) 12px max(16px,calc(env(safe-area-inset-left,0px) + 8px))}
+  .colA,.colB{display:flex;flex-direction:column;gap:9px;flex:1;min-width:0}
+  #menu .col>:first-child,.colA>:first-child,#menu .col>:last-child,.colB>:last-child{margin:0}
+  .brand .eyebrow{display:none}
+  .brand h1{font-size:30px}
+  .brand h1 span{font-size:10.5px;margin-top:4px}
+  .stash{gap:16px}.stash b{font-size:17px}
+  .menuBtns{gap:7px}.menuBtns .btn{padding:9px 14px;font-size:14px}
+  .coop,.contractBox,.loadoutBar,.menuBtns{max-width:none}
+  .coop{padding:10px;gap:7px}
+  .ctItem{font-size:11.5px;padding:4px 7px}
+  .seg button{padding:7px 11px}
+  .dialog{padding:14px 14px 12px;gap:10px;max-height:calc(100vh - 16px);max-height:calc(100dvh - 16px)}
+  .sheet{max-height:calc(100vh - 16px)!important;max-height:calc(100dvh - 16px)!important}
+  .pHead{padding:10px 12px}.pBody{padding:10px 12px}.pFoot{padding:8px 12px}
+  .grid{grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:6px}
+  .item{min-height:58px;padding:7px 8px 6px}
+  .resTitle{font-size:28px}
+  .stats b{font-size:16px}
+  #armoryPanel .dialog{max-height:calc(100vh - 12px);max-height:calc(100dvh - 12px)}
+  .armHead .sub,#armLoadout,#armoryPanel .hint{display:none}
+  .armHead h2{font-size:16px}.armBal{padding:4px 10px}.armBal b{font-size:16px}
+  .armGrid{flex:1;min-height:150px;grid-template-columns:repeat(auto-fill,minmax(220px,1fr))}
+  .armCard{padding:9px;gap:5px}.armDesc{font-size:11.5px;line-height:1.45}
+  #bigmap{width:min(70vh,80vw);height:min(70vh,80vw);width:min(70dvh,80vw);height:min(70dvh,80vw)}
+}
+@media (pointer:coarse) and (max-height:540px){
+  #topLeft{gap:2px}
+  #topLeft .zone{font-size:10.5px;letter-spacing:.12em}
+  #timer{font-size:19px}
+  #objective{font-size:10.5px;max-width:42vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #compass{height:30px;width:min(420px,38vw)}
+  #minimapWrap{width:100px;height:100px}
+  #killfeed{left:50%;right:auto;transform:translateX(-50%);top:calc(40px + env(safe-area-inset-top,0px));align-items:center;font-size:11px}
+  #killfeed div{border-right:0;border-bottom:2px solid var(--danger)}
+  #vitals{top:calc(78px + env(safe-area-inset-top,0px));bottom:auto;width:168px;gap:3px}
+  #vitals .bar{height:6px}#vitals .num{font-size:12px;width:28px}#vitals .lbl{font-size:10.5px;width:28px}
+  #bagValue{font-size:12px}#bagValue small{font-size:10px}#meds{font-size:10.5px}
+  #team .nm{width:56px}
+  #weaponInfo{top:calc(124px + env(safe-area-inset-top,0px));bottom:auto}
+  #weaponInfo .ammo{font-size:24px}#weaponInfo .ammo small{font-size:13px}#weaponInfo .wname{font-size:11px}#weaponInfo .mode{font-size:10.5px}
+  #weaponInfo .slots{margin-top:3px}#weaponInfo .slots span{font-size:10px;padding:1px 5px}
+  #toasts{bottom:calc(92px + env(safe-area-inset-bottom,0px));font-size:12px}
+  #toasts div{white-space:normal;max-width:60vw;text-align:center}
+  #prompt{font-size:12.5px;top:calc(50% + 44px);padding:5px 10px}
+  #progress{top:calc(50% + 78px);width:200px}
+  #banner{top:16%}
+  #banner .big{font-size:26px}
+  #sprintTag{bottom:calc(80px + env(safe-area-inset-bottom,0px))}
+  .tbtn.fire{width:74px;height:74px;font-size:14px}
+  .tbtn.m{width:52px;height:52px;font-size:12px}
+  .tbtn.s{width:42px;height:42px;font-size:10.5px}
+  #stick{width:110px;height:110px;margin:-55px}
+  #stick i{width:46px;height:46px;margin:-23px}
+  #tFire2{top:58%!important}
+}
 @media (prefers-reduced-motion:reduce){#killfeed div,#toasts div{animation-duration:.01s;animation-delay:0s;opacity:1}}
 </style>
 
@@ -345,6 +417,7 @@ input[type=range]{width:100%;accent-color:var(--amber)}
 
   <div id="menu" class="screen" hidden>
     <div class="col">
+      <div class="colA">
       <div class="brand">
         <div class="eyebrow">OPERATION · 0417 · 港区封锁线</div>
         <h1>灰烬港区<span>ASHFALL HARBOR</span></h1>
@@ -356,6 +429,11 @@ input[type=range]{width:100%;accent-color:var(--amber)}
         <div><small>累计击杀</small><b id="stashKills">0</b></div>
       </div>
       <div class="loadoutBar" id="menuLoadout"></div>
+      <div class="contractBox" id="contractBox">
+        <div class="ctHead"><span>黑市悬赏合同 · 撤离兑现</span><span class="streakBadge" id="streakTag">0 连胜 · ×1.0</span></div>
+        <div id="contractList"></div>
+      </div>
+      </div><div class="colB">
       <div class="field"><span class="fl">行动难度</span>
         <div class="seg" id="diffSeg"><button data-v="easy">新兵</button><button data-v="normal">老兵</button><button data-v="hard">精英</button></div>
       </div>
@@ -383,6 +461,7 @@ input[type=range]{width:100%;accent-color:var(--amber)}
         <div class="members" id="roomMembers"></div>
         <div class="hint" id="roomHint"></div>
         <div class="coopRow"><button class="btn primary" id="btnStartCoop">开始联机行动</button><button class="btn" id="btnCopyLink" hidden>复制邀请链接</button><button class="btn" id="btnLeave">离开房间</button></div>
+      </div>
       </div>
     </div>
   </div>
@@ -480,11 +559,12 @@ input[type=range]{width:100%;accent-color:var(--amber)}
       <div class="resTitle" id="resTitle">撤离成功</div>
       <div class="sub" id="resSub" style="color:var(--ink-dim);font-size:13px"></div>
       <div class="stats">
-        <div><small>带出价值</small><b id="resValue">¥0</b></div>
+        <div><small>本局入账</small><b id="resValue">¥0</b></div>
         <div><small>击杀</small><b id="resKills">0</b></div>
         <div><small>爆头</small><b id="resHead">0</b></div>
         <div><small>存活时间</small><b id="resTime">0:00</b></div>
       </div>
+      <div class="resBreakdown" id="resBreakdown"></div>
       <div class="grid" id="resItems"></div>
       <div style="display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap">
         <button class="btn amberOutline" id="resArmory">前往整备库</button>
@@ -538,7 +618,7 @@ const store = {
 const IS_TOUCH = (window.matchMedia && matchMedia('(pointer: coarse)').matches) || ('ontouchstart' in window && navigator.maxTouchPoints > 0);
 const DPR = window.devicePixelRatio || 1;
 const SETTINGS = Object.assign({
-  quality: IS_TOUCH ? 'medium' : 'high', sens: 1, touchSens: 1, fov: 78, volume: 0.8, showFps: false, dynRes: true, difficulty: 'normal',
+  quality: IS_TOUCH ? (Math.min(screen.width, screen.height) < 600 ? 'low' : 'medium') : 'high', sens: 1, touchSens: 1, fov: 78, volume: 0.8, showFps: false, dynRes: true, difficulty: 'normal',
 }, store.get('settings', {}));
 function saveSettings() { store.set('settings', SETTINGS); }
 
@@ -580,6 +660,7 @@ const ARMORY_CATALOG = {
     { id: 'perk_extract', name: '加密撤离信标', price: 95000, tag: '永久改装', stats: ['撤离读秒 8s → 5s'], desc: '提前向撤离载具发送加密身份频段，缩短撤离点暴露等待时间。' },
     { id: 'perk_mag', name: '大容量战术弹挂', price: 110000, tag: '永久改装', stats: ['随身备弹量 +50%'], desc: '扩充胸挂弹匣袋位，无需频繁搜刮弹药箱也能火力全开。' },
     { id: 'perk_sprint', name: '轻量化外骨骼护膝', price: 140000, tag: '永久改装', stats: ['冲刺速度 +12%', '移动噪音 -40%'], desc: '碳纤维助力结构，在港区长距离转点与静步潜行时优势显著。' },
+    { id: 'perk_broker', name: '黑市走私渠道', price: 120000, tag: '钱生钱改装', stats: ['物资售价 +15%', '每局保底分红 ¥8,000'], desc: '打通港区地下销赃网络，带出物资永久溢价 15%，且每次行动结束固定派发 ¥8,000 资产分红。' },
   ],
   supplies: [
     { id: 'sup_med', name: '战地医疗包 (额外携带)', price: 3500, tag: '单局补给', stats: ['开局医疗包 +1'], desc: '购入仓库库存后，每次开始行动自动消耗 1 件并额外带入 1 个医疗包。' },
@@ -2167,16 +2248,18 @@ function initAudio() {
   // ambient wind
   const ws = ctx.createBufferSource(); ws.buffer = nb; ws.loop = true;
   const wf = ctx.createBiquadFilter(); wf.type = 'lowpass'; wf.frequency.value = 380; wf.Q.value = 0.6;
-  const wg = ctx.createGain(); wg.gain.value = 0.05;
+  const wg = ctx.createGain(); wg.gain.value = 0.022;
   const lfo = ctx.createOscillator(); lfo.frequency.value = 0.07; const lg = ctx.createGain(); lg.gain.value = 160; lfo.connect(lg); lg.connect(wf.frequency); lfo.start();
   ws.connect(wf); wf.connect(wg); wg.connect(AU.master); ws.start();
   AU.wind = wg;
   // harbour water lapping
   const ss = ctx.createBufferSource(); ss.buffer = nb; ss.loop = true; ss.playbackRate.value = 0.5;
   const sf = ctx.createBiquadFilter(); sf.type = 'bandpass'; sf.frequency.value = 500; sf.Q.value = 0.5;
+  // swell LFO modulates a unity stage (0.6..1.0); proximity gain sits after it, so far from the water it is fully silent
+  const swell = ctx.createGain(); swell.gain.value = 0.8;
+  const l2 = ctx.createOscillator(); l2.frequency.value = 0.23; const l2g = ctx.createGain(); l2g.gain.value = 0.2; l2.connect(l2g); l2g.connect(swell.gain); l2.start();
   AU.waterG = ctx.createGain(); AU.waterG.gain.value = 0;
-  const l2 = ctx.createOscillator(); l2.frequency.value = 0.23; const l2g = ctx.createGain(); l2g.gain.value = 0.02; l2.connect(l2g); l2g.connect(AU.waterG.gain); l2.start();
-  ss.connect(sf); sf.connect(AU.waterG); AU.waterG.connect(AU.master); ss.start();
+  ss.connect(sf); sf.connect(swell); swell.connect(AU.waterG); AU.waterG.connect(AU.master); ss.start();
 }
 function setVolume(v) { if (AU.master) AU.master.gain.value = v; }
 function out(pan, dist) {
@@ -2660,7 +2743,7 @@ function fireShot() {
   fxMuzzleSmoke(_mz.x, _mz.y, _mz.z);
   sfxGun(def.snd || def.id);
   noiseEvent(o, def.noiseR || 95);
-  if (NET.rm && NET.inRaid) netEvent('s', r2(_mz.x), r2(_mz.y), r2(_mz.z), r2(_hp.x), r2(_hp.y), r2(_hp.z), WEAPON.idx);
+  if (NET.rm && NET.inRaid) netEvent('s', r2(_mz.x), r2(_mz.y), r2(_mz.z), r2(_hp.x), r2(_hp.y), r2(_hp.z), WEAPON.idx, def.snd || def.id);
   // shell ejection
   w.model.ejector.getWorldPosition(_ej);
   const right = _tmpV2.set(1, 0, 0).applyQuaternion(camera.quaternion);
@@ -2854,6 +2937,8 @@ function animateDeath(s, k, fallDir, baseY) {
 }
 
 // Targets the AI can hunt: the local player plus (on the host) remote teammates.
+let RAID_DIFF = SETTINGS.difficulty; // fixed at raid start; in co-op it is the host's
+const hostSimActive = () => !!(NET.rm && NET.hosting && NET.inRaid && NET.phase === 'raid' && STATE.mode !== 'playing');
 const LOCALT = {
   pos: PLAYER.pos, eye: camera.position, peer: null,
   get h() { return PLAYER.h; }, get crouch() { return PLAYER.crouch; }, get speed() { return PLAYER.speed; }, get noise() { return PLAYER.noise; },
@@ -2875,7 +2960,7 @@ class Enemy {
     this.home = new V3(x, y, z);
     this.group = group; this.pts = group.pts; this.pi = opts.pi || 0;
     this.boss = !!opts.boss; this.guard = !!opts.guard;
-    const D = DIFF[SETTINGS.difficulty];
+    const D = DIFF[RAID_DIFF] || DIFF.normal;
     this.maxHp = (this.boss ? 230 : 100) * D.hp * (opts.hpMul || 1); this.hp = this.maxHp; this.armor = this.boss ? 150 : 30 + (opts.armorRoll ?? 0.5) * 50;
     this.yaw = opts.yaw ?? 0; this.yawT = this.yaw;
     this.state = this.guard ? 'guard' : 'patrol';
@@ -2945,7 +3030,7 @@ class Enemy {
     this.dead = true; this.deathT = 0; this.state = 'dead';
     this.fallDir = (this.idx % 2) ? 1 : -1;
     const local = shooter === LOCALT;
-    if (local) { PLAYER.kills++; if (head) PLAYER.heads++; }
+    if (local) { PLAYER.kills++; if (head) PLAYER.heads++; if (this.boss) PLAYER.bossKills = (PLAYER.bossKills || 0) + 1; }
     STATE.kills++;
     const who = local ? WEAPON.cur.def.short : (shooter.nm || '队友');
     killfeed(`${who} ▸ ${this.boss ? '指挥官「铁砧」' : '灰隼承包商'}${head ? ' · 爆头' : ''}`);
@@ -2956,7 +3041,7 @@ class Enemy {
   update(dt) {
     if (this.puppet) { this.puppetUpdate(dt); return; }
     if (this.dead) { this.deathAnim(dt); return; }
-    const D = DIFF[SETTINGS.difficulty];
+    const D = DIFF[RAID_DIFF] || DIFF.normal;
     this.root.visible = this.pos.distanceTo(camera.position) < 190;
     const targets = enemyTargets();
     if (this.tgt && !targets.includes(this.tgt)) this.tgt = null;
@@ -3145,7 +3230,8 @@ class Enemy {
       if (T === LOCALT) damagePlayer(amt, this.pos, 'bullet', isHead);
       else netEvent('d', T.peer, Math.round(amt * 10) / 10, isHead ? 1 : 0, r2(this.pos.x), r2(this.pos.z));
     } else {
-      if (tw !== Infinity && wc) { const kind = wc.water ? 'water' : surfKind(wc); if (_hp.distanceTo(camera.position) < 60) { fxImpact(_hp.x, _hp.y, _hp.z, wn[0], wn[1], wn[2], kind); if (!wc.water) spawnDecal(_hp.x, _hp.y, _hp.z, wn[0], wn[1], wn[2]); sfxImpact(_hp, kind); } }
+      if (STATE.mode !== 'playing') { /* background sim: no local fx */ }
+      else if (tw !== Infinity && wc) { const kind = wc.water ? 'water' : surfKind(wc); if (_hp.distanceTo(camera.position) < 60) { fxImpact(_hp.x, _hp.y, _hp.z, wn[0], wn[1], wn[2], kind); if (!wc.water) spawnDecal(_hp.x, _hp.y, _hp.z, wn[0], wn[1], wn[2]); sfxImpact(_hp, kind); } }
       if (T === LOCALT) {
         const cx = camera.position.x - mz.x, cy = camera.position.y - mz.y, cz = camera.position.z - mz.z;
         const tt = clamp(cx * _ed.x + cy * _ed.y + cz * _ed.z, 0, end);
@@ -3154,9 +3240,7 @@ class Enemy {
         if (md < 1.6 && PLAYER.alive) { const right = _tmpV2.set(1, 0, 0).applyQuaternion(camera.quaternion); sfxWhiz((px * right.x + pz * right.z) / Math.max(md, 0.1)); STATE.suppress = Math.min(1, STATE.suppress + 0.35); }
       }
     }
-    spawnTracer(mz, _hp, 380, 0.02);
-    enemyFlash(mz);
-    sfxGun('ar', mz);
+    if (STATE.mode === 'playing') { spawnTracer(mz, _hp, 380, 0.02); enemyFlash(mz); sfxGun('ar', mz); }
     this.lastFireT = TIME;
     if (NET.hosting && NET.inRaid) netEvent('e', this.idx, r2(mz.x), r2(mz.y), r2(mz.z), r2(_hp.x), r2(_hp.y), r2(_hp.z));
   }
@@ -3179,7 +3263,7 @@ function noiseEvent(pos, radius) {
 function spawnEnemies(rng = Math.random, players = 1, puppet = false) {
   for (const e of ENEMIES) scene.remove(e.root);
   ENEMIES.length = 0;
-  const D = SETTINGS.difficulty;
+  const D = RAID_DIFF;
   for (const g of PATROLS) {
     let n = g.n;
     const r1 = rng(), r2v = rng(), r3 = rng();
@@ -3494,6 +3578,7 @@ function renderLoot() {
   $('lootGrid').innerHTML = c.items.map((it, i) => itemCard(it, i)).join('') || '<div class="sub">空的</div>';
 }
 function openLoot(c) {
+  if (c && !c._counted) { c._counted = true; PLAYER.looted = (PLAYER.looted || 0) + 1; }
   UI.lootC = c; UI.panelOpen = 'loot';
   $('lootPanel').hidden = false;
   renderLoot(); sfxRummage();
@@ -3574,6 +3659,34 @@ function updateHUD(dt) {
   if (UI.panelOpen === 'map') drawBigMap();
 }
 
+
+// ================= black-market contracts & extraction streak =================
+const DIFF_MULT = { easy: 1.0, normal: 1.25, hard: 1.6 };
+const streakMult = (n) => 1 + Math.min(1.0, (n || 0) * 0.2);
+function genContract(runs, exclude = []) {
+  const tier = 1 + Math.floor((runs || 0) / 3);
+  const pool = [
+    { type: 'val', target: 25000 + tier * 15000, label: (t) => `单局带出 ≥ ${fmtMoney(t)} 物资`, reward: (t) => Math.round(t * 0.45) },
+    { type: 'kills', target: Math.min(8, 2 + tier), label: (t) => `单局消灭 ${t} 名灰隼承包商`, reward: (t) => t * 6500 },
+    { type: 'heads', target: Math.min(5, 1 + Math.floor(tier * 0.8)), label: (t) => `单局完成 ${t} 次爆头击杀`, reward: (t) => t * 9000 },
+    { type: 'loot', target: Math.min(10, 3 + tier), label: (t) => `单局搜索 ${t} 个物资容器`, reward: (t) => t * 4500 },
+    { type: 'boss', target: 1, label: () => '击杀 A 号仓库指挥官「铁砧」', reward: () => 45000 + tier * 5000 },
+  ].filter((c) => !exclude.includes(c.type));
+  const c = pool[Math.floor(Math.random() * pool.length)] || { type: 'kills', target: 3, label: (t) => `单局消灭 ${t} 名灰隼承包商`, reward: (t) => t * 6500 };
+  return { type: c.type, target: c.target, desc: c.label(c.target), reward: c.reward(c.target) };
+}
+function syncContracts(s) {
+  if (!Array.isArray(s.contracts)) s.contracts = [];
+  s.contracts = s.contracts.filter((c) => c && typeof c.type === 'string' && Number.isFinite(c.target) && Number.isFinite(c.reward));
+  while (s.contracts.length < 3) s.contracts.push(genContract(s.runs, s.contracts.map((c) => c.type)));
+  return s.contracts;
+}
+function renderContracts() {
+  const s = stash(); const list = syncContracts(s); store.set('stash', s);
+  $('streakTag').textContent = `${s.streak || 0} 连胜 · 收益 ×${streakMult(s.streak).toFixed(1)}`;
+  $('contractList').innerHTML = list.map((c) => `<div class="ctItem"><span>${c.desc}</span><b>+${fmtMoney(c.reward)}</b></div>`).join('');
+}
+
 // ================= game state & flow =================
 const STATE = { mode: 'loading', timeLeft: 1200, extracts: [], beacons: {}, extractT: 0, kills: 0, suppress: 0, raidStart: 0, deathTimer: 0, interact: null };
 const RAID_TIME = 20 * 60;
@@ -3586,6 +3699,7 @@ function refreshMenu() {
   $('stashVal').textContent = fmtMoney(s.value); $('stashRuns').textContent = s.runs; $('stashKills').textContent = s.kills;
   segSet('diffSeg', SETTINGS.difficulty);
   renderMenuLoadout();
+  renderContracts();
 }
 function segSet(id, v) { for (const b of $(id).children) b.classList.toggle('on', b.dataset.v === String(v)); }
 function showScreen(id) { for (const s of ['menu', 'pause', 'result']) $(s).hidden = s !== id; }
@@ -3594,6 +3708,8 @@ function showScreen(id) { for (const s of ['menu', 'pause', 'result']) $(s).hidd
 function startRaid(opts = {}) {
   initAudio(); sfxUI();
   const seed = opts.seed ?? ((Math.random() * 2 ** 31) | 0);
+  RAID_DIFF = DIFF[opts.diff] ? opts.diff : SETTINGS.difficulty;
+  PLAYER.bossKills = 0; PLAYER.looted = 0;
   R = mulberry32(seed | 1);
   // player
   const P = PLAYER;
@@ -3623,7 +3739,7 @@ function startRaid(opts = {}) {
   for (const d of DECALS) d.visible = false;
   camera.rotation.z = 0;
   updateWeaponHUD();
-  banner('灰烬港区', `17:42 · ${DIFF[opts.diff || SETTINGS.difficulty].label}难度 · ${opts.players > 1 ? opts.players + ' 人小队 · ' : ''}撤离点：${ex.map((e) => e.name).join(' / ')}`, 5);
+  banner('灰烬港区', `17:42 · ${DIFF[RAID_DIFF].label}难度 · ${opts.players > 1 ? opts.players + ' 人小队 · ' : ''}撤离点：${ex.map((e) => e.name).join(' / ')}`, 5);
   NET.inRaid = !!NET.rm; NET.myState = 'play';
   if (!touchMode) lockPointer();
 }
@@ -3663,24 +3779,57 @@ function onPlayerDeath(kind) {
 }
 function endRaid(kind) {
   STATE.mode = 'result'; STATE.coopPause = false;
-  if (NET.rm) { NET.myState = kind === 'extracted' ? 'out' : 'dead'; }
+  if (NET.rm) { NET.myState = kind === 'extracted' ? 'out' : 'dead'; netSendPresence(); }
   releasePointer(); closePanels(false);
   $('hud').hidden = true; $('touch').hidden = true;
-  const s = stash();
-  const val = kind === 'extracted' ? bagValue() : 0;
-  const refund = (kind === 'dead' || kind === 'mia') && PLAYER.insured ? Math.round(bagValue() * 0.5) : 0;
-  s.raids++; s.kills += PLAYER.kills;
-  if (kind === 'extracted') { s.value += val; s.runs++; sfxExtract(); }
-  else if (refund > 0) s.value += refund;
+  const P = PLAYER, s = stash(), ok = kind === 'extracted';
+  const streak = s.streak || 0;
+  const sMul = ok ? streakMult(streak) : 1;
+  const dMul = DIFF_MULT[RAID_DIFF] || 1;
+  const bMul = P.perks.has('perk_broker') ? 1.15 : 1;
+  const rawBag = bagValue();
+  const lootGain = ok ? Math.round(rawBag * bMul * dMul * sMul) : 0;
+  const rawBounty = P.kills * 2500 + P.heads * 1500 + (P.bossKills || 0) * 35000;
+  const bountyGain = kind === 'abort' ? 0 : Math.round(rawBounty * (ok ? dMul : 0.3));
+  let contractGain = 0;
+  const contracts = syncContracts(s);
+  if (ok) {
+    const prog = { val: rawBag, kills: P.kills, heads: P.heads, loot: P.looted || 0, boss: P.bossKills || 0 };
+    const keep = contracts.filter((c) => (prog[c.type] || 0) < c.target);
+    for (const c of contracts) if (!keep.includes(c)) contractGain += c.reward;
+    s.contracts = keep;
+    while (s.contracts.length < 3) s.contracts.push(genContract((s.runs || 0) + 1, s.contracts.map((x) => x.type)));
+  }
+  const refund = (kind === 'dead' || kind === 'mia') && P.insured ? Math.round(rawBag * 0.5) : 0;
+  const dividend = kind !== 'abort' && P.perks.has('perk_broker') ? 8000 : 0;
+  const total = lootGain + bountyGain + contractGain + refund + dividend;
+  s.raids++; s.kills += P.kills;
+  s.streak = ok ? streak + 1 : 0;
+  if (ok) { s.runs++; sfxExtract(); }
+  s.value += total;
   store.set('stash', s);
-  const T = { extracted: ['撤离成功', 'ok', '物资已转入仓库。'], dead: ['行动失败', 'bad', '阵亡 · 本局携带物资全部丢失。'], mia: ['失踪 MIA', 'bad', '未能在时限内撤离 · 物资全部丢失。'], abort: ['放弃行动', 'bad', '你中止了本次行动。'] }[kind];
+  const T = {
+    extracted: ['撤离成功', 'ok', `连胜 ${s.streak} 场 · 下局物资倍率 ×${streakMult(s.streak).toFixed(1)}。`],
+    dead: ['行动失败', 'bad', '阵亡 · 背包物资丢失，撤离连胜已重置。'],
+    mia: ['失踪 MIA', 'bad', '超时未撤离 · 背包物资丢失，撤离连胜已重置。'],
+    abort: ['放弃行动', 'bad', '中止行动 · 无战利品与赏金结算，撤离连胜已重置。'],
+  }[kind];
   $('resTitle').textContent = T[0]; $('resTitle').className = 'resTitle ' + T[1];
-  $('resSub').textContent = T[2] + (refund > 0 ? ` 黑市保险理赔 ${fmtMoney(refund)}。` : '') + `  仓库资产：${fmtMoney(s.value)}`;
-  $('resValue').textContent = fmtMoney(kind === 'extracted' ? val : bagValue());
-  if (kind !== 'extracted') $('resValue').style.textDecoration = 'line-through'; else $('resValue').style.textDecoration = 'none';
-  $('resKills').textContent = PLAYER.kills; $('resHead').textContent = PLAYER.heads;
+  $('resSub').textContent = `${T[2]}  仓库资产：${fmtMoney(s.value)}`;
+  $('resValue').textContent = fmtMoney(total);
+  $('resValue').style.textDecoration = total > 0 ? 'none' : 'line-through';
+  $('resKills').textContent = P.kills; $('resHead').textContent = P.heads;
   $('resTime').textContent = fmtTime(RAID_TIME - STATE.timeLeft);
-  $('resItems').innerHTML = BAG.items.slice().sort((a, b) => ITEMS[b].v - ITEMS[a].v).map((id, i) => itemCard({ id, revealed: true, taken: kind !== 'extracted' }, i)).join('');
+  const rows = [];
+  if (ok) rows.push([`物资变现（${DIFF[RAID_DIFF].label} ×${dMul} · 连胜 ×${sMul.toFixed(1)}${bMul > 1 ? ' · 渠道 +15%' : ''}）`, fmtMoney(lootGain)]);
+  else if (rawBag > 0) rows.push(['背包物资（已丢失）', '<s>' + fmtMoney(rawBag) + '</s>']);
+  if (bountyGain > 0) rows.push([`击杀赏金${ok ? '' : '（30% 抚恤）'}`, fmtMoney(bountyGain)]);
+  if (contractGain > 0) rows.push(['黑市悬赏合同', fmtMoney(contractGain)]);
+  if (refund > 0) rows.push(['黑市保险理赔（50%）', fmtMoney(refund)]);
+  if (dividend > 0) rows.push(['走私渠道分红', fmtMoney(dividend)]);
+  rows.push(['本局总入账', '+' + fmtMoney(total)]);
+  $('resBreakdown').innerHTML = rows.map(([k, v], i) => `<div class="${i === rows.length - 1 ? 'tot' : ''}"><span>${k}</span><span>${v}</span></div>`).join('');
+  $('resItems').innerHTML = BAG.items.slice().sort((a, b) => ITEMS[b].v - ITEMS[a].v).map((id, i) => itemCard({ id, revealed: true, taken: !ok }, i)).join('');
   $('resBack').textContent = NET.rm ? '返回房间' : '返回大厅';
   showScreen('result');
 }
@@ -3974,7 +4123,7 @@ function gameUpdate(dt) {
   } else { STATE.extractT = 0; pg.hidden = true; }
   // heartbeat & ambience
   if (P.hp < 35 && P.alive) { heartT -= dt; if (heartT <= 0) { sfxHeart(); heartT = 0.9; } }
-  if (AU.waterG) AU.waterG.gain.value = clamp((P.pos.x - 70) / 40, 0, 1) * 0.04;
+  if (AU.waterG) AU.waterG.gain.value = clamp((P.pos.x - 85) / 30, 0, 1) * 0.012;
   updateHUD(dt);
 }
 function menuCam(dt) {
@@ -3992,7 +4141,12 @@ function frame() {
   const paused = STATE.mode === 'paused';
   if (!paused) TIME += dt;
   if (STATE.mode === 'playing') gameUpdate(dt);
-  else if (STATE.mode === 'menu' || STATE.mode === 'result') menuCam(dt);
+  else {
+    if (STATE.mode === 'menu' || STATE.mode === 'result') menuCam(dt);
+    if (AU.waterG) AU.waterG.gain.value = 0;
+    // co-op host keeps the AI running for teammates still in the raid after it died / extracted
+    if (hostSimActive()) for (const e of ENEMIES) e.update(dt);
+  }
   netUpdate(dt);
   if (!paused) {
     updateParticles(FX_ADD, dt); updateParticles(FX_SMOKE, dt);
@@ -4062,7 +4216,7 @@ async function init() {
   frame();
 }
 init().catch((err) => { console.error(err); $('loadText').textContent = '加载失败：' + (err && err.message ? err.message : err); });
-window.__ashfall = { startRaid, endRaid, getGear, saveGear, store, applyLoadout, usePlate, useMed, PLAYER, ENEMIES, STATE, CONTAINERS, WEAPON, camera, openLoot, BAG, get NET() { return NET; }, netEvent: (...a) => netEvent(...a), takeItem: (c, i) => takeItem(c, i) };
+window.__ashfall = { renderContracts, stash, get RAID_DIFF() { return RAID_DIFF; }, startRaid, endRaid, getGear, saveGear, store, applyLoadout, usePlate, useMed, PLAYER, ENEMIES, STATE, CONTAINERS, WEAPON, camera, openLoot, BAG, get NET() { return NET; }, netEvent: (...a) => netEvent(...a), takeItem: (c, i) => takeItem(c, i) };
 
 // ================= co-op (up to 3) over the artifact `room` capability =================
 // Everything travels in each player's room *presence* (works for every viewer, any share level):
@@ -4113,7 +4267,7 @@ class Remote {
     if (nm !== this.tagText) { if (this.tag) { this.root.remove(this.tag); this.tag.material.map.dispose(); this.tag.material.dispose(); } this.tag = nameTag(nm); this.root.add(this.tag); this.tagText = nm; }
     this.nm = nm; this.ho = !!pr.ho;
     this.st = ['lobby', 'play', 'dead', 'out'].includes(pr.st) ? pr.st : 'lobby';
-    this.run = Number(pr.rn) || 0; this.hp = clamp(Number(pr.hp) || 0, 0, 100); this.w = pr.w === 1 ? 1 : 0;
+    this.run = Number(pr.rn) || 0; this.hp = clamp(Number(pr.hp) || 0, 0, 125); this.w = pr.w === 1 ? 1 : 0;
     const wasAlive = this.alive; this.alive = !!pr.al;
     if (wasAlive && !this.alive) this.deathT = 0;
     const p = pr.p;
@@ -4391,9 +4545,10 @@ function handleEvent(peer, r, e) {
     case 's': { // teammate fired
       if (!NET.inRaid) break;
       _na.set(n(2), n(3), n(4)); _nb.set(n(5), n(6), n(7));
-      spawnTracer(_na, _nb, 520, 0.018); enemyFlash(_na); sfxGun(n(8) === 1 ? 'dmr' : 'ar', _na);
+      const snd = ['ar', 'dmr', 'smg', 'akm', 'sup'].includes(e[9]) ? e[9] : (n(8) === 1 ? 'dmr' : 'ar');
+      spawnTracer(_na, _nb, 520, 0.018); if (snd !== 'sup') enemyFlash(_na); sfxGun(snd, _na);
       if (_nb.distanceTo(camera.position) < 50) { const d = _tmpV.subVectors(_na, _nb).normalize(); fxImpact(_nb.x, _nb.y, _nb.z, d.x, d.y, d.z, 'concrete'); }
-      if (NET.hosting) noiseEvent(_na, 95);
+      if (NET.hosting) noiseEvent(_na, snd === 'sup' ? 38 : 95);
       break;
     }
     case 'h': { // teammate hit an enemy (host applies)
@@ -4406,9 +4561,9 @@ function handleEvent(peer, r, e) {
     case 'k': { // host confirms a kill
       if (!fromHost) break;
       const killer = e[3], head = !!n(4);
-      if (killer === NET.me) { PLAYER.kills++; if (head) PLAYER.heads++; showHitmarker(head, true); sfxHit(head, true); }
-      const kr = NET.remotes.get(killer);
       const en = ENEMIES[n(2) | 0];
+      if (killer === NET.me) { PLAYER.kills++; if (head) PLAYER.heads++; if (en && en.boss) PLAYER.bossKills = (PLAYER.bossKills || 0) + 1; showHitmarker(head, true); sfxHit(head, true); }
+      const kr = NET.remotes.get(killer);
       killfeed(`${killer === NET.me ? WEAPON.cur.def.short : kr ? kr.nm : '队友'} ▸ ${en && en.boss ? '指挥官「铁砧」' : '灰隼承包商'}${head ? ' · 爆头' : ''}`);
       STATE.kills++;
       if (en && en.puppet && !en.dead) en.ncode = 3;
@@ -4458,8 +4613,16 @@ function netSendPresence() {
   }
   // stay well inside the 4 KiB presence limit: shed the oldest events first
   let json = JSON.stringify(pr);
-  while (json.length > 3700 && pr.ev.length) { pr.ev.shift(); json = JSON.stringify(pr); }
-  if (pr.ev.length < NET.ring.length) NET.ring.splice(0, NET.ring.length - pr.ev.length);
+  if (json.length > 3700) {
+    const cosmetic = (x) => x.e[1] === 's' || x.e[1] === 'e';
+    while (json.length > 3700) {
+      let i = NET.ring.findIndex(cosmetic);
+      if (i < 0) i = 0;
+      if (!NET.ring.length) break;
+      NET.ring.splice(i, 1);
+      pr.ev = NET.ring.map((x) => x.e); json = JSON.stringify(pr);
+    }
+  }
   NET.rm.presence(pr).catch(() => {});
 }
 function netStartCoop() {
@@ -4562,7 +4725,7 @@ function drawTeamHUD() {
   box.dataset.k = key; box.textContent = '';
   for (const r of rows) {
     const d = el('div', 'tm');
-    const bar = el('span', 'b'); const fill = el('i'); fill.style.width = (r.st === 'play' ? r.hp : 0) + '%'; bar.append(fill);
+    const bar = el('span', 'b'); const fill = el('i'); fill.style.width = (r.st === 'play' ? Math.min(100, r.hp) : 0) + '%'; bar.append(fill);
     d.append(el('span', 'nm', r.nm), bar, el('span', 'ts', r.st === 'dead' ? '阵亡' : r.st === 'out' ? '已撤离' : Math.round(r.hp)));
     box.append(d);
   }
