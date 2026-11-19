@@ -258,6 +258,21 @@ input[type=range]{width:100%;accent-color:var(--amber)}
 .roomItem .ri{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .roomItem.invite{border-color:var(--signal)}
 .roomItem .btn{padding:6px 12px;font-size:12.5px}
+.lvlBar{margin:8px 0 10px;font-size:12px}
+.lvlBar .lvTop{display:flex;align-items:baseline;gap:10px;margin-bottom:4px;flex-wrap:wrap}
+.lvlBar .lvTop b{font-family:var(--f-display);font-size:18px;color:var(--amber)}
+.lvlBar .lvTop em{font-style:normal;margin-left:auto;color:#6fe2a8;font-size:11.5px}
+.lvlBar .lvTop em.done{color:var(--ink-dim)}
+.lvlBar .tr{height:6px;background:rgba(255,255,255,.08);border-radius:3px;overflow:hidden}
+.lvlBar .tr i{display:block;height:100%;background:linear-gradient(90deg,#ffb23f,#ffd27a)}
+.lvlBar .lvNext{margin-top:4px;color:var(--ink-dim);font-size:11px}
+.lvDots{display:flex;gap:4px}.lvDots i{width:9px;height:9px;border-radius:2px;background:rgba(255,255,255,.12)}.lvDots i.on{background:var(--ac)}
+.armStats span.got{color:#6fe2a8}.armStats span.next{color:#fff;border-color:var(--ac)}.armStats span.lock{opacity:.45}
+.codexHead{grid-column:1/-1;font-size:12.5px;color:var(--ink-dim);line-height:1.6}
+.codexTier{grid-column:1/-1}.ctTitle{font-family:var(--f-display);font-weight:700;margin:4px 0}.ctTitle small{color:var(--ink-dim);font-weight:400;margin-left:6px}
+.codexGrid{display:flex;flex-wrap:wrap;gap:6px}
+.cx{font-size:11.5px;padding:5px 8px;border-radius:6px;background:rgba(255,255,255,.04);border:1px dashed rgba(255,255,255,.12);color:var(--ink-dim)}
+.cx.got{border:1px solid var(--rc);color:#fff;background:rgba(255,255,255,.06)}.cx small{display:block;color:var(--ink-dim);font-size:10px}
 .roomCode{font-size:20px;letter-spacing:.16em;color:var(--amber)}
 .members{display:flex;flex-direction:column;gap:6px;font-size:14px}
 .members div{display:flex;justify-content:space-between;gap:8px}
@@ -361,7 +376,7 @@ input[type=range]{width:100%;accent-color:var(--amber)}
     <div id="dmgFlash"></div>
     <div id="scope" hidden><div class="thick"></div><div class="mil"></div></div>
     <div id="topLeft">
-      <div class="zone">灰烬港区 · ASHFALL</div>
+      <div class="zone" id="hudZone">灰烬港区 · ASHFALL</div>
       <div id="timer">20:00</div>
       <div id="objective">搜集物资，前往撤离点</div>
     </div>
@@ -443,12 +458,17 @@ input[type=range]{width:100%;accent-color:var(--amber)}
         <div><small>成功撤离</small><b id="stashRuns">0</b></div>
         <div><small>累计击杀</small><b id="stashKills">0</b></div>
       </div>
+      <div class="lvlBar" id="lvlBar"></div>
       <div class="loadoutBar" id="menuLoadout"></div>
       <div class="contractBox" id="contractBox">
         <div class="ctHead"><span>黑市悬赏合同 · 撤离兑现</span><span class="streakBadge" id="streakTag">0 连胜 · ×1.0</span></div>
         <div id="contractList"></div>
       </div>
       </div><div class="colB">
+      <div class="field"><span class="fl">作战地图</span>
+        <div class="seg" id="mapSeg"><button data-v="harbor">灰烬港区</button><button data-v="desert">赤砂前哨</button></div>
+        <div class="hint" id="mapHint" style="font-size:11.5px;color:var(--ink-dim);margin-top:4px"></div>
+      </div>
       <div class="field"><span class="fl">行动难度</span>
         <div class="seg" id="diffSeg"><button data-v="easy">新兵</button><button data-v="normal">老兵</button><button data-v="hard">精英</button></div>
       </div>
@@ -466,7 +486,7 @@ input[type=range]{width:100%;accent-color:var(--amber)}
           <button class="btn" id="btnCreate">创建房间</button>
         </div>
         <div class="coopRow" id="joinRow" hidden>
-          <input id="joinCode" maxlength="10" placeholder="输入房间码" aria-label="房间码" autocomplete="off">
+          <input id="joinCode" maxlength="200" autocapitalize="characters" spellcheck="false" placeholder="房间码或邀请链接" aria-label="房间码" autocomplete="off">
           <button class="btn" id="btnJoinCode">加入</button>
         </div>
         <div class="roomList" id="roomList"></div>
@@ -496,6 +516,9 @@ input[type=range]{width:100%;accent-color:var(--amber)}
         <button data-tab="protection">护甲与背包</button>
         <button data-tab="perks">战术改装（永久）</button>
         <button data-tab="supplies">战备补给（单局）</button>
+        <button data-tab="hideout">藏身处</button>
+        <button data-tab="mods">武器改装</button>
+        <button data-tab="codex">收藏图鉴</button>
       </div>
       <div class="armGrid" id="armGrid"></div>
       <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
@@ -712,6 +735,63 @@ function getEquippedBag() {
   return ARMORY_CATALOG.protection.find((x) => x.id === g.bag) || ARMORY_CATALOG.protection[3];
 }
 function hasPerk(id) { return getGear().perks.includes(id); }
+
+// ================= maps =================
+const MAP_ID = (() => {
+  try { const q = new URLSearchParams(location.search).get('map'); if (q === 'desert' || q === 'harbor') return q; } catch (e) { /* ignore */ }
+  return store.get('map', 'harbor') === 'desert' ? 'desert' : 'harbor';
+})();
+const MAPS = {
+  harbor: { name: '灰烬港区', en: 'ASHFALL HARBOR', loot: 1, xp: 1, brief: '傍晚 17:40，废弃港区被武装承包商占据。潜入、搜刮高价值物资，在 20 分钟内抵达开放撤离点。阵亡或超时将失去本局全部所得。' },
+  desert: { name: '赤砂前哨', en: 'RED SANDS OUTPOST', loot: 1.25, xp: 1.2, brief: '正午 12:30，沙漠深处的废弃油田与军事前哨。视野开阔、掩体稀少，敌人更会利用岩石与沙袋。物资价值 ×1.25，经验 ×1.2。' },
+};
+
+// ================= progression: level, hideout, weapon mods, codex =================
+const HIDEOUT = [
+  { id: 'safe', name: '安全箱', costs: [60000, 180000, 450000], desc: ['阵亡/失踪时保住最值钱的 1 件物资', '保住最值钱的 2 件', '保住最值钱的 4 件'], color: '#ffc23a' },
+  { id: 'gen', name: '柴油发电机', costs: [40000, 120000, 300000], desc: ['每局结束发放 ¥3,000', '每局 ¥8,000', '每局 ¥18,000'], color: '#6fe2a8' },
+  { id: 'med', name: '医疗站', costs: [35000, 110000, 260000], desc: ['开局医疗包 +1', '医疗包 +1 · 生命上限 +10', '医疗包 +2 · 生命上限 +20'], color: '#ff6b6b' },
+  { id: 'intel', name: '情报室', costs: [50000, 150000, 350000], desc: ['悬赏合同增加到 4 份', '合同赏金 +30%', '所有物资售价 +10%'], color: '#4c9bff' },
+  { id: 'range', name: '室内靶场', costs: [30000, 90000, 220000], desc: ['作战经验 +15%', '作战经验 +30%', '作战经验 +50%'], color: '#b46bff' },
+];
+const SAFE_N = [0, 1, 2, 4], GEN_PAY = [0, 3000, 8000, 18000], RANGE_XP = [1, 1.15, 1.3, 1.5];
+const MAX_LVL = 60;
+const xpNeed = (l) => 1200 + l * 800;
+const MOD_COST = [25000, 70000, 160000];
+const MOD_TIER = { k7: 1, sr9: 1, mp5: 1.2, akm: 1.5, m110: 1.8 };
+const MOD_NAMES = ['出厂', 'I 级改装', 'II 级改装', 'III 级大师改装'];
+function getProg() {
+  const p = store.get('prog', {});
+  return {
+    xp: p.xp | 0, lvl: Math.max(1, p.lvl | 0),
+    hide: Object.assign({ safe: 0, gen: 0, med: 0, intel: 0, range: 0 }, p.hide || {}),
+    mods: Object.assign({}, p.mods || {}), codex: Array.isArray(p.codex) ? p.codex : [], day: p.day || '',
+  };
+}
+function saveProg(p) { store.set('prog', p); }
+const hideLv = (id) => getProg().hide[id] | 0;
+const modLv = (gearId) => getProg().mods[gearId] | 0;
+const contractSlots = () => (hideLv('intel') >= 1 ? 4 : 3);
+function moddedDef(def, gearId) {
+  const L = modLv(gearId); if (!L) return def;
+  const d = Object.assign({}, def);
+  d.dmg = Math.round(def.dmg * (1 + 0.07 * L));
+  d.recoilV = def.recoilV * (1 - 0.12 * L); d.recoilH = def.recoilH * (1 - 0.12 * L);
+  d.mag = def.mag + Math.round(def.mag * 0.15 * L);
+  d.reload = def.reload * (1 - 0.07 * L);
+  return d;
+}
+// codex: finish a whole rarity tier -> permanent +4% loot value
+function codexTiers(p) {
+  const out = [];
+  for (let r = 0; r < 6; r++) {
+    const all = Object.keys(ITEMS).filter((id) => ITEMS[id].r === r);
+    const got = all.filter((id) => p.codex.includes(id)).length;
+    out.push({ r, got, all: all.length, done: all.length > 0 && got === all.length });
+  }
+  return out;
+}
+const codexBonus = (p) => codexTiers(p).filter((t) => t.done).length * 0.04;
 
 function setLoad(p, text) { $('loadBar').style.width = Math.round(p * 100) + '%'; if (text) $('loadText').textContent = text; }
 
@@ -1059,6 +1139,7 @@ const LAMPS = [];
 const CONTAINER_SPOTS = [];
 const PATROLS = [];
 const MAP_X0 = -122, MAP_X1 = 109, MAP_Z0 = -122, MAP_Z1 = 122;
+const SEA_X = MAP_ID === 'desert' ? 1e9 : MAP_X1; // x beyond which there is water
 
 function addCollider(x0, y0, z0, x1, y1, z1, flags) {
   const c = { x0: Math.min(x0, x1), y0: Math.min(y0, y1), z0: Math.min(z0, z1), x1: Math.max(x0, x1), y1: Math.max(y0, y1), z1: Math.max(z0, z1) };
@@ -1559,6 +1640,7 @@ function buildMap() {
   CONTAINER_SPOTS.push({ x: 140, z: -64, type: 'tool' }, { x: 10, z: -15, type: 'ammo' }, { x: -74, z: 33, type: 'tool' }, { x: 6, z: 103, type: 'medical' }, { x: -10, z: -112, type: 'cabinet' });
   PATROLS.push({ pts: [[-2, -100], [-2, -60], [2, -60], [2, -100]], n: 1 }, { pts: [[-10, 10], [-10, 50], [10, 50], [10, 10]], n: 1 }, { pts: [[120, -66], [140, -66]], n: 1 }, { pts: [[-84, 40], [-84, -15], [-70, -15]], n: 1 });
 
+  scatterCover(['jersey', 'sandbags', 'crates', 'block', 'jersey', 'sandbags'], 46, [MAP_X0 + 6, MAP_X1 - 6, MAP_Z0 + 6, MAP_Z1 - 6], coverAvoid());
   for (let i = 0; i < 40; i++) {
     const a = rr(0, Math.PI * 2), d = rr(230, 380);
     const x = Math.cos(a) * d, z = Math.sin(a) * d;
@@ -1569,6 +1651,222 @@ function buildMap() {
     const a = rr(0.5, 5.8), d = rr(140, 220); const x = Math.cos(a) * d, z = Math.sin(a) * d;
     if (x > 90) continue;
     tree(x, z, rr(1.3, 2));
+  }
+}
+// ---------- shared cover helpers ----------
+function coverAvoid() { return [...EXTRACTS.map((e) => [e.x, e.z, 11]), ...SPAWNS.map((p) => [p[0], p[1], 9])]; }
+function rock(x, z, s = 1) {
+  const col = [0.66 + R() * 0.08, 0.5 + R() * 0.06, 0.37 + R() * 0.05];
+  addBox(x, z, 2.6 * s, 2.0 * s, 1.5 * s, 0, 'concrete', { color: col, rotY: rr(0, 3) });
+  addBox(x + rr(-0.6, 0.6) * s, z + rr(-0.5, 0.5) * s, 1.7 * s, 1.5 * s, 1.0 * s, 1.4 * s, 'concrete', { color: col.map((c) => c * 0.93), rotY: rr(0, 3) });
+  if (R() < 0.5) addBox(x + 1.6 * s, z + rr(-1, 1) * s, 1.2 * s, 1.1 * s, 0.8 * s, 0, 'concrete', { color: col.map((c) => c * 1.04), rotY: rr(0, 3) });
+}
+function scatterCover(kinds, count, area, avoid) {
+  let placed = 0;
+  for (let tries = 0; tries < count * 14 && placed < count; tries++) {
+    const x = rr(area[0], area[1]), z = rr(area[2], area[3]);
+    if (avoid.some(([ax, az, ar]) => Math.hypot(x - ax, z - az) < ar)) continue;
+    if (!spotFree(x, z, 3.2, 0.05, 3)) continue;
+    const k = kinds[Math.floor(R() * kinds.length)], ax = R() < 0.5;
+    if (k === 'jersey') { jersey(x, z, ax); jersey(x + (ax ? 3.1 : 0), z + (ax ? 0 : 3.1), ax); }
+    else if (k === 'sandbags') sandbags(x, z, rr(3, 5), ax, 4);
+    else if (k === 'crates') { crate(x, z, 1.2, 0, { rotY: rr(0, 1) }); crate(x + 1.3, z, 1.1); crate(x + 0.6, z + 0.2, 1.0, 1.2); }
+    else if (k === 'block') addBox(x, z, ax ? 2.6 : 0.9, ax ? 0.9 : 2.6, 1.7, 0, 'concrete', { color: [0.74, 0.72, 0.68] });
+    else if (k === 'rock') rock(x, z, rr(0.9, 1.6));
+    else if (k === 'ruin') { const c = [0.8, 0.66, 0.48]; addBox(x, z, ax ? rr(3, 5) : 0.5, ax ? 0.5 : rr(3, 5), rr(1.2, 2.4), 0, 'concrete', { color: c }); addBox(x + (ax ? 0 : 1.6), z + (ax ? 1.6 : 0), ax ? 0.5 : 2.2, ax ? 2.2 : 0.5, rr(0.8, 1.6), 0, 'concrete', { color: c }); }
+    placed++;
+  }
+  return placed;
+}
+// flat-roofed adobe house: doors/windows as {side:'n'|'s'|'e'|'w', a, w}; roof:true adds parapet + outside stairs on the east
+function adobe(x0, z0, x1, z1, H, o = {}) {
+  const t = 0.35, col = o.color || [0.88, 0.74, 0.54], c = { color: col };
+  const holes = (side) => [
+    ...(o.doors || []).filter((d) => d.side === side).map((d) => ({ a: d.a - (d.w || 1.6) / 2, b: d.a + (d.w || 1.6) / 2, y0: 0, y1: 2.3 })),
+    ...(o.wins || []).filter((d) => d.side === side).map((d) => ({ a: d.a - 0.6, b: d.a + 0.6, y0: 1.2, y1: 2.0 })),
+  ];
+  wall('x', z0, x0, x1, 0, H, t, 'concrete', holes('n'), c);
+  wall('x', z1, x0, x1, 0, H, t, 'concrete', holes('s'), c);
+  wall('z', x0, z0 + t / 2, z1 - t / 2, 0, H, t, 'concrete', holes('w'), c);
+  wall('z', x1, z0 + t / 2, z1 - t / 2, 0, H, t, 'concrete', holes('e'), c);
+  slab(x0, z0, x1, z1, H, 0.3, 'concrete', [], { color: col.map((v) => v * 0.9) });
+  for (let x = x0 + 1.2; x < x1 - 0.6; x += 2.2) addCyl(x, z0 - 0.15, 0.07, 0.6, H - 0.4, 'wood', { color: [0.42, 0.32, 0.24], rotX: Math.PI / 2, collide: false, seg: 6 });
+  if (o.roof) {
+    const pc = { color: col.map((v) => v * 0.95) }, top = H + 0.3;
+    wall('x', z0 + 0.12, x0, x1, top, top + 0.9, 0.25, 'concrete', [], pc);
+    wall('x', z1 - 0.12, x0, x1, top, top + 0.9, 0.25, 'concrete', [], pc);
+    wall('z', x0 + 0.12, z0 + 0.25, z1 - 0.25, top, top + 0.9, 0.25, 'concrete', [], pc);
+    wall('z', x1 - 0.12, z0 + 0.25, z1 - 0.25, top, top + 0.9, 0.25, 'concrete', [{ a: z0 + 0.3, b: z0 + 2.6, y0: top, y1: top + 1 }], pc);
+    const L = top * 1.7;
+    stairs(x1 + 0.2, z0 + 0.4, x1 + 1.9, z0 + 0.4 + L, 0, top, '-z', 'concrete', { color: col.map((v) => v * 0.85) });
+    boxMM(x1 - 0.1, top - 0.3, z0 + 0.3, x1 + 1.9, top, z0 + 2.6, 'concrete', { color: col.map((v) => v * 0.85) });
+  }
+}
+function hescoLine(axis, c, a0, a1, gaps = []) {
+  const col = [0.72, 0.64, 0.46];
+  let ranges = [[a0, a1]];
+  for (const g of gaps) ranges = ranges.flatMap(([p, q]) => (g[1] <= p || g[0] >= q ? [[p, q]] : [[p, g[0]], [g[1], q]].filter(([u, v]) => v - u > 0.5)));
+  for (const [p, q] of ranges) {
+    for (let a = p + 0.6; a < q - 0.3; a += 1.25) {
+      const tint = 0.9 + hash2(a | 0, c | 0, 7) * 0.15;
+      if (axis === 'x') addBox(a, c, 1.18, 1.2, 1.5, 0, 'fabric', { color: col.map((v) => v * tint), collide: false });
+      else addBox(c, a, 1.2, 1.18, 1.5, 0, 'fabric', { color: col.map((v) => v * tint), collide: false });
+    }
+    if (axis === 'x') addCollider(p, 0, c - 0.6, q, 1.5, c + 0.6); else addCollider(c - 0.6, 0, p, c + 0.6, 1.5, q);
+  }
+}
+function palm(x, z, s = 1) {
+  addCyl(x, z, 0.2 * s, 6 * s, 0, 'wood', { color: [0.55, 0.42, 0.3], seg: 7, colR: 0.25, rTop: 0.14 * s });
+  for (let i = 0; i < 6; i++) addBox(x + Math.cos(i * 1.05) * 1.3 * s, z + Math.sin(i * 1.05) * 1.3 * s, 2.8 * s, 0.6 * s, 0.08, 5.8 * s, 'foliage', { rotY: -i * 1.05, collide: false, color: [0.85, 0.95, 0.7] });
+}
+
+// ================= desert map: 赤砂前哨 =================
+function buildDesertMap() {
+  R = mulberry32(51277);
+  addCollider(-400, -3, -400, 400, 0, 400, { ground: true, nobake: true });
+  EXTRACTS.splice(0, EXTRACTS.length,
+    { id: 'canyon', name: '峡谷小径', x: -112, z: 104, y: 0 },
+    { id: 'convoy', name: '南门车队', x: 36, z: 114, y: 0 },
+    { id: 'airstrip', name: '跑道尽头', x: 100, z: 10, y: 0 });
+  SPAWNS.splice(0, SPAWNS.length, [-112, -30, 0], [-40, 114, 0], [104, 34, 0], [-14, -114, 0]);
+  for (const sp of SPAWNS) sp[2] = Math.atan2(sp[0], sp[1]);
+  const WALLC = { color: [0.78, 0.66, 0.5] };
+  wall('x', MAP_Z0, MAP_X0, MAP_X1, 0, 3.8, 0.6, 'concrete', [], WALLC);
+  wall('x', MAP_Z1, MAP_X0, MAP_X1, 0, 3.8, 0.6, 'concrete', [], WALLC);
+  wall('z', MAP_X0, MAP_Z0, MAP_Z1, 0, 3.8, 0.6, 'concrete', [], WALLC);
+  wall('z', MAP_X1, MAP_Z0, MAP_Z1, 0, 3.8, 0.6, 'concrete', [], WALLC);
+  for (const e of EXTRACTS) addBox(e.x + (e.x < -100 ? -6 : e.x > 95 ? 6 : 0), e.z + (e.z > 100 ? 6.5 : 0), e.x < -100 || e.x > 95 ? 0.3 : 8, e.x < -100 || e.x > 95 ? 8 : 0.3, 3.4, 0, 'steel', { color: [0.42, 0.38, 0.32], collide: false });
+  const road = (x0, z0, x1, z1, c = [0.66, 0.55, 0.42]) => boxMM(x0, -0.02, z0, x1, 0.01, z1, 'asphalt', { collide: false, shadow: false, color: c });
+  road(-6, MAP_Z0, 6, MAP_Z1); road(MAP_X0, 46, MAP_X1, 56); road(30, 4, 104, 16, [0.42, 0.4, 0.38]);
+
+  // --- 绿洲镇 village ---
+  adobe(-44, -24, -30, -14, 3.4, { doors: [{ side: 's', a: -37 }], wins: [{ side: 'n', a: -40 }, { side: 'w', a: -19 }] });
+  adobe(-26, -26, -12, -14, 3.6, { roof: true, doors: [{ side: 's', a: -21 }, { side: 'w', a: -20 }], wins: [{ side: 'n', a: -18 }] });
+  adobe(12, -26, 26, -14, 3.6, { roof: true, doors: [{ side: 's', a: 16 }, { side: 'w', a: -18 }], wins: [{ side: 'n', a: 20 }], color: [0.84, 0.68, 0.5] });
+  adobe(-44, -6, -30, 6, 3.4, { doors: [{ side: 'e', a: 0 }, { side: 'n', a: -40 }], wins: [{ side: 's', a: -36 }] });
+  adobe(-24, -4, -12, 8, 3.6, { roof: true, doors: [{ side: 'w', a: 2 }, { side: 's', a: -18 }], color: [0.9, 0.78, 0.6] });
+  adobe(12, -6, 30, 8, 4.2, { doors: [{ side: 'w', a: 1, w: 2.4 }, { side: 's', a: 24 }], wins: [{ side: 'n', a: 18 }, { side: 'n', a: 26 }, { side: 'e', a: 0 }] });
+  adobe(-40, 16, -24, 28, 3.6, { roof: true, doors: [{ side: 'n', a: -32 }, { side: 's', a: -28 }], color: [0.84, 0.7, 0.52] });
+  adobe(12, 16, 28, 30, 3.4, { doors: [{ side: 'w', a: 22 }, { side: 'n', a: 20 }], wins: [{ side: 'e', a: 22 }, { side: 's', a: 16 }] });
+  adobe(-20, 20, -8, 36, 5.2, { doors: [{ side: 'e', a: 28, w: 2.2 }], wins: [{ side: 'w', a: 26 }, { side: 'w', a: 31 }], color: [0.92, 0.84, 0.7] });
+  addCyl(-14, 28, 2.8, 2.4, 5.5, 'concrete', { color: [0.94, 0.86, 0.72], rTop: 0.4, seg: 18, collide: false });
+  addCyl(-7.4, 37.4, 1.0, 13, 0, 'concrete', { color: [0.9, 0.8, 0.64], seg: 12 });
+  addCyl(-7.4, 37.4, 1.35, 0.4, 10.5, 'concrete', { color: [0.82, 0.7, 0.54], seg: 12, collide: false });
+  for (const [x, z] of [[-10, 12], [8, 12], [-28, 12], [-2, 40], [30, 40]]) palm(x, z, rr(0.9, 1.15));
+  // market stalls in the square
+  for (const [x, z] of [[-27, 10], [-21, 10.5], [8.5, -10], [8.5, 22]]) {
+    for (const [dx, dz] of [[-1.3, -1], [1.3, -1], [-1.3, 1], [1.3, 1]]) addBox(x + dx, z + dz, 0.12, 0.12, 2.4, 0, 'wood', { color: [0.5, 0.38, 0.28], collide: false });
+    addBox(x, z, 3.2, 2.6, 0.08, 2.4, 'fabric', { color: pick([[0.7, 0.2, 0.16], [0.2, 0.36, 0.55], [0.75, 0.6, 0.25]], R), collide: false });
+    addBox(x, z - 0.6, 2.6, 0.8, 0.9, 0, 'wood', { color: [0.7, 0.58, 0.42] });
+  }
+  CONTAINER_SPOTS.push({ x: -43, z: -23, type: 'cabinet' }, { x: -13, z: -25, type: 'medical' }, { x: 25, z: -25, type: 'safe' }, { x: -43, z: 5, type: 'tool' },
+    { x: -13, z: 7, type: 'ammo' }, { x: 29, z: 7, type: 'weapon' }, { x: 13, z: -5, type: 'computer' }, { x: -25, z: 27, type: 'cabinet' }, { x: 27, z: 29, type: 'medical' }, { x: -9, z: 35, type: 'safe' });
+  PATROLS.push({ pts: [[-28, -10], [-8, -10], [-8, 12], [-28, 12]], n: 2 }, { pts: [[8, -10], [34, -10], [34, 12], [8, 12]], n: 2 }, { pts: [[-30, 40], [-8, 42], [-8, 14]], n: 1 }, { pts: [[20, 34], [36, 34], [36, 14]], n: 1 });
+  POI.push({ name: '绿洲镇', x: -8, z: 4 });
+
+  // --- 油田 oil field (NW) ---
+  addCyl(-100, -100, 6, 8, 0, 'steel', { color: [0.74, 0.72, 0.68], seg: 28 });
+  addCyl(-84, -103, 4.5, 6.5, 0, 'steel', { color: [0.7, 0.66, 0.6], seg: 24 });
+  addCyl(-102, -80, 4.5, 6.5, 0, 'steel', { color: [0.62, 0.22, 0.16], seg: 24 });
+  for (const [x, z] of [[-100, -100], [-84, -103], [-102, -80]]) addBox(x, z, 0.12, 0.12, 0.12, 8, 'lamp', { collide: false, bake: false });
+  const pump = (x, z, r) => {
+    addBox(x, z, 4.2, 1.4, 0.9, 0, 'paint', { color: [0.3, 0.3, 0.3], rotY: r });
+    addBox(x, z, 0.5, 0.5, 2.8, 0.9, 'paint', { color: [0.75, 0.6, 0.15], rotY: r });
+    addBox(x, z, 5, 0.45, 0.5, 3.5, 'paint', { color: [0.75, 0.6, 0.15], rotY: r, collide: false });
+    addBox(x + Math.cos(r) * 2.4, z - Math.sin(r) * 2.4, 0.8, 0.7, 1.4, 2.6, 'paint', { color: [0.3, 0.3, 0.3], rotY: r, collide: false });
+  };
+  pump(-70, -108, 0.3); pump(-66, -88, 1.2); pump(-80, -70, 0.6); pump(-108, -64, 2.2);
+  for (const [x0, z0, x1, z1] of [[-110, -91, -70, -90.4], [-73, -110, -72.4, -66], [-96, -72, -60, -71.4]]) boxMM(x0, 0, z0, x1, 0.65, z1, 'steel', { color: [0.45, 0.42, 0.38] });
+  adobe(-94, -74, -84, -64, 3.2, { doors: [{ side: 'e', a: -69 }], wins: [{ side: 's', a: -89 }], color: [0.8, 0.74, 0.64] });
+  container(-74, -80, 6, 0, true, [0.5, 0.18, 0.12]); container(-62, -100, 6, 0, false, [0.2, 0.32, 0.45]); container(-62, -100, 6, 2.6, false, [0.55, 0.5, 0.3]);
+  CONTAINER_SPOTS.push({ x: -93, z: -65, type: 'computer' }, { x: -85, z: -73, type: 'tool' }, { x: -96, z: -92, type: 'tool' }, { x: -66, z: -76, type: 'ammo' }, { x: -76, z: -112, type: 'cabinet' });
+  PATROLS.push({ pts: [[-104, -90], [-76, -92], [-76, -66], [-104, -66]], n: 2 }, { pts: [[-90, -114], [-62, -114], [-62, -92]], n: 1 });
+  POI.push({ name: '油田', x: -86, z: -88 });
+
+  // --- 军事前哨 outpost (E) ---
+  hescoLine('x', -104, 52, 100, [[74, 80]]); hescoLine('x', -50, 52, 100, [[70, 78]]);
+  hescoLine('z', 52, -104, -50, [[-80, -73]]); hescoLine('z', 100, -104, -50);
+  watchtower(56, -100); watchtower(90, -56);
+  adobe(68, -94, 86, -80, 3.6, { roof: true, doors: [{ side: 'w', a: -87, w: 2 }, { side: 'n', a: 72 }], wins: [{ side: 's', a: 78 }, { side: 's', a: 83 }], color: [0.72, 0.68, 0.58] });
+  for (const [x0, z0, x1, z1] of [[60, -72, 68, -64], [74, -70, 82, -62], [88, -96, 96, -88]]) { boxMM(x0, 0, z0, x1, 2.3, z1, 'fabric', { color: [0.42, 0.45, 0.32] }); addBox((x0 + x1) / 2, (z0 + z1) / 2, x1 - x0 + 0.4, 0.2, 0.3, 2.3, 'fabric', { color: [0.36, 0.38, 0.27], collide: false }); }
+  sandbags(64, -58, 5, true, 4); sandbags(84, -76, 4, false, 4); sandbags(92, -70, 4, true, 4); sandbags(60, -84, 4, false, 4);
+  truck(88, -80, false, [0.55, 0.5, 0.38]);
+  for (let i = 0; i < 3; i++) crate(66 + i * 1.3, -78, 1.2);
+  CONTAINER_SPOTS.push({ x: 85, z: -93, type: 'safe' }, { x: 69, z: -81, type: 'computer' }, { x: 64, z: -66, type: 'weapon' }, { x: 78, z: -64, type: 'ammo' }, { x: 92, z: -90, type: 'medical' }, { x: 96, z: -60, type: 'weapon' });
+  PATROLS.push({ pts: [[60, -60], [94, -60], [94, -98], [60, -98]], n: 2 }, { pts: [[77, -87]], n: 1, boss: true }, { pts: [[56, -100]], n: 1, guard: true, y: 6 }, { pts: [[90, -56]], n: 1, guard: true, y: 6 }, { pts: [[46, -78], [46, -110], [100, -112]], n: 1 });
+  POI.push({ name: '军事前哨', x: 76, z: -77 });
+
+  // --- 机库 hangar & runway (NE) ---
+  {
+    const x0 = 40, x1 = 72, z0 = -28, z1 = -6, H = 9, c = { color: [0.66, 0.66, 0.62] };
+    wall('x', z0, x0, x1, 0, H, 0.4, 'siding', [{ a: 50, b: 53, y0: 0, y1: 2.6 }], c);
+    wall('x', z1, x0, x1, 0, H, 0.4, 'siding', [{ a: 48, b: 64, y0: 0, y1: 7 }], c);
+    wall('z', x0, z0 + 0.2, z1 - 0.2, 0, H, 0.4, 'siding', [{ a: -16, b: -13, y0: 0, y1: 2.6 }], c);
+    wall('z', x1, z0 + 0.2, z1 - 0.2, 0, H, 0.4, 'siding', [], c);
+    slab(x0, z0, x1, z1, H, 0.35, 'siding', [{ x0: 50, z0: -20, x1: 56, z1: -14 }], { color: [0.5, 0.5, 0.48] });
+    SHAFT_RECTS.push({ x0: 50, z0: -20, x1: 56, z1: -14, y: H });
+    addBox(56, -17, 3.4, 15, 3.2, 0.3, 'paint', { color: [0.58, 0.6, 0.56], rotY: 0.25 });
+    addBox(56, -17, 16, 2.6, 0.35, 1.6, 'paint', { color: [0.55, 0.57, 0.53], rotY: 0.25, collide: false });
+    addBox(63, -14.5, 3, 1.2, 2.6, 0, 'paint', { color: [0.4, 0.4, 0.4], rotY: 0.25 });
+    for (let i = 0; i < 4; i++) pallet(44 + i * 1.6, -24);
+    crate(68, -24, 1.2); crate(68, -22.7, 1.2); crate(68, -23.4, 1.0, 1.2);
+    CONTAINER_SPOTS.push({ x: 41, z: -27, type: 'tool' }, { x: 70.6, z: -9, type: 'cabinet' }, { x: 46, z: -10, type: 'ammo' }, { x: 66, z: -27, type: 'computer' });
+    PATROLS.push({ pts: [[44, -20], [68, -20], [68, -10], [44, -10]], n: 2 });
+    POI.push({ name: '机库', x: 56, z: -17 });
+  }
+  for (let x = 34; x < 100; x += 8) boxMM(x, 0.012, 9.8, x + 4, 0.02, 10.2, 'paint', { color: [0.9, 0.88, 0.8], collide: false, shadow: false });
+  addBox(84, 22, 3.2, 12, 2.8, 0, 'paint', { color: [0.35, 0.36, 0.33], rotY: 1.1 });
+  addBox(80, 26, 10, 1.8, 0.3, 1.2, 'paint', { color: [0.3, 0.31, 0.29], rotY: 1.1, collide: false });
+  jersey(60, 0, true); jersey(74, 20, true); jersey(92, 0, true);
+
+  // --- 车队残骸 burnt convoy (S) ---
+  const burnt = [0.16, 0.14, 0.12];
+  truck(22, 51, true, burnt); truck(42, 50, true, [0.36, 0.3, 0.22]); truck(64, 53, false, burnt); truck(84, 50, true, burnt);
+  container(48, 70, 6, 0, false, [0.45, 0.2, 0.12]); container(72, 86, 6, 0, true, [0.25, 0.3, 0.38]); container(92, 100, 6, 0, false, [0.5, 0.45, 0.3]);
+  adobe(30, 80, 44, 94, 3.4, { roof: true, doors: [{ side: 'n', a: 34 }, { side: 'w', a: 88 }], wins: [{ side: 's', a: 40 }], color: [0.8, 0.66, 0.5] });
+  sandbags(26, 66, 5, true, 4); sandbags(58, 62, 4, false, 4);
+  CONTAINER_SPOTS.push({ x: 43, z: 93, type: 'safe' }, { x: 31, z: 81, type: 'medical' }, { x: 22, z: 55, type: 'ammo' }, { x: 66, z: 58, type: 'weapon' }, { x: 94, z: 108, type: 'tool' });
+  PATROLS.push({ pts: [[20, 62], [96, 62]], n: 2 }, { pts: [[30, 104], [60, 110], [92, 92]], n: 1 }, { pts: [[37, 87]], n: 1, guard: true });
+  POI.push({ name: '车队残骸', x: 52, z: 58 });
+
+  // --- 加油站 gas station (N) ---
+  for (const [x, z] of [[16, -60], [32, -60], [16, -46], [32, -46]]) addBox(x, z, 0.5, 0.5, 4.8, 0, 'paint', { color: [0.85, 0.85, 0.82] });
+  boxMM(14, 4.8, -62, 34, 5.3, -44, 'paint', { color: [0.82, 0.2, 0.16], collide: false });
+  for (const x of [20, 28]) addBox(x, -53, 0.9, 0.6, 1.5, 0, 'paint', { color: [0.85, 0.82, 0.75] });
+  adobe(36, -60, 46, -48, 3.2, { doors: [{ side: 'w', a: -51 }], wins: [{ side: 'n', a: 41 }], color: [0.86, 0.84, 0.78] });
+  truck(24, -38, true, [0.6, 0.6, 0.58]);
+  CONTAINER_SPOTS.push({ x: 45, z: -59, type: 'cabinet' }, { x: 37, z: -49, type: 'computer' });
+  PATROLS.push({ pts: [[18, -64], [40, -64], [40, -40]], n: 1 });
+  POI.push({ name: '加油站', x: 26, z: -53 });
+
+  // --- 岩石峡谷 canyon (W) & 废村 ruins (SW) ---
+  for (let z = 6; z < 96; z += rr(7, 11)) { rock(-96 + rr(-3, 3), z, rr(1.4, 2.2)); if (R() < 0.7) rock(-74 + rr(-3, 3), z + rr(-3, 3), rr(1.2, 2)); }
+  boxMM(-92, 3.2, 40, -82, 3.6, 50, 'concrete', { color: [0.6, 0.47, 0.36] });
+  for (const [x, z] of [[-92, 40], [-82, 40], [-92, 50], [-82, 50]]) addBox(x, z, 2.2, 2.2, 3.2, 0, 'concrete', { color: [0.64, 0.5, 0.38], rotY: rr(0, 1) });
+  CONTAINER_SPOTS.push({ x: -87, z: 45, type: 'weapon' }, { x: -110, z: 30, type: 'tool' }, { x: -66, z: 92, type: 'medical' });
+  PATROLS.push({ pts: [[-100, 20], [-84, 60], [-100, 96]], n: 2 }, { pts: [[-70, 20], [-64, 70]], n: 1 });
+  POI.push({ name: '岩石峡谷', x: -86, z: 50 });
+  for (const [x0, z0, x1, z1, H] of [[-110, -44, -100, -34, 2.2], [-92, -40, -84, -30, 1.6], [-76, -20, -66, -10, 2.6]]) {
+    const c = { color: [0.8, 0.66, 0.48] };
+    wall('x', z0, x0, x1, 0, H, 0.4, 'concrete', [{ a: x0 + 2, b: x0 + 3.6, y0: 0, y1: 9 }], c);
+    wall('z', x1, z0, z1, 0, H * 0.6, 0.4, 'concrete', [], c);
+    wall('x', z1, x0, x1 - 3, 0, H * 0.8, 0.4, 'concrete', [], c);
+  }
+  CONTAINER_SPOTS.push({ x: -101, z: -36, type: 'cabinet' }, { x: -68, z: -12, type: 'ammo' });
+  PATROLS.push({ pts: [[-104, -50], [-70, -50], [-70, -4]], n: 1 });
+  POI.push({ name: '废村', x: -88, z: -30 });
+
+  // scattered cover over the open sand
+  scatterCover(['rock', 'rock', 'ruin', 'sandbags', 'crates', 'rock'], 70, [MAP_X0 + 5, MAP_X1 - 5, MAP_Z0 + 5, MAP_Z1 - 5], coverAvoid());
+  for (let i = 0; i < 10; i++) { const x = rr(-110, 100), z = rr(-110, 110); if (spotFree(x, z, 1.2)) barrel(x, z, pick([[0.2, 0.32, 0.5], [0.62, 0.15, 0.1], [0.75, 0.6, 0.2]], R)); }
+  // horizon: dunes and mesas
+  for (let i = 0; i < 46; i++) {
+    const a = rr(0, Math.PI * 2), d = rr(150, 260), x = Math.cos(a) * d, z = Math.sin(a) * d, r = rr(18, 40);
+    addCyl(x, z, r, rr(4, 12), -1, 'concrete', { rTop: r * 0.25, seg: 14, collide: false, shadow: false, bake: false, color: [0.92, 0.75, 0.52] });
+  }
+  for (let i = 0; i < 16; i++) {
+    const a = rr(0, Math.PI * 2), d = rr(300, 420);
+    addBox(Math.cos(a) * d, Math.sin(a) * d, rr(40, 90), rr(30, 70), rr(25, 60), 0, 'concrete', { collide: false, shadow: false, bake: false, color: [0.7, 0.45, 0.32], rotY: rr(0, 3) });
   }
 }
 function spotFree(x, z, r, y0 = 0.05, y1 = 1.6) {
@@ -1646,7 +1944,7 @@ function raycast(ox, oy, oz, dx, dy, dz, tmax, bullet = false) {
     const t = rayBox(ox, oy, oz, ix, iy, iz, c, best);
     if (t < best) { best = t; bc = c; bax = RAXIS; }
   }
-  if (dy < 0 && oy > -1.3) { const tw = (-1.3 - oy) / dy; if (tw < best && ox + dx * tw > MAP_X1) { best = tw; bc = { water: true }; bax = 1; } }
+  if (dy < 0 && oy > -1.3) { const tw = (-1.3 - oy) / dy; if (tw < best && ox + dx * tw > SEA_X) { best = tw; bc = { water: true }; bax = 1; } }
   HIT.t = best; HIT.c = bc;
   HIT.nx = bax === 0 ? -Math.sign(dx) : 0; HIT.ny = bax === 1 ? -Math.sign(dy) : 0; HIT.nz = bax === 2 ? -Math.sign(dz) : 0;
   return bc ? best : Infinity;
@@ -1760,14 +2058,14 @@ async function bakeStatic() {
 }
 
 // ================= sky, sun, environment =================
-const SUN_ELEV = 17, SUN_AZ = 232;
+const SUN_ELEV = MAP_ID === 'desert' ? 38 : 17, SUN_AZ = MAP_ID === 'desert' ? 205 : 232;
 const sunDir = new V3().setFromSphericalCoords(1, THREE.MathUtils.degToRad(90 - SUN_ELEV), THREE.MathUtils.degToRad(SUN_AZ));
 let sky, sun, waterMesh;
 function buildSky() {
   sky = new Sky();
   sky.scale.setScalar(4000);
   const u = sky.material.uniforms;
-  u.turbidity.value = 6; u.rayleigh.value = 2.4; u.mieCoefficient.value = 0.0045; u.mieDirectionalG.value = 0.86;
+  u.turbidity.value = MAP_ID === 'desert' ? 9 : 6; u.rayleigh.value = MAP_ID === 'desert' ? 1.4 : 2.4; u.mieCoefficient.value = 0.0045; u.mieDirectionalG.value = 0.86;
   u.sunPosition.value.copy(sunDir);
   scene.add(sky);
   const pm = new THREE.PMREMGenerator(renderer);
@@ -1781,15 +2079,15 @@ function buildSky() {
   scene.environment = envRT.texture;
   scene.environmentIntensity = 0.75;
   pm.dispose();
-  scene.fog = new THREE.FogExp2(0x9c8a7a, 0.003);
+  scene.fog = MAP_ID === 'desert' ? new THREE.FogExp2(0xd9b382, 0.0032) : new THREE.FogExp2(0x9c8a7a, 0.003);
 
-  sun = new THREE.DirectionalLight(0xffc690, 3.6);
+  sun = MAP_ID === 'desert' ? new THREE.DirectionalLight(0xfff0d8, 4.0) : new THREE.DirectionalLight(0xffc690, 3.6);
   sun.position.copy(sunDir).multiplyScalar(200);
   sun.castShadow = true;
   sun.shadow.bias = -0.00025;
   sun.shadow.normalBias = 0.035;
   scene.add(sun); scene.add(sun.target);
-  const hemi = new THREE.HemisphereLight(0x9fb4c9, 0x3b342c, 0.15);
+  const hemi = MAP_ID === 'desert' ? new THREE.HemisphereLight(0xbcd0e2, 0x8a6a48, 0.22) : new THREE.HemisphereLight(0x9fb4c9, 0x3b342c, 0.15);
   scene.add(hemi);
 }
 const _lightQ = new THREE.Quaternion();
@@ -1815,17 +2113,24 @@ function buildGroundAndWater() {
   g.rotateX(-Math.PI / 2);
   g.translate((MAP_X1 + 4 + MAP_X0 - 4) / 2 - 2, 0, (MAP_Z0 + MAP_Z1) / 2);
   const p = g.attributes.position;
-  for (let i = 0; i < p.count; i++) if (p.getX(i) > MAP_X1) p.setX(i, MAP_X1);
+  if (MAP_ID !== 'desert') for (let i = 0; i < p.count; i++) if (p.getX(i) > MAP_X1) p.setX(i, MAP_X1);
   const uv = g.attributes.uv; for (let i = 0; i < p.count; i++) uv.setXY(i, p.getX(i) / 4, -p.getZ(i) / 4);
   const col = [];
   for (let i = 0; i < p.count; i++) {
     const x = p.getX(i), z = p.getZ(i);
     const n = fbm((x + 500) / 1000, (z + 500) / 1000, 12, 4, 5);
     const k = 0.82 + n * 0.32;
-    col.push(k * 1.02, k, k * 0.95);
+    if (MAP_ID === 'desert') col.push(0.5 * k, 0.37 * k, 0.24 * k); else col.push(k * 1.02, k, k * 0.95);
   }
   pushStatic(g, 'ground', { shadow: false });
   STATIC[STATIC.length - 1].g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+  if (MAP_ID === 'desert') {
+    MAT.ground.map = null; MAT.ground.color.setRGB(1, 1, 1); MAT.ground.normalMap = TEX.asphalt.normal; MAT.ground.roughnessMap = null; MAT.ground.roughness = 0.95; MAT.ground.normalScale.set(0.6, 0.6); MAT.ground.needsUpdate = true;
+    const og = new THREE.PlaneGeometry(1600, 1600, 4, 4); og.rotateX(-Math.PI / 2); og.translate(0, -0.05, 0);
+    const ouv = og.attributes.uv, op = og.attributes.position; for (let i = 0; i < ouv.count; i++) ouv.setXY(i, op.getX(i) / 4, op.getZ(i) / 4);
+    pushStatic(og, 'ground', { shadow: false, bake: false, color: [0.5, 0.38, 0.25] });
+    return;
+  }
   const og = new THREE.PlaneGeometry(900, 900, 4, 4); og.rotateX(-Math.PI / 2); og.translate(109 - 450, -0.05, 0);
   const ouv = og.attributes.uv, op = og.attributes.position; for (let i = 0; i < ouv.count; i++) ouv.setXY(i, op.getX(i) / 4, op.getZ(i) / 4);
   pushStatic(og, 'ground', { shadow: false, bake: false, color: [0.7, 0.68, 0.62] });
@@ -2106,7 +2411,7 @@ function updateParticles(sys, dt) {
     p.vy -= p.grav * dt;
     const dr = Math.exp(-p.drag * dt); p.vx *= dr; p.vy *= dr; p.vz *= dr;
     p.x += p.vx * dt; p.y += p.vy * dt; p.z += p.vz * dt;
-    if (p.grav > 0 && p.y < 0.02 && p.x < MAP_X1) { p.y = 0.02; p.vy *= -0.3; p.vx *= 0.5; p.vz *= 0.5; }
+    if (p.grav > 0 && p.y < 0.02 && p.x < SEA_X) { p.y = 0.02; p.vy *= -0.3; p.vx *= 0.5; p.vz *= 0.5; }
     pos[i * 3] = p.x; pos[i * 3 + 1] = p.y; pos[i * 3 + 2] = p.z;
     size[i] = lerp(p.s0, p.s1, k);
     col[i * 4] = p.r; col[i * 4 + 1] = p.g; col[i * 4 + 2] = p.b; col[i * 4 + 3] = p.a * (1 - k) * (k < 0.1 ? k * 10 : 1);
@@ -2209,8 +2514,8 @@ function updateShells(dt) {
 }
 function groundAt(x, z, fromY) {
   gridQuery(x - 0.1, z - 0.1, x + 0.1, z + 0.1, _cand);
-  let gy = x < MAP_X1 ? 0 : -1.3;
-  if (x >= MAP_X1 && z > -72 && z < -60 && x < 146) gy = 0;
+  let gy = x < SEA_X ? 0 : -1.3;
+  if (x >= SEA_X && z > -72 && z < -60 && x < 146) gy = 0;
   for (const c of _cand) if (x > c.x0 && x < c.x1 && z > c.z0 && z < c.z1 && c.y1 <= fromY && c.y1 > gy) gy = c.y1;
   return gy;
 }
@@ -2436,7 +2741,7 @@ function integrateBody(b, dt, stepH = 0.45) {
   else if (b.onGround && b.vel.y <= 0 && b.pos.y - gy < 0.5) { b.pos.y = gy; b.vel.y = 0; }
   else b.onGround = false;
   if (b.pos.y + b.h > b.ceilY) { b.pos.y = Math.max(gy, b.ceilY - b.h); if (b.vel.y > 0) b.vel.y = 0; }
-  if (b.pos.y < -1.25 && b.pos.x > MAP_X1) { b.pos.y = -1.25; b.vel.y = 0; b.onGround = true; b.inWater = true; } else b.inWater = false;
+  if (b.pos.y < -1.25 && b.pos.x > SEA_X) { b.pos.y = -1.25; b.vel.y = 0; b.onGround = true; b.inWater = true; } else b.inWater = false;
 }
 
 // ================= player =================
@@ -2569,8 +2874,8 @@ function playerUpdate(dt) {
 }
 function surfaceUnder(p) {
   gridQuery(p.x - 0.1, p.z - 0.1, p.x + 0.1, p.z + 0.1, _cand);
-  for (const c of _cand) if (Math.abs(c.y1 - p.y) < 0.05 && p.x > c.x0 && p.x < c.x1 && p.z > c.z0 && p.z < c.z1) { if (c.y1 > 2) return 'metal'; if (p.x > MAP_X1) return 'wood'; return 'metal'; }
-  if (p.x > MAP_X1) return 'wood';
+  for (const c of _cand) if (Math.abs(c.y1 - p.y) < 0.05 && p.x > c.x0 && p.x < c.x1 && p.z > c.z0 && p.z < c.z1) { if (c.y1 > 2) return 'metal'; if (p.x > SEA_X) return 'wood'; return 'metal'; }
+  if (p.x > SEA_X) return 'wood';
   return 'concrete';
 }
 function damagePlayer(dmg, fromPos, kind = 'bullet', head = false) {
@@ -2713,9 +3018,10 @@ function buildWeapons() {
 function applyLoadout() {
   const G = getGear();
   const ids = [CAT2DEF[G.primary] || 'ar', CAT2DEF[G.secondary] || 'dmr'];
+  const gids = [G.primary, G.secondary];
   for (const k in WEAPON.pool) WEAPON.pool[k].model.g.visible = false;
   const magMul = PLAYER.perks.has('perk_mag') ? 1.5 : 1;
-  WEAPON.list = ids.map((id) => { const e = WEAPON.pool[id]; return { def: e.def, model: e.model, mag: e.def.mag, reserve: Math.round(e.def.reserve * magMul), mode: 0, reloadT: 0 }; });
+  WEAPON.list = ids.map((id, k) => { const e = WEAPON.pool[id]; const def = moddedDef(e.def, gids[k]); return { def, model: e.model, mag: def.mag, reserve: Math.round(def.reserve * magMul), mode: 0, reloadT: 0 }; });
 }
 function resetWeapons() {
   applyLoadout();
@@ -2773,6 +3079,7 @@ function fireShot() {
     if (!wc.water) spawnDecal(_hp.x, _hp.y, _hp.z, wnx, wny, wnz);
     sfxImpact(_hp, kind);
   }
+  suppressAlong(o, _dir, dist, be);
   w.model.muzzle.getWorldPosition(_mz);
   if (def.big || WEAPON.shotN % 2 === 0) spawnTracer(_mz, _hp, 520, def.big ? 0.024 : 0.018);
   // recoil
@@ -2796,6 +3103,21 @@ function fireShot() {
   const right = _tmpV2.set(1, 0, 0).applyQuaternion(camera.quaternion);
   spawnShell(_ej, new V3(right.x * rnd(2, 3) + P.vel.x, rnd(1.5, 2.5) + P.vel.y, right.z * rnd(2, 3) + P.vel.z));
   updateWeaponHUD();
+}
+function suppressAlong(o, d, len, skip) {
+  for (const e of ENEMIES) {
+    if (e.dead || e === skip || e.puppet) continue;
+    const cx = e.pos.x - o.x, cy = e.pos.y + 1.2 - o.y, cz = e.pos.z - o.z;
+    const t = cx * d.x + cy * d.y + cz * d.z; if (t < 2 || t > len + 1.5) continue;
+    const px = cx - d.x * t, py = cy - d.y * t, pz = cz - d.z * t;
+    if (px * px + py * py + pz * pz < 2.6 * 2.6) { e.suppress = Math.min(1, e.suppress + 0.3); e.coverT = Math.min(e.coverT, 0.3); if (e.state !== 'combat') e.hear(o, 4); }
+  }
+}
+const _cand3 = [];
+function coverFree(x, z, r, y0, y1) {
+  gridQuery(x - r, z - r, x + r, z + r, _cand3);
+  for (const c of _cand3) { if (c.y1 < y0 || c.y0 > y1) continue; if (x + r > c.x0 && x - r < c.x1 && z + r > c.z0 && z - r < c.z1) return false; }
+  return true;
 }
 function surfKind(c) {
   const m = c && c.mat;
@@ -2971,7 +3293,7 @@ function animateSoldier(s, dt, vx, vz, yaw, crouch, aimPitch, armsYaw) {
   s.shR.rotation.x = lerp(-Math.max(0, Math.sin(s.walkPh + 1.3 + Math.PI)) * 0.9 * s.moveAmt, -1.7, cr);
   s.thL.position.y = s.thR.position.y = lerp(0.9, 0.52, cr);
   s.upper.position.y = lerp(0, -0.4, cr) + Math.abs(Math.sin(s.walkPh)) * 0.03 * s.moveAmt;
-  s.upper.rotation.x = lerp(0, 0.18, cr);
+  s.upper.rotation.x = lerp(0, 0.18, cr); s.upper.rotation.z = 0;
   s.arms.rotation.x = aimPitch - s.upper.rotation.x;
   s.arms.rotation.y = armsYaw;
 }
@@ -2981,7 +3303,7 @@ function animateDeath(s, k, fallDir, baseY) {
   s.arms.rotation.x = lerp(s.arms.rotation.x, 1.2, k);
   s.thL.rotation.x = lerp(s.thL.rotation.x, 0.3, k); s.thR.rotation.x = lerp(s.thR.rotation.x, -0.1, k);
   s.shL.rotation.x = lerp(s.shL.rotation.x, -0.4, k); s.shR.rotation.x = lerp(s.shR.rotation.x, -0.1, k);
-  s.upper.position.y = lerp(s.upper.position.y, 0, k);
+  s.upper.position.y = lerp(s.upper.position.y, 0, k); s.upper.rotation.z = lerp(s.upper.rotation.z, 0, k);
 }
 
 // Targets the AI can hunt: the local player plus (on the host) remote teammates.
@@ -3020,6 +3342,10 @@ class Enemy {
     this.stuckT = 0; this.lastPos = new V3(x, y, z); this.detour = 0; this.detourDir = 1;
     this.lastFireT = -10; this.spotT = -10; this.aimPitch = 0.75;
     this.lookT = 0;
+    // cover / suppression / reload / role
+    this.cover = null; this.coverT = 0; this.peekT = 0; this.peeking = true; this.suppress = 0; this.hurtT = -10;
+    this.magSize = this.boss ? 40 : 30; this.ammo = this.magSize; this.reloadT = 0;
+    this.role = this.idx % 3 === 2 ? 'flank' : 'hold'; this.flankSide = Math.random() < 0.5 ? -1 : 1;
     // puppet (co-op client) targets
     this.puppet = false; this.npos = new V3(x, y, z); this.nyaw = this.yaw; this.ncode = 0; this.naim = 0.75;
     const s = buildSoldier(this.boss ? 'b' : 'n');
@@ -3060,6 +3386,7 @@ class Enemy {
   // shooter: LOCALT or a Remote teammate (host only)
   damage(dmg, part, from, shooter = LOCALT) {
     if (this.dead) return;
+    this.hurtT = TIME; this.suppress = Math.min(1, this.suppress + 0.4); this.coverT = Math.min(this.coverT, 0.15);
     let d = dmg;
     if (part === 'head') d *= this.boss ? 0.55 : 0.8; // helmet
     else if (part === 'body' && this.armor > 0) { const ab = Math.min(this.armor, d * 0.45); this.armor -= ab; d -= ab; }
@@ -3151,15 +3478,45 @@ class Enemy {
       }
       if (this.boss && this.home.distanceTo(this.pos) > 5) toward(this.home.x, this.home.z, 2);
     } else if (this.state === 'combat') {
-      if (this.canSee || TIME - this.spotT < 0.35) {
-        this.lostT = 0;
-        this.yawT = Math.atan2(-(T.pos.x - this.pos.x), -(T.pos.z - this.pos.z));
-        this.aimT += dt;
+      this.suppress = Math.max(0, this.suppress - dt * 0.35);
+      if (this.reloadT > 0) this.reloadT -= dt;
+      const sees = this.canSee || TIME - this.spotT < 0.35;
+      // pick (or re-pick) cover: on entering combat, after being hit or pinned, or when the spot became exposed
+      this.coverT -= dt;
+      if (!this.guard && !this.boss && this.coverT <= 0) {
+        this.coverT = rnd(2.5, 4);
+        const exposed = this.cover && losClear(T.eye.x, T.eye.y, T.eye.z, this.cover.x, this.pos.y + 0.8, this.cover.z);
+        if (!this.cover || exposed || TIME - this.hurtT < 1.5) this.cover = this.findCover(T, this.reloadT > 0 || TIME - this.hurtT < 1.5 || this.suppress > 0.6);
+      }
+      const cv = this.cover, cvD = cv ? Math.hypot(cv.x - this.pos.x, cv.z - this.pos.z) : 99;
+      this.yawT = sees ? Math.atan2(-(T.pos.x - this.pos.x), -(T.pos.z - this.pos.z)) : Math.atan2(-(this.lastKnown.x - this.pos.x), -(this.lastKnown.z - this.pos.z));
+      if (cv && cvD > 0.7) {
+        // run to cover; only shoot on the move when nearly there
+        toward(cv.x, cv.z, this.suppress > 0.3 || TIME - this.hurtT < 2 ? 4.4 : 3.6);
+        this.crouchWant = false;
+        if (sees) { this.lostT = 0; this.aimT += dt * 0.5; if (cvD < 4) this.shoot(dt, distP, D); }
+        else { this.lostT += dt * 0.5; }
+      } else if (cv) {
+        // in cover: duck, pop up, fire a few bursts, duck again (stay down while reloading)
+        this.peekT -= dt;
+        if (this.peekT <= 0) { this.peeking = !this.peeking && this.reloadT <= 0; this.peekT = this.peeking ? rnd(1.1, 2.4) : rnd(0.7, 1.6) * (1 + this.suppress * 1.5); }
+        if (!cv.peek || this.reloadT > 0) this.peeking = false;
+        this.crouchWant = !this.peeking;
+        if (this.peeking && sees) { this.lostT = 0; this.aimT += dt; this.shoot(dt, distP, D); }
+        else if (!this.peeking) { this.lostT = 0; this.aimT = Math.max(0, this.aimT - dt * 0.6); if (!cv.peek && this.reloadT <= 0 && this.peekT < 0.2) { this.cover = null; this.coverT = rnd(2, 3.5); } }
+        else { this.lostT += dt; if (this.lostT > 3) { this.cover = null; this.state = 'investigate'; this.lookT = 0; this.crouchWant = false; } }
+      } else if (sees) {
+        // no cover nearby: strafing duel; flankers swing around the target
+        this.lostT = 0; this.aimT += dt;
         this.strafeT -= dt;
         if (this.strafeT <= 0) { this.strafe = Math.random() < 0.35 ? 0 : (Math.random() < 0.5 ? -1 : 1); this.strafeT = rnd(0.7, 1.8); }
         this.crouchT -= dt;
         if (this.crouchT <= 0) { this.crouchWant = distP > 10 && Math.random() < 0.45; this.crouchT = rnd(2, 4.5); }
-        if (this.strafe && !this.guard) {
+        if (this.role === 'flank' && !this.guard && !this.boss && distP > 9 && distP < 45) {
+          const a0 = Math.atan2(this.pos.x - T.pos.x, this.pos.z - T.pos.z) + this.flankSide * 0.6, R0 = Math.max(9, distP * 0.85);
+          toward(T.pos.x + Math.sin(a0) * R0, T.pos.z + Math.cos(a0) * R0, 3.2); this.crouchWant = false;
+          this.yawT = Math.atan2(-(T.pos.x - this.pos.x), -(T.pos.z - this.pos.z));
+        } else if (this.strafe && !this.guard) {
           const sx = Math.cos(this.yaw), sz = -Math.sin(this.yaw);
           mvx = sx * this.strafe; mvz = sz * this.strafe; spd = this.crouchWant ? 1.2 : 2.2;
         }
@@ -3168,8 +3525,9 @@ class Enemy {
         this.shoot(dt, distP, D);
       } else {
         this.lostT += dt; this.aimT = Math.max(0, this.aimT - dt * 2);
-        this.yawT = Math.atan2(-(this.lastKnown.x - this.pos.x), -(this.lastKnown.z - this.pos.z));
-        if (this.lostT > 2.2) { this.state = 'investigate'; this.lookT = 0; this.crouchWant = false; }
+        // push toward where the target was last seen instead of freezing
+        if (!this.guard && !this.boss && this.lostT > 0.8) toward(this.lastKnown.x, this.lastKnown.z, 2.4);
+        if (this.lostT > 3.2) { this.state = 'investigate'; this.lookT = 0; this.crouchWant = false; this.cover = null; }
       }
     }
     // ---- locomotion ----
@@ -3242,6 +3600,26 @@ class Enemy {
     animateSoldier(this.s, dt, this.vel.x, this.vel.z, this.yaw, this.crouch, this.aimPitch, st === 2 ? 0 : 0.35);
     this.applyFlinch(dt);
   }
+  // sample spots around us whose crouched head is hidden from the target (and ideally can peek standing)
+  findCover(T, allowFull = false) {
+    const ex = T.eye.x, ey = T.eye.y, ez = T.eye.z, by = this.pos.y;
+    const dT0 = Math.hypot(this.pos.x - T.pos.x, this.pos.z - T.pos.z);
+    let best = null, bs = Infinity;
+    for (const rad of [2.2, 4.5, 7, 10]) for (let i = 0; i < 10; i++) {
+      const a = (i / 10) * Math.PI * 2 + this.id * 0.37;
+      const x = this.pos.x + Math.cos(a) * rad, z = this.pos.z + Math.sin(a) * rad;
+      const dT = Math.hypot(x - T.pos.x, z - T.pos.z);
+      if (dT < 6 || dT > dT0 + 6) continue;
+      if (!coverFree(x, z, 0.45, by + 0.05, by + 1.7)) continue;
+      if (Math.abs(groundAt(x, z, by + 0.5) - by) > 0.4) continue;
+      if (losClear(ex, ey, ez, x, by + 0.8, z)) continue;   // crouched torso must be covered
+      const peek = losClear(ex, ey, ez, x, by + 1.62, z);
+      if (!peek && !allowFull) continue;
+      const sc = rad * 1.3 + (peek ? 0 : 5) + Math.abs(dT - 22) * 0.12 - (this.role === 'flank' ? Math.abs(Math.sin(a - Math.atan2(T.pos.x - this.pos.x, T.pos.z - this.pos.z))) * 2 : 0);
+      if (sc < bs) { bs = sc; best = { x, z, peek }; }
+    }
+    return best;
+  }
   hear(pos, jitter) {
     if (this.state === 'combat') return;
     this.lastKnown.set(pos.x + rnd(-jitter, jitter), pos.y, pos.z + rnd(-jitter, jitter));
@@ -3249,12 +3627,13 @@ class Enemy {
     this.yawT = Math.atan2(-(pos.x - this.pos.x), -(pos.z - this.pos.z));
   }
   shoot(dt, dist, D) {
+    if (this.reloadT > 0) return;
     const react = (this.boss ? 0.45 : 0.75) * D.react + dist * 0.006;
     if (this.aimT < react) return;
     if (Math.abs(angDiff(this.yaw, this.yawT)) > 0.3) return;
     this.shotCD -= dt;
     if (this.burst > 0) {
-      if (this.shotCD <= 0) { this.fire(dist, D); this.burst--; this.shotCD = 0.1 + rnd(0, 0.05); }
+      if (this.shotCD <= 0) { this.fire(dist, D); this.burst--; this.shotCD = 0.1 + rnd(0, 0.05); if (--this.ammo <= 0) { this.ammo = this.magSize; this.reloadT = rnd(2.0, 2.8); this.burst = 0; this.peekT = 0; } }
     } else {
       this.burstPause -= dt;
       if (this.burstPause <= 0) { this.burst = (this.boss ? 4 : 2) + Math.floor(Math.random() * (this.boss ? 5 : 4)); this.burstPause = rnd(0.45, 1.3) * (dist > 40 ? 1.4 : 1); }
@@ -3267,7 +3646,7 @@ class Enemy {
     const head = Math.random() < (this.boss ? 0.14 : 0.07);
     _tgt.set(T.pos.x, head ? T.eye.y - 0.02 : T.pos.y + T.h * 0.62, T.pos.z);
     _ed.subVectors(_tgt, mz).normalize();
-    const sig = (0.03 + dist * 0.00055) * (1 + T.speed * 0.13) * (T.crouch > 0.5 ? 0.85 : 1) / (D.acc * (1 + Math.min(this.aimT, 3) * 0.5)) * (this.boss ? 0.7 : 1);
+    const sig = (0.03 + dist * 0.00055) * (1 + T.speed * 0.13) * (T.crouch > 0.5 ? 0.85 : 1) / (D.acc * (1 + Math.min(this.aimT, 3) * 0.5)) * (this.boss ? 0.7 : 1) * (1 + (this.suppress || 0) * 0.9);
     const g3 = () => (Math.random() + Math.random() + Math.random() - 1.5) * sig * 1.4;
     _ed.x += g3(); _ed.y += g3(); _ed.z += g3(); _ed.normalize();
     const tw = raycast(mz.x, mz.y, mz.z, _ed.x, _ed.y, _ed.z, 300, true);
@@ -3515,9 +3894,14 @@ function buildMapBase() {
   const cv = document.createElement('canvas'); cv.width = cv.height = N;
   const g = cv.getContext('2d');
   const X = (x) => (x + MAPE) * S, Z = (z) => (z + MAPE) * S;
-  g.fillStyle = '#2a2d2a'; g.fillRect(0, 0, N, N);
-  g.fillStyle = '#16303a'; g.fillRect(X(MAP_X1), 0, N - X(MAP_X1), N);
-  g.fillStyle = '#383b37'; g.fillRect(X(-5), 0, 10 * S, N); g.fillRect(0, Z(-30), N, 8 * S); g.fillRect(0, Z(56), N, 8 * S);
+  if (MAP_ID === 'desert') {
+    g.fillStyle = '#4a3d2c'; g.fillRect(0, 0, N, N);
+    g.fillStyle = '#5a4a35'; g.fillRect(X(-6), 0, 12 * S, N); g.fillRect(0, Z(46), N, 10 * S); g.fillRect(X(30), Z(4), 74 * S, 12 * S);
+  } else {
+    g.fillStyle = '#2a2d2a'; g.fillRect(0, 0, N, N);
+    g.fillStyle = '#16303a'; g.fillRect(X(MAP_X1), 0, N - X(MAP_X1), N);
+    g.fillStyle = '#383b37'; g.fillRect(X(-5), 0, 10 * S, N); g.fillRect(0, Z(-30), N, 8 * S); g.fillRect(0, Z(56), N, 8 * S);
+  }
   const list = COLLIDERS.filter((c) => !c.ground && !c.prop).sort((a, b) => a.y1 - b.y1);
   for (const c of list) {
     const h = c.y1;
@@ -3749,7 +4133,7 @@ function genContract(runs, exclude = []) {
 function syncContracts(s) {
   if (!Array.isArray(s.contracts)) s.contracts = [];
   s.contracts = s.contracts.filter((c) => c && typeof c.type === 'string' && Number.isFinite(c.target) && Number.isFinite(c.reward));
-  while (s.contracts.length < 3) s.contracts.push(genContract(s.runs, s.contracts.map((c) => c.type)));
+  while (s.contracts.length < contractSlots()) s.contracts.push(genContract(s.runs, s.contracts.map((c) => c.type)));
   return s.contracts;
 }
 function renderContracts() {
@@ -3765,8 +4149,18 @@ const SPAWNS = [[-112, 108, -0.8], [-114, -48, -1.6], [102, -114, 2.4], [-60, 11
 let touchMode = IS_TOUCH;
 
 function stash() { return Object.assign({ value: 0, runs: 0, kills: 0, raids: 0 }, store.get('stash', {})); }
+function renderLevel() {
+  const p = getProg(), need = xpNeed(p.lvl), pct = p.lvl >= MAX_LVL ? 100 : Math.floor(p.xp / need * 100);
+  const daily = p.day !== new Date().toDateString();
+  $('lvlBar').innerHTML = `<div class="lvTop"><b>Lv.${p.lvl}</b><span>${p.lvl >= MAX_LVL ? '满级' : `${p.xp} / ${need} XP`}</span>${daily ? '<em>今日首撤 ×2 经验 + ¥20,000</em>' : '<em class="done">今日首撤奖励已领取</em>'}</div><div class="tr"><i style="width:${pct}%"></i></div><div class="lvNext">下一级奖励 ${fmtMoney(4000 * (p.lvl + 1))}${(p.lvl + 1) % 5 === 0 ? ' + 军需补给箱' : ''} · 图鉴 ${p.codex.length}/${Object.keys(ITEMS).length}</div>`;
+}
 function refreshMenu() {
   const s = stash();
+  renderLevel();
+  segSet('mapSeg', MAP_ID);
+  $('hudZone').textContent = MAP_ID === 'desert' ? '赤砂前哨 · RED SANDS' : '灰烬港区 · ASHFALL';
+  { const M = MAPS[MAP_ID], h = document.querySelector('#menu h1'); if (h) h.innerHTML = `${M.name}<span>${M.en}</span>`; const br = document.querySelector('#menu .brief'); if (br) br.textContent = M.brief; }
+  $('mapHint').textContent = MAP_ID === 'desert' ? '当前：赤砂前哨（物资 ×1.25 · 经验 ×1.2）。切换地图会重新加载场景。' : '当前：灰烬港区。切换地图会重新加载场景（约几秒）。';
   $('stashVal').textContent = fmtMoney(s.value); $('stashRuns').textContent = s.runs; $('stashKills').textContent = s.kills;
   segSet('diffSeg', SETTINGS.difficulty);
   renderMenuLoadout();
@@ -3811,7 +4205,7 @@ function startRaid(opts = {}) {
   for (const d of DECALS) d.visible = false;
   camera.rotation.z = 0;
   updateWeaponHUD();
-  banner('灰烬港区', `17:42 · ${DIFF[RAID_DIFF].label}难度 · ${opts.players > 1 ? opts.players + ' 人小队 · ' : ''}撤离点：${ex.map((e) => e.name).join(' / ')}`, 5);
+  banner(MAPS[MAP_ID].name, `${MAP_ID === 'desert' ? '12:30' : '17:42'} · ${DIFF[RAID_DIFF].label}难度 · ${opts.players > 1 ? opts.players + ' 人小队 · ' : ''}撤离点：${ex.map((e) => e.name).join(' / ')}`, 5);
   NET.inRaid = !!NET.rm; NET.myState = 'play';
   if (!touchMode) lockPointer();
 }
@@ -3860,21 +4254,44 @@ function endRaid(kind) {
   const dMul = DIFF_MULT[RAID_DIFF] || 1;
   const bMul = P.perks.has('perk_broker') ? 1.15 : 1;
   const rawBag = bagValue();
-  const lootGain = ok ? Math.round(rawBag * bMul * dMul * sMul) : 0;
+  const prog = getProg();
+  const xMul = MAPS[MAP_ID].loot * ((prog.hide.intel | 0) >= 3 ? 1.1 : 1) * (1 + codexBonus(prog));
+  const lootGain = ok ? Math.round(rawBag * bMul * dMul * sMul * xMul) : 0;
   const rawBounty = P.kills * 2500 + P.heads * 1500 + (P.bossKills || 0) * 35000;
   const bountyGain = kind === 'abort' ? 0 : Math.round(rawBounty * (ok ? dMul : 0.3));
-  let contractGain = 0;
+  let contractGain = 0, doneN = 0;
   const contracts = syncContracts(s);
   if (ok) {
-    const prog = { val: rawBag, kills: P.kills, heads: P.heads, loot: P.looted || 0, boss: P.bossKills || 0 };
-    const keep = contracts.filter((c) => (prog[c.type] || 0) < c.target);
-    for (const c of contracts) if (!keep.includes(c)) contractGain += c.reward;
+    const progC = { val: rawBag, kills: P.kills, heads: P.heads, loot: P.looted || 0, boss: P.bossKills || 0 };
+    const keep = contracts.filter((c) => (progC[c.type] || 0) < c.target);
+    for (const c of contracts) if (!keep.includes(c)) { contractGain += Math.round(c.reward * ((prog.hide.intel | 0) >= 2 ? 1.3 : 1)); doneN++; }
     s.contracts = keep;
-    while (s.contracts.length < 3) s.contracts.push(genContract((s.runs || 0) + 1, s.contracts.map((x) => x.type)));
+    while (s.contracts.length < contractSlots()) s.contracts.push(genContract((s.runs || 0) + 1, s.contracts.map((x) => x.type)));
   }
   const refund = (kind === 'dead' || kind === 'mia') && P.insured ? Math.round(rawBag * 0.5) : 0;
   const dividend = kind !== 'abort' && P.perks.has('perk_broker') ? 8000 : 0;
-  const total = lootGain + bountyGain + contractGain + refund + dividend;
+  // secure container: the most valuable items survive a death
+  const safeN = ok || kind === 'abort' ? 0 : SAFE_N[prog.hide.safe | 0];
+  const safeItems = safeN ? BAG.items.slice().sort((a, b) => ITEMS[b].v - ITEMS[a].v).slice(0, safeN) : [];
+  const safeGain = Math.round(safeItems.reduce((a, id) => a + ITEMS[id].v, 0) * MAPS[MAP_ID].loot);
+  const genGain = kind !== 'abort' ? GEN_PAY[prog.hide.gen | 0] : 0;
+  // codex: first time each item type is brought home
+  let codexGain = 0, codexXp = 0; const newFinds = [];
+  if (ok) for (const id of new Set(BAG.items)) if (!prog.codex.includes(id)) { prog.codex.push(id); newFinds.push(id); codexGain += Math.round(ITEMS[id].v * 0.5); codexXp += 150 * (ITEMS[id].r + 1); }
+  const today = new Date().toDateString();
+  const firstWin = ok && prog.day !== today;
+  const dailyGain = firstWin ? 20000 : 0;
+  if (firstWin) prog.day = today;
+  let xp = P.kills * 120 + P.heads * 60 + (P.bossKills || 0) * 1500 + (ok ? 600 : kind === 'abort' ? 0 : 120) + Math.round(lootGain / 150) + doneN * 400;
+  xp = Math.round(xp * RANGE_XP[prog.hide.range | 0] * MAPS[MAP_ID].xp * (firstWin ? 2 : 1)) + codexXp;
+  prog.xp += xp;
+  let levelGain = 0; const ups = [];
+  while (prog.lvl < MAX_LVL && prog.xp >= xpNeed(prog.lvl)) {
+    prog.xp -= xpNeed(prog.lvl); prog.lvl++; levelGain += 4000 * prog.lvl; ups.push(prog.lvl);
+    if (prog.lvl % 5 === 0) { const G = getGear(); G.stock.sup_med += 2; G.stock.sup_armor += 1; G.stock.sup_stim += 1; G.stock.sup_insure += 1; saveGear(G); }
+  }
+  saveProg(prog);
+  const total = lootGain + bountyGain + contractGain + refund + dividend + safeGain + genGain + codexGain + dailyGain + levelGain;
   s.raids++; s.kills += P.kills;
   s.streak = ok ? streak + 1 : 0;
   if (ok) { s.runs++; sfxExtract(); }
@@ -3899,9 +4316,16 @@ function endRaid(kind) {
   if (contractGain > 0) rows.push(['黑市悬赏合同', fmtMoney(contractGain)]);
   if (refund > 0) rows.push(['黑市保险理赔（50%）', fmtMoney(refund)]);
   if (dividend > 0) rows.push(['走私渠道分红', fmtMoney(dividend)]);
+  if (safeGain > 0) rows.push([`安全箱保住 ${safeItems.length} 件物资`, fmtMoney(safeGain)]);
+  if (genGain > 0) rows.push(['藏身处 · 发电机收益', fmtMoney(genGain)]);
+  if (codexGain > 0) rows.push([`图鉴首次收录 ×${newFinds.length}`, fmtMoney(codexGain)]);
+  if (dailyGain > 0) rows.push(['今日首次撤离（经验 ×2）', fmtMoney(dailyGain)]);
+  for (const l of ups) rows.push([`★ 升到 ${l} 级${l % 5 === 0 ? ' · 附赠军需补给箱' : ''}`, fmtMoney(4000 * l)]);
+  rows.push([`作战经验 · Lv.${prog.lvl}${prog.lvl < MAX_LVL ? ` (${Math.floor(prog.xp / xpNeed(prog.lvl) * 100)}%)` : ' MAX'}`, `+${xp} XP`]);
   rows.push(['本局总入账', '+' + fmtMoney(total)]);
   $('resBreakdown').innerHTML = rows.map(([k, v], i) => `<div class="${i === rows.length - 1 ? 'tot' : ''}"><span>${k}</span><span>${v}</span></div>`).join('');
-  $('resItems').innerHTML = BAG.items.slice().sort((a, b) => ITEMS[b].v - ITEMS[a].v).map((id, i) => itemCard({ id, revealed: true, taken: !ok }, i)).join('');
+  $('resItems').innerHTML = BAG.items.slice().sort((a, b) => ITEMS[b].v - ITEMS[a].v).map((id, i) => itemCard({ id, revealed: true, taken: !ok && !safeItems.includes(id) }, i)).join('');
+  if (ups.length) { toast(`升级！现在是 ${prog.lvl} 级`, 'var(--amber)'); sfxPickup(2); }
   $('resBack').textContent = NET.rm ? '返回房间' : '返回大厅';
   showScreen('result');
 }
@@ -4098,6 +4522,13 @@ $('touch').addEventListener('touchstart', (e) => e.preventDefault(), { passive: 
 
 // ================= menus & settings =================
 $('btnDeploy').addEventListener('click', startRaid);
+$('mapSeg').addEventListener('click', (e) => {
+  const b = e.target.closest('button'); if (!b || b.dataset.v === MAP_ID) return;
+  if (NET.rm) { toast('请先离开房间，再切换地图（联机时由房主的地图决定）', 'var(--danger)'); return; }
+  store.set('map', b.dataset.v); sfxUI();
+  $('mapHint').textContent = '正在切换地图…';
+  setTimeout(() => location.reload(), 150);
+});
 $('diffSeg').addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; SETTINGS.difficulty = b.dataset.v; saveSettings(); segSet('diffSeg', b.dataset.v); sfxUI(); });
 function openSettings() {
   initAudio();
@@ -4135,6 +4566,7 @@ function applyGearToPlayer(P) {
   P.meds = 2 + (use('sup_med') ? 1 : 0);
   P.plates = use('sup_armor') ? 1 : 0;
   P.insured = use('sup_insure');
+  { const mL = hideLv('med'); P.meds += [0, 1, 1, 2][mL]; P.maxHp += [0, 0, 10, 20][mL]; P.hp = P.maxHp; }
   P.healAmt = P.perks.has('perk_med') ? 65 : 45; P.healDur = P.perks.has('perk_med') ? 1.8 : 3.0;
   BAG.cap = bag.cap;
   saveGear(G);
@@ -4153,6 +4585,7 @@ function renderArmory() {
   $('armBalance').textContent = fmtMoney(bal);
   $('armLoadout').innerHTML = [['主武器', G.primary], ['副武器', G.secondary], ['护甲', G.armor], ['背包', G.bag]].map(([k, id]) => `<div class="armSlot"><small>${k}</small><b>${armName(id)}</b></div>`).join('');
   for (const b of $('armTabs').children) b.classList.toggle('on', b.dataset.tab === ARM.tab);
+  if (ARM.tab === 'hideout' || ARM.tab === 'mods' || ARM.tab === 'codex') { renderProgTab(G, bal); return; }
   const colors = { weapons: '#ffb23f', protection: '#4c9bff', perks: '#6fe2a8', supplies: '#b46bff' };
   const equippedIds = [G.primary, G.secondary, G.armor, G.bag];
   $('armGrid').innerHTML = ARMORY_CATALOG[ARM.tab].map((it) => {
@@ -4177,12 +4610,54 @@ function renderArmory() {
     return `<div class="armCard${equipped ? ' equipped' : ''}${perk && owned ? ' activePerk' : ''}" style="--ac:${colors[ARM.tab]}"><div class="armCardTop"><span class="title">${it.name}</span><span class="tag">${it.tag}</span></div><div class="armStats">${it.stats.map((x) => `<span>${x}</span>`).join('')}</div><div class="armDesc">${it.desc}</div><div class="armFoot">${price}${btn}</div></div>`;
   }).join('');
 }
+function renderProgTab(G, bal) {
+  const p = getProg(), dots = (L) => `<span class="lvDots">${[1, 2, 3].map((i) => `<i class="${i <= L ? 'on' : ''}"></i>`).join('')}</span>`;
+  let html = '';
+  if (ARM.tab === 'hideout') {
+    html = HIDEOUT.map((h) => {
+      const L = p.hide[h.id] | 0, max = L >= 3, cost = max ? 0 : h.costs[L];
+      return `<div class="armCard${L ? ' activePerk' : ''}" style="--ac:${h.color}"><div class="armCardTop"><span class="title">${h.name}</span>${dots(L)}</div>
+        <div class="armStats">${h.desc.map((d, i) => `<span class="${i < L ? 'got' : i === L ? 'next' : 'lock'}">${i + 1}级 · ${d}</span>`).join('')}</div>
+        <div class="armFoot">${max ? '<span class="armPrice owned">已满级</span><button class="btn" disabled>MAX</button>' : `<span class="armPrice">${fmtMoney(cost)}</span><button class="btn amberOutline" data-act="hide" data-id="${h.id}" ${bal >= cost ? '' : 'disabled'}>${L ? '升级' : '建造'}</button>`}</div></div>`;
+    }).join('');
+  } else if (ARM.tab === 'mods') {
+    const owned = ARMORY_CATALOG.weapons.filter((w) => G.unlocked.includes(w.id));
+    html = owned.map((w) => {
+      const L = p.mods[w.id] | 0, max = L >= 3, cost = max ? 0 : Math.round(MOD_COST[L] * (MOD_TIER[w.id] || 1));
+      const base = WDEFS.find((d) => d.id === CAT2DEF[w.id]);
+      const st = (lv) => { const k = lv; return [`伤害 ${Math.round(base.dmg * (1 + 0.07 * k))}`, `后坐 -${12 * k}%`, `弹匣 ${base.mag + Math.round(base.mag * 0.15 * k)}`, `换弹 -${7 * k}%`]; };
+      const now = st(L), nxt = max ? null : st(L + 1);
+      return `<div class="armCard${L ? ' activePerk' : ''}" style="--ac:#ffb23f"><div class="armCardTop"><span class="title">${w.name}</span>${dots(L)}</div>
+        <div class="armStats">${now.map((x, i) => `<span>${x}${nxt && nxt[i] !== x ? ` → <b>${nxt[i].replace(/^\S+ /, '')}</b>` : ''}</span>`).join('')}</div>
+        <div class="armDesc">${MOD_NAMES[L]}${max ? '：已达到大师级。' : `：下一级为 ${MOD_NAMES[L + 1]}，提升伤害、稳定性、弹匣与换弹速度。`}</div>
+        <div class="armFoot">${max ? '<span class="armPrice owned">已满级</span><button class="btn" disabled>MAX</button>' : `<span class="armPrice">${fmtMoney(cost)}</span><button class="btn amberOutline" data-act="mod" data-id="${w.id}" ${bal >= cost ? '' : 'disabled'}>改装</button>`}</div></div>`;
+    }).join('') || '<div class="hint">先在「武器军械」里解锁武器。</div>';
+  } else {
+    const tiers = codexTiers(p);
+    html = `<div class="codexHead">把一种物资第一次带出战区就会收录进图鉴：奖励它价值 50% 的现金和额外经验。集齐某个稀有度的全部物资，永久提升所有物资售价 +4%（当前 +${Math.round(codexBonus(p) * 100)}%）。</div>` +
+      tiers.map((t) => `<div class="codexTier"><div class="ctTitle" style="color:${RAR[t.r].c}">${RAR[t.r].n} <small>${t.got}/${t.all}${t.done ? ' · 已集齐 +4%' : ''}</small></div><div class="codexGrid">` +
+        Object.keys(ITEMS).filter((id) => ITEMS[id].r === t.r).map((id) => p.codex.includes(id) ? `<span class="cx got" style="--rc:${RAR[t.r].c}">${ITEMS[id].n}<small>${fmtMoney(ITEMS[id].v)}</small></span>` : '<span class="cx">？？？</span>').join('') + '</div></div>').join('');
+  }
+  $('armGrid').innerHTML = html;
+}
 function equipGear(G, it) {
   if (it.slot === 'primary') G.primary = it.id; else if (it.slot === 'secondary') G.secondary = it.id;
   else if (it.kind === 'armor') G.armor = it.id; else if (it.kind === 'bag') G.bag = it.id;
 }
 $('armGrid').addEventListener('click', (e) => {
   const b = e.target.closest('button[data-act]'); if (!b || b.disabled) return;
+  if (b.dataset.act === 'hide' || b.dataset.act === 'mod') {
+    const p = getProg(), s = stash(), id = b.dataset.id;
+    const L = b.dataset.act === 'hide' ? p.hide[id] | 0 : p.mods[id] | 0;
+    if (L >= 3) return;
+    const cost = b.dataset.act === 'hide' ? HIDEOUT.find((h) => h.id === id).costs[L] : Math.round(MOD_COST[L] * (MOD_TIER[id] || 1));
+    if (s.value < cost) { sfxEmpty(); return; }
+    s.value -= cost; store.set('stash', s);
+    if (b.dataset.act === 'hide') p.hide[id] = L + 1; else p.mods[id] = L + 1;
+    saveProg(p); sfxPickup(2);
+    if (b.dataset.act === 'hide' && id === 'intel') syncContracts(s), store.set('stash', s);
+    renderArmory(); refreshMenu(); return;
+  }
   const it = allArm().find((x) => x.id === b.dataset.id); if (!it) return;
   const G = getGear();
   if (b.dataset.act === 'equip') { equipGear(G, it); saveGear(G); sfxUI(); }
@@ -4238,7 +4713,7 @@ function gameUpdate(dt) {
   } else { STATE.extractT = 0; pg.hidden = true; }
   // heartbeat & ambience
   if (P.hp < 35 && P.alive) { heartT -= dt; if (heartT <= 0) { sfxHeart(); heartT = 0.9; } }
-  if (AU.waterG) AU.waterG.gain.value = clamp((P.pos.x - 85) / 30, 0, 1) * 0.012;
+  if (AU.waterG) AU.waterG.gain.value = MAP_ID === 'desert' ? 0 : clamp((P.pos.x - 85) / 30, 0, 1) * 0.012;
   updateHUD(dt);
 }
 function menuCam(dt) {
@@ -4280,7 +4755,7 @@ function frame() {
   if (STATE.mode !== 'playing' && STATE.mode !== 'paused') _focus.set(-10, 0, -10);
   _focus.y = 0;
   if (Q.shadows) updateSunShadow(_focus);
-  if (Q.refl) renderReflection();
+  if (Q.refl && REFL.mesh) renderReflection();
   composer.render(dt);
   // perf / dynamic resolution
   perf.fpsAcc += raw; perf.fpsN++;
@@ -4305,14 +4780,15 @@ async function init() {
   lap('textures');
   buildMaterials(); buildEnemyAssets(); buildPropAssets();
   setLoad(0.37, '构建港区…'); await yieldUI();
-  buildMap(); buildGroundAndWater();
+  if (MAP_ID === 'desert') buildDesertMap(); else buildMap();
+  buildGroundAndWater();
   placeContainers();
   buildGrid();
   lap('map ' + COLLIDERS.length + ' colliders, ' + STATIC.length + ' static');
   await bakeSkyMap(); lap('skymap');
   await bakeStatic(); lap('bake');
   setLoad(0.87, '合并几何体、构建光照…'); await yieldUI();
-  mergeStatic(); buildSky(); buildLamps(); buildShafts(); buildPuddles();
+  mergeStatic(); buildSky(); buildLamps(); buildShafts(); if (MAP_ID !== 'desert') buildPuddles();
   FX_ADD = makeParticleSystem(500, true); FX_SMOKE = makeParticleSystem(420, false);
   buildTracers(); buildDecals(); buildShells(); buildEnemyFlashes(); buildWeapons(); buildMapBase();
   for (const e of EXTRACTS) { const b = makeBeacon(e.x, e.z, e.y); b.visible = false; STATE.beacons[e.id] = b; }
@@ -4417,6 +4893,14 @@ function clearRemotes() { for (const r of NET.remotes.values()) r.dispose(); NET
 
 // ---------- public-website transport: WebRTC via PeerJS (star topology, host relays) ----------
 // Mimics the subset of the artifact `room` API that NET uses, so the same game code runs on both.
+// STUN finds a direct route. When both players sit behind strict NAT (phone data, school/office Wi-Fi), only a TURN
+// relay works: paste TURN entries from a free provider (e.g. Metered Open Relay / ExpressTURN) into EXTRA_ICE.
+const EXTRA_ICE = [];
+const ICE_SERVERS = [
+  { urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302', 'stun:stun2.l.google.com:19302'] },
+  { urls: 'stun:stun.cloudflare.com:3478' },
+  ...EXTRA_ICE,
+];
 function loadScript(src) { return new Promise((res, rej) => { const s = document.createElement('script'); s.src = src; s.onload = res; s.onerror = rej; document.head.appendChild(s); }); }
 async function makeP2PRoom() {
   if (!window.Peer) await loadScript('https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js');
@@ -4431,7 +4915,9 @@ async function makeP2PRoom() {
 function p2pJoin(name, asHost) {
   return new Promise((resolve, reject) => {
     const id = 'ashfall-' + name;
-    const peer = asHost ? new window.Peer(id, { debug: 0 }) : new window.Peer({ debug: 0 });
+    const popts = { debug: 0, config: { iceServers: ICE_SERVERS } };
+    const peer = asHost ? new window.Peer(id, popts) : new window.Peer(popts);
+    let stage = 'signal';
     const peers = new Map(), conns = new Map(), listeners = new Set(), errListeners = new Set();
     let me = null, myPres = {}, snapshot = Object.freeze([]), hostConn = null, done = false;
     const emitChange = (joined = [], left = []) => {
@@ -4457,10 +4943,13 @@ function p2pJoin(name, asHost) {
       leave: async () => { try { peer.destroy(); } catch (e) { /* */ } },
       emit: async () => {}, on: () => () => {},
     };
+    const giveUp = (code) => { if (done) return; done = true; try { peer.destroy(); } catch (er) { /* */ } reject({ code }); };
     peer.on('error', (e) => {
-      if (!done) { done = true; try { peer.destroy(); } catch (er) { /* */ } reject({ code: e.type === 'unavailable-id' ? 'taken' : e.type === 'peer-unavailable' ? 'not_found' : 'upstream_error' }); }
+      if (!done) { giveUp(e.type === 'unavailable-id' ? 'taken' : e.type === 'peer-unavailable' ? 'not_found' : (e.type === 'network' || e.type === 'server-error' || e.type === 'socket-error' || e.type === 'socket-closed') ? 'server' : stage === 'ice' ? 'ice' : 'upstream_error'); return; }
+      // after we're in: keep the host reachable through signalling hiccups
+      if (asHost && ['network', 'server-error', 'socket-error', 'socket-closed', 'disconnected'].includes(e.type)) setTimeout(() => { try { if (!peer.destroyed && peer.disconnected) peer.reconnect(); } catch (er) { /* */ } }, 1500);
     });
-    setTimeout(() => { if (!done) { done = true; try { peer.destroy(); } catch (e) { /* */ } reject({ code: 'timeout' }); } }, 15000);
+    setTimeout(() => giveUp(stage === 'ice' ? 'ice' : 'timeout'), 22000);
     if (asHost) {
       peer.on('open', () => { me = id; peers.set(me, { presence: Object.freeze({}), t: Date.now() }); done = true; resolve(api); emitChange([me]); });
       peer.on('connection', (conn) => {
@@ -4478,11 +4967,23 @@ function p2pJoin(name, asHost) {
           if (peers.delete(conn.peer)) { for (const c of conns.values()) if (c.open) c.send({ t: 'l', peer: conn.peer }); emitChange([], [conn.peer]); }
         });
       });
-      peer.on('disconnected', () => { try { peer.reconnect(); } catch (e) { /* */ } }); // keeps the code reachable; open links survive
+      peer.on('disconnected', () => { setTimeout(() => { try { if (!peer.destroyed && peer.disconnected) peer.reconnect(); } catch (e) { /* */ } }, 500); }); // keeps the code reachable; open links survive
+      // iPad/phone: Safari drops the signalling socket while the page is in the background (e.g. while sharing the link)
+      const onVis = () => { if (document.visibilityState === 'visible' && !peer.destroyed && peer.disconnected) { try { peer.reconnect(); } catch (e) { /* */ } } };
+      document.addEventListener('visibilitychange', onVis);
+      addEventListener('pageshow', onVis); addEventListener('online', onVis);
     } else {
       peer.on('open', (pid) => {
         me = pid; peers.set(me, { presence: Object.freeze({}), t: Date.now() });
+        stage = 'ice';
         hostConn = peer.connect(id, { reliable: true, serialization: 'json' });
+        hostConn.on('error', () => giveUp('ice'));
+        const watchIce = () => {
+          const pc = hostConn.peerConnection;
+          if (!pc) { if (!done) setTimeout(watchIce, 200); return; }
+          pc.addEventListener('iceconnectionstatechange', () => { if (pc.iceConnectionState === 'failed') giveUp('ice'); });
+        };
+        watchIce();
         hostConn.on('open', () => { if (done) return; done = true; resolve(api); hostConn.send({ t: 'p', p: myPres }); emitChange([me]); });
         hostConn.on('data', (d) => {
           if (!d) return;
@@ -4499,8 +5000,8 @@ function p2pJoin(name, asHost) {
 // ---------- connecting ----------
 async function netInit() {
   $('nick').value = NET.nick;
-  const m = /^#r-([a-z0-9]{4,8})$/.exec(location.hash || '');
-  if (m) NET.invite = m[1];
+  const m = /^#r-([a-z0-9]{4,8})$/i.exec(location.hash || '');
+  if (m) NET.invite = m[1].toLowerCase();
   let room = null;
   const inClaude = !!(window.claude && typeof window.claude.use === 'function');
   try { if (inClaude) room = await window.claude.use('room'); } catch (e) { room = null; }
@@ -4512,7 +5013,24 @@ async function netInit() {
   room.onPeers(() => renderCoopUISoon(), () => { NET.available = false; NET.room = null; renderCoopUI(); });
   room.onConnection((c) => { NET.connected = c; renderCoopUISoon(); }, () => {});
   renderCoopUI();
+  if (NET.invite) acceptInvite(NET.invite);
 }
+function parseRoomCode(raw) {
+  const t = String(raw || '').trim().toLowerCase();
+  const m = /r-([a-z0-9]{4,8})\b/.exec(t); if (m) return m[1];
+  const c = t.replace(/[\s\-_#.]/g, '');
+  return /^[a-z0-9]{4,8}$/.test(c) ? c : null;
+}
+function acceptInvite(code) {
+  if (!NET.room || NET.rm || NET.joining || !['menu', 'loading'].includes(STATE.mode)) return;
+  NET.invite = code;
+  try { $('coopBox').scrollIntoView({ block: 'center', behavior: 'smooth' }); } catch (e) { /* */ }
+  netJoin(code, false);
+}
+addEventListener('hashchange', () => {
+  const m = /^#r-([a-z0-9]{4,8})$/i.exec(location.hash || '');
+  if (m && (!NET.rm || NET.code !== m[1].toLowerCase())) acceptInvite(m[1].toLowerCase());
+});
 function lobbyRooms() {
   if (!NET.room) return [];
   const out = [], seen = new Set();
@@ -4549,16 +5067,32 @@ async function netJoin(code, host) {
   initAudio();
   const listed = lobbyRooms().find((r) => r.code === code);
   if (!host && listed && listed.n >= COOP_MAX) { NET.msg = '房间已满（最多 3 人）'; renderCoopUI(); return; }
-  NET.joining = true; NET.msg = ''; renderCoopUI();
-  let rm;
-  try { rm = await NET.room.join('ash-' + code, host); }
-  catch (e) {
+  NET.joining = true; NET.msg = host ? '正在创建房间…' : `正在加入房间 ${code.toUpperCase()}…`; renderCoopUI();
+  let rm, lastErr = null;
+  for (let attempt = 0; attempt < (host ? 1 : 3) && !rm; attempt++) {
+    if (attempt) { NET.msg = `正在重试加入 ${code.toUpperCase()}（第 ${attempt + 1} 次）…`; renderCoopUI(); await new Promise((r) => setTimeout(r, 1200)); }
+    try { rm = await NET.room.join('ash-' + code, host); }
+    catch (e) {
+      lastErr = e;
+      if (e && (e.code === 'taken' || e.code === 'not_permitted' || e.code === 'full')) break;
+      if (e && e.code === 'not_found' && attempt >= 1) break; // host may be briefly reconnecting: one retry
+    }
+  }
+  if (!rm) {
     NET.joining = false;
+    const e = lastErr;
     if (e && e.code === 'taken') return 'taken';
-    NET.msg = '无法进入房间：' + ({ limit_reached: '房间服务繁忙，稍后再试', not_permitted: '当前账号不能使用联机房间', not_found: '房间不存在或房主已离开', timeout: '连接超时，请检查网络后重试' }[e && e.code] || '连接失败');
+    NET.msg = '无法进入房间：' + ({
+      limit_reached: '房间服务繁忙，稍后再试',
+      not_permitted: '当前账号不能使用联机房间',
+      not_found: `找不到房间 ${code.toUpperCase()}。请核对房间码；房主需要停留在游戏页面（iPad/手机切到后台或锁屏时，队友暂时进不来）`,
+      ice: '找到了房间，但没法和房主直连。常见于手机流量、校园/公司网络或开着 VPN：请双方连同一个 Wi‑Fi、关闭 VPN 后再试',
+      server: '连不上联机服务器，请检查网络（或关闭 VPN）后重试',
+      timeout: '连接超时：请确认房主还在游戏页面，然后重试',
+    }[e && e.code] || '连接失败，请重试');
     renderCoopUI(); return;
   }
-  NET.joining = false;
+  NET.joining = false; NET.msg = '';
   NET.nick = cleanName($('nick').value) || NET.nick; store.set('nick', NET.nick);
   NET.rm = rm; NET.code = code; NET.hosting = host; NET.hostPeer = null; NET.me = null; NET.ring.length = 0;
   clearRemotes();
@@ -4566,7 +5100,7 @@ async function netJoin(code, host) {
   rm.onPeers(onRoomPeers, (e) => netLeave(e && e.code === 'full' ? '房间已满（最多 3 人）' : '与房间的连接已断开'));
   netSendPresence();
   try { location.hash = 'r-' + code; } catch (e) { /* ignore */ }
-  if (!host) setTimeout(netCheckRoom, 3000);
+  if (!host) setTimeout(netCheckRoom, 6000);
   NET.adT = 0;
   renderCoopUI();
 }
@@ -4621,6 +5155,12 @@ function onRoomPeers(ch) {
   if (ch.joined.length || ch.left.length) renderCoopUISoon();
 }
 function hostInfo(pr) {
+  if ((pr.mp === 'desert' || pr.mp === 'harbor') && pr.mp !== MAP_ID && STATE.mode !== 'playing' && !NET.mapSwitch) {
+    NET.mapSwitch = true; store.set('map', pr.mp);
+    toast(`房主选择了「${MAPS[pr.mp].name}」，正在切换地图并重新进入房间…`, 'var(--amber)');
+    setTimeout(() => location.reload(), 1200);
+    return;
+  }
   const ph = pr.ph === 'raid' ? 'raid' : 'lobby';
   if (ph !== NET.phase) { NET.phase = ph; renderCoopUISoon(); }
   const run = Number(pr.run) || 0;
@@ -4718,7 +5258,7 @@ function netSendPresence() {
   if (!NET.rm) return;
   const P = PLAYER;
   const pr = {
-    v: 1, nm: NET.nick, ho: NET.hosting ? 1 : 0, st: NET.myState, rn: NET.startedRun,
+    v: 1, mp: MAP_ID, nm: NET.nick, ho: NET.hosting ? 1 : 0, st: NET.myState, rn: NET.startedRun,
     p: [r2(P.pos.x), r2(P.pos.y), r2(P.pos.z), r3(P.yaw), r3(P.pitch), r2(P.crouch), r2(P.speed), P.sprinting ? 1 : 0],
     hp: Math.round(P.hp), al: P.alive ? 1 : 0, w: WEAPON.idx,
     ev: NET.ring.map((x) => x.e),
@@ -4794,6 +5334,7 @@ function renderCoopUI() {
       info.append(el('b', 'mono', r.code.toUpperCase()), el('span', '', ` · ${r.nm}${r.n ? ` · ${r.n}/${COOP_MAX}` : ''} · ${r.ph === 'raid' ? '战局进行中' : DIFF[r.diff || 'normal'].label + '难度'}`));
       const b = el('button', 'btn' + (r.code === NET.invite ? ' primary' : ''), r.code === NET.invite ? '接受邀请' : '加入');
       b.disabled = NET.joining || r.n >= COOP_MAX || r.ph === 'raid';
+      if (NET.joining && r.code === NET.invite) b.textContent = '连接中…';
       b.addEventListener('click', () => netJoin(r.code, false));
       row.append(info, b); list.append(row);
     }
@@ -4816,12 +5357,14 @@ function renderCoopUI() {
   sb.disabled = busy || NET.myState === 'play';
   $('btnCopyLink').hidden = !NET.p2p;
   $('roomHint').textContent = NET.hosting
-    ? (busy ? '有队友仍在行动中，等他们撤离或阵亡后才能开新局。' : NET.p2p ? `${n}/${COOP_MAX} 人。把邀请链接发给朋友：${inviteURL()}` : `${n}/${COOP_MAX} 人。邀请：先在页面右上角「分享」里把它分享给队友，对方打开后在大厅点「加入」；或把链接末尾加上 #r-${NET.code}。`)
+    ? (busy ? '有队友仍在行动中，等他们撤离或阵亡后才能开新局。' : NET.p2p ? `${n}/${COOP_MAX} 人。把邀请链接或房间码发给朋友：${inviteURL()} · 发完请回到这个页面等待（iPad/手机切到后台时队友进不来）` : `${n}/${COOP_MAX} 人。邀请：先在页面右上角「分享」里把它分享给队友，对方打开后在大厅点「加入」；或把链接末尾加上 #r-${NET.code}。`)
     : (NET.phase === 'raid' && NET.myState === 'lobby' ? '战局进行中，等待下一局…' : '等待房主开始行动…');
 }
 const inviteURL = () => location.origin + location.pathname + '#r-' + NET.code;
 $('btnCreate').addEventListener('click', netCreate);
-$('btnJoinCode').addEventListener('click', () => { const c = String($('joinCode').value || '').trim().toLowerCase().replace(/^#?r-/, ''); if (/^[a-z0-9]{4,8}$/.test(c)) netJoin(c, false); else { NET.msg = '房间码是 6 位字母数字'; renderCoopUI(); } });
+const joinByCode = () => { const c = parseRoomCode($('joinCode').value); if (c) netJoin(c, false); else { NET.msg = '房间码是 6 位字母数字（也可以直接粘贴邀请链接）'; renderCoopUI(); } };
+$('btnJoinCode').addEventListener('click', joinByCode);
+$('joinCode').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); joinByCode(); } });
 $('btnCopyLink').addEventListener('click', () => {
   const u = inviteURL();
   const ok = () => { $('btnCopyLink').textContent = '已复制'; setTimeout(() => ($('btnCopyLink').textContent = '复制邀请链接'), 1500); };
