@@ -4902,24 +4902,161 @@ const ICE_SERVERS = [
   ...EXTRA_ICE,
 ];
 function loadScript(src) { return new Promise((res, rej) => { const s = document.createElement('script'); s.src = src; s.onload = res; s.onerror = rej; document.head.appendChild(s); }); }
+// =====================================================================
+// RELAY: public MQTT brokers over secure WebSocket.
+//  - lobby: hosts publish a retained "room card" so everyone can browse open rooms
+//  - relay: when a direct WebRTC link can't be made (strict NAT, school/office Wi-Fi, mobile data),
+//    game traffic is forwarded through the broker instead. Slower, but it connects.
+// =====================================================================
+const MQTT_URLS = ['wss://broker.emqx.io:8084/mqtt', 'wss://broker.hivemq.com:8884/mqtt', 'wss://test.mosquitto.org:8081/mqtt'];
+const RT = 'ashfallharbor/v1';
+const RELAY = {
+  clients: [], ready: null, lobby: new Map(), handlers: new Map(), me: 'r' + Math.random().toString(36).slice(2, 10),
+  pub(bi, topic, obj, retain = false) {
+    const c = this.clients[bi]; if (!c || !c.connected) return false;
+    try { c.publish(topic, typeof obj === 'string' ? obj : JSON.stringify(obj), { qos: 0, retain }); return true; } catch (e) { return false; }
+  },
+  pubAll(topic, obj, retain = false) { let ok = false; this.clients.forEach((c, i) => { if (c) ok = this.pub(i, topic, obj, retain) || ok; }); return ok; },
+  sub(topic, fn) { this.handlers.set(topic, fn); for (const c of this.clients) if (c) c.subscribe(topic, { qos: 0 }); },
+  unsub(topic) { this.handlers.delete(topic); for (const c of this.clients) if (c) try { c.unsubscribe(topic); } catch (e) { /* */ } },
+  dispatch(bi, topic, buf) {
+    if (buf.length > 12000) return;
+    let msg = null; const txt = buf.toString();
+    if (txt) { try { msg = JSON.parse(txt); } catch (e) { return; } }
+    for (const [pat, fn] of this.handlers) {
+      if (pat === topic || (pat.endsWith('/+') && topic.startsWith(pat.slice(0, -1)) && !topic.slice(pat.length - 1).includes('/'))) { try { fn(msg, topic, bi); } catch (e) { console.error(e); } }
+    }
+  },
+  live() { return this.clients.some((c) => c && c.connected); },
+};
+// connect to every broker that answers; resolves once the first one is up (others keep trying in the background)
+function relayConnect() {
+  if (RELAY.ready) return RELAY.ready;
+  RELAY.ready = (async () => {
+    if (!window.mqtt) await loadScript('https://cdn.jsdelivr.net/npm/mqtt@5.10.1/dist/mqtt.min.js').catch(() => {});
+    if (!window.mqtt) await loadScript('https://unpkg.com/mqtt@5.10.1/dist/mqtt.min.js').catch(() => {});
+    if (!window.mqtt) throw new Error('mqtt');
+    return new Promise((resolve, reject) => {
+      let pending = MQTT_URLS.length, first = false;
+      MQTT_URLS.forEach((url, bi) => {
+        let cl;
+        try { cl = window.mqtt.connect(url, { clientId: 'ash_' + RELAY.me + '_' + bi, clean: true, connectTimeout: 8000, reconnectPeriod: 4000, keepalive: 25, resubscribe: true }); }
+        catch (e) { if (--pending === 0 && !first) reject(new Error('relay')); return; }
+        let counted = false;
+        const giveUp = () => { if (counted) return; counted = true; if (--pending === 0 && !first) reject(new Error('relay')); };
+        const to = setTimeout(() => { if (!cl.connected) { try { cl.end(true); } catch (e) { /* */ } giveUp(); } }, 9000);
+        cl.on('connect', () => {
+          clearTimeout(to); RELAY.clients[bi] = cl;
+          for (const t of RELAY.handlers.keys()) cl.subscribe(t, { qos: 0 });
+          if (!first) { first = true; resolve(true); }
+          renderCoopUISoon();
+        });
+        cl.on('message', (t, m) => RELAY.dispatch(bi, t, m));
+        cl.on('error', () => { if (!cl.connected) { clearTimeout(to); try { cl.end(true); } catch (e) { /* */ } giveUp(); } });
+      });
+    });
+  })().catch((e) => { RELAY.ready = null; throw e; });
+  return RELAY.ready;
+}
+// ---- lobby: browse rooms anyone on the internet has opened ----
+let lobbyAdLast = null;
+function relayLobbyStart() {
+  RELAY.sub(`${RT}/lobby/+`, (m, topic, bi) => {
+    const code = topic.split('/').pop();
+    if (!/^[a-z0-9]{4,8}$/.test(code)) return;
+    if (!m) { RELAY.lobby.delete(code); renderCoopUISoon(); return; }
+    if (typeof m !== 'object' || !(Number(m.t) > Date.now() - 90000)) return;
+    const prev = RELAY.lobby.get(code);
+    RELAY.lobby.set(code, { code, n: clamp(Number(m.n) || 1, 1, 9), ph: m.ph === 'raid' ? 'raid' : 'lobby', nm: cleanName(m.nm) || '某位干员', diff: DIFF[m.diff] ? m.diff : 'normal', mp: m.mp === 'desert' ? 'desert' : 'harbor', t: Number(m.t), bi: prev && prev.t > Number(m.t) - 1 ? prev.bi : bi });
+    renderCoopUISoon();
+  });
+  setInterval(() => { let ch = false; for (const [k, v] of RELAY.lobby) if (v.t < Date.now() - 90000) { RELAY.lobby.delete(k); ch = true; } if (ch) renderCoopUISoon(); }, 10000);
+  setInterval(() => { if (lobbyAdLast && NET.rm && NET.hosting) RELAY.pubAll(`${RT}/lobby/${NET.code}`, Object.assign({}, lobbyAdLast, { t: Date.now() }), true); }, 20000);
+}
+function relayLobbyPublish(ad) {
+  if (!RELAY.live()) return;
+  if (ad && ad.room) { lobbyAdLast = { n: ad.n, ph: ad.ph, nm: ad.nm, diff: ad.diff, mp: MAP_ID }; RELAY.pubAll(`${RT}/lobby/${ad.room}`, Object.assign({ t: Date.now() }, lobbyAdLast), true); }
+  else if (lobbyAdLast && NET.lastAdCode) { RELAY.pubAll(`${RT}/lobby/${NET.lastAdCode}`, '', true); lobbyAdLast = null; }
+}
+// ---- relay connection: looks like a PeerJS DataConnection to the rest of the code ----
+class RelayConn {
+  constructor(bi, outTopic, peerId, from) { this.bi = bi; this.out = outTopic; this.peer = peerId; this.from = from; this.open = false; this.closed = false; this.h = { open: [], data: [], close: [], error: [] }; this.rx = Date.now(); this.relay = true; }
+  on(ev, f) { (this.h[ev] || (this.h[ev] = [])).push(f); return this; }
+  emit(ev, a) { for (const f of this.h[ev] || []) { try { f(a); } catch (e) { console.error(e); } } }
+  send(d) { if (!this.closed) RELAY.pub(this.bi, this.out, { f: this.from, k: 'd', d }); }
+  ctl(k) { RELAY.pub(this.bi, this.out, { f: this.from, k }); }
+  close(quiet) { if (this.closed) return; if (!quiet) this.ctl('bye'); this.closed = true; this.open = false; this.emit('close'); }
+}
+// host side: accept clients that arrive through any broker
+function relayHost(name, onConn) {
+  const conns = new Map(), inT = `${RT}/r/${name}/h`;
+  RELAY.sub(inT, (m, topic, bi) => {
+    if (!m || typeof m.f !== 'string' || !/^r[a-z0-9]{4,12}$/.test(m.f)) return;
+    let c = conns.get(m.f);
+    if (m.k === 'hi') {
+      if (c && c.bi !== bi) return;                // same client knocking on a second broker: ignore
+      if (!c) { c = new RelayConn(bi, `${RT}/r/${name}/c/${m.f}`, m.f, 'host'); conns.set(m.f, c); c.on('close', () => conns.delete(m.f)); onConn(c); }
+      c.rx = Date.now(); c.ctl('ok');
+      if (!c.open) { c.open = true; c.emit('open'); }
+    } else if (c && c.bi === bi) {
+      c.rx = Date.now();
+      if (m.k === 'd') c.emit('data', m.d);
+      else if (m.k === 'bye') c.close(true);
+    }
+  });
+  const iv = setInterval(() => { for (const c of conns.values()) { if (Date.now() - c.rx > 20000) c.close(true); else c.ctl('ping'); } }, 5000);
+  return { stop() { clearInterval(iv); for (const c of [...conns.values()]) c.close(); RELAY.unsub(inT); } };
+}
+// client side: knock on the room through every broker; the first host answer wins
+function relayJoin(name, preferBi) {
+  return relayConnect().then(() => new Promise((resolve, reject) => {
+    const inT = `${RT}/r/${name}/c/${RELAY.me}`, outT = `${RT}/r/${name}/h`;
+    let conn = null, tries = 0;
+    RELAY.sub(inT, (m, topic, bi) => {
+      if (!m) return;
+      if (!conn) {
+        if (m.k !== 'ok') return;
+        conn = new RelayConn(bi, outT, 'ashfall-' + name, RELAY.me); conn.open = true; clearInterval(knock);
+        conn.on('close', () => { clearInterval(iv); RELAY.unsub(inT); });
+        resolve(conn); setTimeout(() => conn.emit('open'), 0);
+        return;
+      }
+      if (bi !== conn.bi) return;
+      conn.rx = Date.now();
+      if (m.k === 'd') conn.emit('data', m.d); else if (m.k === 'bye') conn.close(true);
+    });
+    const knock = setInterval(() => {
+      if (++tries > 10) { clearInterval(knock); RELAY.unsub(inT); reject({ code: 'not_found' }); return; }
+      if (preferBi != null && tries < 3 && RELAY.clients[preferBi]) RELAY.pub(preferBi, outT, { f: RELAY.me, k: 'hi' });
+      else RELAY.pubAll(outT, { f: RELAY.me, k: 'hi' });
+    }, 1000);
+    const iv = setInterval(() => { if (!conn) return; if (Date.now() - conn.rx > 20000) conn.close(true); else conn.ctl('ping'); }, 5000);
+  }));
+}
+
 async function makeP2PRoom() {
-  if (!window.Peer) await loadScript('https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js');
-  if (!window.Peer) throw new Error('peerjs');
+  // PeerJS (direct) and the relay are both optional: either one is enough to play
+  const peerOk = await (window.Peer ? Promise.resolve(true) : loadScript('https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js').then(() => !!window.Peer, () => false));
+  relayLobbyStart();
+  const relayP = relayConnect().then(() => true, () => false);
+  if (!peerOk && !(await relayP)) throw new Error('net');   // only wait for the relay when direct play is impossible
   return {
     p2p: true,
     presence: async () => {}, peers: () => [], onPeers: () => () => {}, connected: () => true,
     onConnection: (f) => { setTimeout(() => f(true), 0); return () => {}; },
-    join: (name, asHost) => p2pJoin(name, !!asHost),
+    join: (name, asHost, preferBi) => p2pJoin(name, !!asHost, preferBi),
   };
 }
-function p2pJoin(name, asHost) {
+function p2pJoin(name, asHost, preferBi) {
   return new Promise((resolve, reject) => {
     const id = 'ashfall-' + name;
     const popts = { debug: 0, config: { iceServers: ICE_SERVERS } };
-    const peer = asHost ? new window.Peer(id, popts) : new window.Peer(popts);
+    let peer = null;
+    try { if (window.Peer) peer = asHost ? new window.Peer(id, popts) : new window.Peer(popts); } catch (e) { peer = null; }
     let stage = 'signal';
     const peers = new Map(), conns = new Map(), listeners = new Set(), errListeners = new Set();
-    let me = null, myPres = {}, snapshot = Object.freeze([]), hostConn = null, done = false;
+    let me = null, myPres = {}, snapshot = Object.freeze([]), hostConn = null, done = false, relayH = null;
+    let peerFailed = !peer, relayFailed = false, lastCode = 'not_found', relayStarted = false;
     const emitChange = (joined = [], left = []) => {
       snapshot = Object.freeze([...peers.entries()].map(([pid, v]) => Object.freeze({ peer: pid, by: null, isMe: pid === me, sameTab: pid === me, kind: 'viewer', guest: false, presence: v.presence, updatedAt: v.t })));
       const ch = { peers: snapshot, joined: snapshot.filter((p) => joined.includes(p.peer)), left: left.map((peer) => ({ peer })), updated: [] };
@@ -4938,21 +5075,19 @@ function p2pJoin(name, asHost) {
       },
       peers: () => snapshot,
       onPeers: (f, onErr) => { listeners.add(f); if (onErr) errListeners.add(onErr); setTimeout(() => emitChange([...peers.keys()]), 0); return () => listeners.delete(f); },
-      connected: () => (asHost ? !peer.disconnected : !!(hostConn && hostConn.open)),
+      connected: () => (asHost ? (!!peer && !peer.disconnected) || RELAY.live() : !!(hostConn && hostConn.open)),
       onConnection: (f) => { setTimeout(() => f(api.connected()), 0); return () => {}; },
-      leave: async () => { try { peer.destroy(); } catch (e) { /* */ } },
+      leave: async () => { try { if (hostConn) hostConn.close(); } catch (e) { /* */ } try { if (relayH) relayH.stop(); } catch (e) { /* */ } try { if (peer) peer.destroy(); } catch (e) { /* */ } },
       emit: async () => {}, on: () => () => {},
+      via: () => (asHost ? (peer && !peerFailed ? (RELAY.live() ? '直连 + 中转' : '直连') : '中转') : hostConn && hostConn.relay ? '中转' : '直连'),
     };
-    const giveUp = (code) => { if (done) return; done = true; try { peer.destroy(); } catch (er) { /* */ } reject({ code }); };
-    peer.on('error', (e) => {
-      if (!done) { giveUp(e.type === 'unavailable-id' ? 'taken' : e.type === 'peer-unavailable' ? 'not_found' : (e.type === 'network' || e.type === 'server-error' || e.type === 'socket-error' || e.type === 'socket-closed') ? 'server' : stage === 'ice' ? 'ice' : 'upstream_error'); return; }
-      // after we're in: keep the host reachable through signalling hiccups
-      if (asHost && ['network', 'server-error', 'socket-error', 'socket-closed', 'disconnected'].includes(e.type)) setTimeout(() => { try { if (!peer.destroyed && peer.disconnected) peer.reconnect(); } catch (er) { /* */ } }, 1500);
-    });
-    setTimeout(() => giveUp(stage === 'ice' ? 'ice' : 'timeout'), 22000);
+    const giveUp = (code) => { if (done) return; done = true; try { if (peer) peer.destroy(); } catch (er) { /* */ } try { if (relayH) relayH.stop(); } catch (er) { /* */ } reject({ code }); };
+    const win = () => { if (done) return; done = true; resolve(api); };
+    setTimeout(() => giveUp(stage === 'ice' ? 'ice' : 'timeout'), 26000);
+
+    // ---------------- host ----------------
     if (asHost) {
-      peer.on('open', () => { me = id; peers.set(me, { presence: Object.freeze({}), t: Date.now() }); done = true; resolve(api); emitChange([me]); });
-      peer.on('connection', (conn) => {
+      const onConn = (conn) => {
         conn.on('open', () => { conns.set(conn.peer, conn); for (const [pid, v] of peers) conn.send({ t: 'p', peer: pid, p: v.presence }); });
         conn.on('data', (d) => {
           if (!d || d.t !== 'p' || !okP(d.p)) return;
@@ -4963,35 +5098,77 @@ function p2pJoin(name, asHost) {
           emitChange(isNew ? [conn.peer] : []);
         });
         conn.on('close', () => {
-          conns.delete(conn.peer);
+          if (conns.get(conn.peer) === conn) conns.delete(conn.peer);
           if (peers.delete(conn.peer)) { for (const c of conns.values()) if (c.open) c.send({ t: 'l', peer: conn.peer }); emitChange([], [conn.peer]); }
         });
+      };
+      const hostReady = () => { if (!me) { me = id; peers.set(me, { presence: Object.freeze({}), t: Date.now() }); } win(); emitChange([me]); };
+      // relay listener starts right away so a friend on a locked-down network can still get in
+      if (RELAY.live()) { relayH = relayHost(name, onConn); if (peerFailed) hostReady(); }
+      else relayConnect().then(() => { if (done && !me) return; relayH = relayHost(name, onConn); if (peerFailed) hostReady(); }, () => { relayFailed = true; if (peerFailed) giveUp(lastCode); });
+      if (peer) {
+        peer.on('error', (e) => {
+          if (!done) {
+            if (e.type === 'unavailable-id') { giveUp('taken'); return; }
+            peerFailed = true; lastCode = 'server';
+            if (relayH) hostReady(); else if (relayFailed) giveUp('server');
+            return;
+          }
+          if (['network', 'server-error', 'socket-error', 'socket-closed', 'disconnected'].includes(e.type)) setTimeout(() => { try { if (!peer.destroyed && peer.disconnected) peer.reconnect(); } catch (er) { /* */ } }, 1500);
+        });
+        peer.on('open', hostReady);
+        peer.on('connection', onConn);
+        peer.on('disconnected', () => { setTimeout(() => { try { if (!peer.destroyed && peer.disconnected) peer.reconnect(); } catch (e) { /* */ } }, 500); });
+        const onVis = () => { if (document.visibilityState === 'visible' && !peer.destroyed && peer.disconnected) { try { peer.reconnect(); } catch (e) { /* */ } } };
+        document.addEventListener('visibilitychange', onVis);
+        addEventListener('pageshow', onVis); addEventListener('online', onVis);
+      }
+      return;
+    }
+
+    // ---------------- client ----------------
+    const wireHost = (conn) => {
+      conn.on('data', (d) => {
+        if (!d) return;
+        if (d.t === 'p' && typeof d.peer === 'string' && d.peer !== me && okP(d.p)) { const isNew = !peers.has(d.peer); peers.set(d.peer, { presence: Object.freeze(d.p), t: Date.now() }); emitChange(isNew ? [d.peer] : []); }
+        else if (d.t === 'l' && peers.delete(d.peer)) emitChange([], [d.peer]);
+        else if (d.t === 'full') fail('full');
       });
-      peer.on('disconnected', () => { setTimeout(() => { try { if (!peer.destroyed && peer.disconnected) peer.reconnect(); } catch (e) { /* */ } }, 500); }); // keeps the code reachable; open links survive
-      // iPad/phone: Safari drops the signalling socket while the page is in the background (e.g. while sharing the link)
-      const onVis = () => { if (document.visibilityState === 'visible' && !peer.destroyed && peer.disconnected) { try { peer.reconnect(); } catch (e) { /* */ } } };
-      document.addEventListener('visibilitychange', onVis);
-      addEventListener('pageshow', onVis); addEventListener('online', onVis);
-    } else {
+      conn.on('close', () => { if (hostConn !== conn) return; const gone = [...peers.keys()].filter((p) => p !== me); gone.forEach((p) => peers.delete(p)); emitChange([], gone); });
+    };
+    const adopt = (conn) => {
+      if (done) { try { conn.close(); } catch (e) { /* */ } return; }
+      hostConn = conn; wireHost(conn);
+      if (!me) me = conn.relay ? RELAY.me : (peer && peer.id) || RELAY.me;
+      peers.set(me, { presence: Object.freeze({}), t: Date.now() });
+      win(); hostConn.send({ t: 'p', p: myPres }); emitChange([me]);
+      if (conn.relay && peer) { try { peer.destroy(); } catch (e) { /* */ } }
+    };
+    const startRelay = () => {
+      if (relayStarted || done) return; relayStarted = true;
+      NET.msg = `直连不通，正在通过中转服务器连接 ${name.replace(/^ash-/, '').toUpperCase()}…`; renderCoopUI();
+      relayJoin(name, preferBi).then(adopt, () => { relayFailed = true; if (peerFailed) giveUp(lastCode); });
+    };
+    // give the direct route a head start, then race the relay
+    setTimeout(startRelay, peer ? 4000 : 0);
+    if (peer) {
+      peer.on('error', (e) => {
+        if (done) return;
+        peerFailed = true;
+        lastCode = e.type === 'peer-unavailable' ? 'not_found' : (e.type === 'network' || e.type === 'server-error' || e.type === 'socket-error' || e.type === 'socket-closed') ? 'server' : stage === 'ice' ? 'ice' : 'upstream_error';
+        if (relayFailed) giveUp(lastCode); else startRelay();
+      });
       peer.on('open', (pid) => {
-        me = pid; peers.set(me, { presence: Object.freeze({}), t: Date.now() });
         stage = 'ice';
-        hostConn = peer.connect(id, { reliable: true, serialization: 'json' });
-        hostConn.on('error', () => giveUp('ice'));
+        const pc0 = peer.connect(id, { reliable: true, serialization: 'json' });
+        pc0.on('error', () => { peerFailed = true; lastCode = 'ice'; if (relayFailed) giveUp('ice'); else startRelay(); });
         const watchIce = () => {
-          const pc = hostConn.peerConnection;
+          const pc = pc0.peerConnection;
           if (!pc) { if (!done) setTimeout(watchIce, 200); return; }
-          pc.addEventListener('iceconnectionstatechange', () => { if (pc.iceConnectionState === 'failed') giveUp('ice'); });
+          pc.addEventListener('iceconnectionstatechange', () => { if (pc.iceConnectionState === 'failed' && !done) { peerFailed = true; lastCode = 'ice'; if (relayFailed) giveUp('ice'); else startRelay(); } });
         };
         watchIce();
-        hostConn.on('open', () => { if (done) return; done = true; resolve(api); hostConn.send({ t: 'p', p: myPres }); emitChange([me]); });
-        hostConn.on('data', (d) => {
-          if (!d) return;
-          if (d.t === 'p' && typeof d.peer === 'string' && d.peer !== me && okP(d.p)) { const isNew = !peers.has(d.peer); peers.set(d.peer, { presence: Object.freeze(d.p), t: Date.now() }); emitChange(isNew ? [d.peer] : []); }
-          else if (d.t === 'l' && peers.delete(d.peer)) emitChange([], [d.peer]);
-          else if (d.t === 'full') fail('full');
-        });
-        hostConn.on('close', () => { const gone = [...peers.keys()].filter((p) => p !== me); gone.forEach((p) => peers.delete(p)); emitChange([], gone); });
+        pc0.on('open', () => { if (done) { try { pc0.close(); } catch (e) { /* */ } return; } me = pid; adopt(pc0); });
       });
     }
   });
@@ -5034,6 +5211,7 @@ addEventListener('hashchange', () => {
 function lobbyRooms() {
   if (!NET.room) return [];
   const out = [], seen = new Set();
+  for (const r of [...RELAY.lobby.values()].sort((a, b) => b.t - a.t)) { if (r.code === NET.code && NET.hosting) continue; seen.add(r.code); out.push(r); }
   for (const p of NET.room.peers()) {
     if (p.kind !== 'viewer' || p.sameTab || !p.presence) continue;
     const pr = p.presence;
@@ -5049,6 +5227,7 @@ function lobbyAdvert() {
   const key = JSON.stringify(ad);
   if (key === NET.lastAd) return;
   NET.lastAd = key;
+  if (NET.p2p) { relayLobbyPublish(ad); if (ad.room) NET.lastAdCode = ad.room; return; }
   NET.room.presence(ad).catch(() => {});
 }
 function roomViewers() { return NET.rm ? NET.rm.peers().filter((p) => p.kind === 'viewer') : []; }
@@ -5071,7 +5250,7 @@ async function netJoin(code, host) {
   let rm, lastErr = null;
   for (let attempt = 0; attempt < (host ? 1 : 3) && !rm; attempt++) {
     if (attempt) { NET.msg = `正在重试加入 ${code.toUpperCase()}（第 ${attempt + 1} 次）…`; renderCoopUI(); await new Promise((r) => setTimeout(r, 1200)); }
-    try { rm = await NET.room.join('ash-' + code, host); }
+    try { rm = await NET.room.join('ash-' + code, host, listed ? listed.bi : undefined); }
     catch (e) {
       lastErr = e;
       if (e && (e.code === 'taken' || e.code === 'not_permitted' || e.code === 'full')) break;
@@ -5322,7 +5501,7 @@ function renderCoopUI() {
     $('coopCtl').hidden = !NET.available;
     if (NET.available === null) st.textContent = '正在连接联机服务…';
     else if (!NET.available) st.textContent = '此处无法联机：需要登录 claude.ai，并且这个页面已经通过「分享」邀请了你（公开链接访客无法联机）。单人模式不受影响。';
-    else st.textContent = NET.msg || (NET.p2p ? '公开网页联机：创建房间后把邀请链接发给朋友（无需登录，最多 3 人），或输入房间码加入。' : NET.connected ? '创建房间后，队友打开同一页面即可在下方看到并加入，也可以输入房间码。' : '正在连接…');
+    else st.textContent = NET.msg || (NET.p2p ? (RELAY.live() ? '公开大厅已连接：下方是互联网上正在开放的房间，点「加入」即可；也可以创建房间，或输入房间码 / 粘贴邀请链接。直连不通时会自动走中转。' : '公开网页联机：创建房间后把邀请链接发给朋友（无需登录，最多 3 人），或输入房间码加入。') : NET.connected ? '创建房间后，队友打开同一页面即可在下方看到并加入，也可以输入房间码。' : '正在连接…');
     $('joinRow').hidden = !NET.available;
     const list = $('roomList'); list.textContent = '';
     if (!NET.available) return;
@@ -5331,14 +5510,14 @@ function renderCoopUI() {
     for (const r of rooms) {
       const row = el('div', 'roomItem' + (r.code === NET.invite ? ' invite' : ''));
       const info = el('div', 'ri');
-      info.append(el('b', 'mono', r.code.toUpperCase()), el('span', '', ` · ${r.nm}${r.n ? ` · ${r.n}/${COOP_MAX}` : ''} · ${r.ph === 'raid' ? '战局进行中' : DIFF[r.diff || 'normal'].label + '难度'}`));
+      info.append(el('b', 'mono', r.code.toUpperCase()), el('span', '', ` · ${r.nm}${r.n ? ` · ${r.n}/${COOP_MAX}` : ''}${r.mp ? ' · ' + MAPS[r.mp].name : ''} · ${r.ph === 'raid' ? '战局进行中' : DIFF[r.diff || 'normal'].label + '难度'}`));
       const b = el('button', 'btn' + (r.code === NET.invite ? ' primary' : ''), r.code === NET.invite ? '接受邀请' : '加入');
       b.disabled = NET.joining || r.n >= COOP_MAX || r.ph === 'raid';
       if (NET.joining && r.code === NET.invite) b.textContent = '连接中…';
       b.addEventListener('click', () => netJoin(r.code, false));
       row.append(info, b); list.append(row);
     }
-    if (!rooms.length && NET.connected) list.append(el('div', 'hint', '大厅里暂时没有房间。'));
+    if (!rooms.length && NET.connected) list.append(el('div', 'hint', RELAY.live() ? '公开大厅里暂时没有房间。创建一个，别人打开游戏就能看到。' : '大厅里暂时没有房间。'));
     return;
   }
   $('roomCode').textContent = NET.code.toUpperCase();
@@ -5356,9 +5535,10 @@ function renderCoopUI() {
   sb.hidden = !NET.hosting;
   sb.disabled = busy || NET.myState === 'play';
   $('btnCopyLink').hidden = !NET.p2p;
-  $('roomHint').textContent = NET.hosting
+  const via = NET.rm && NET.rm.via ? `【${NET.rm.via()}】` : '';
+  $('roomHint').textContent = via + (NET.hosting
     ? (busy ? '有队友仍在行动中，等他们撤离或阵亡后才能开新局。' : NET.p2p ? `${n}/${COOP_MAX} 人。把邀请链接或房间码发给朋友：${inviteURL()} · 发完请回到这个页面等待（iPad/手机切到后台时队友进不来）` : `${n}/${COOP_MAX} 人。邀请：先在页面右上角「分享」里把它分享给队友，对方打开后在大厅点「加入」；或把链接末尾加上 #r-${NET.code}。`)
-    : (NET.phase === 'raid' && NET.myState === 'lobby' ? '战局进行中，等待下一局…' : '等待房主开始行动…');
+    : (NET.phase === 'raid' && NET.myState === 'lobby' ? '战局进行中，等待下一局…' : '等待房主开始行动…'));
 }
 const inviteURL = () => location.origin + location.pathname + '#r-' + NET.code;
 $('btnCreate').addEventListener('click', netCreate);
