@@ -1668,6 +1668,7 @@ function buildFace(v) {
   const g = c.getContext('2d', { willReadFrequently: true });
   g.fillStyle = '#000'; g.fillRect(0, 0, S, S);
   if (SCARE_IMG.naturalWidth) g.drawImage(SCARE_IMG, 0, 0, S, S);
+  if (v === 'world') return c;
   // harder contrast and a tint per mood
   const tint = v === 'hot' ? [1.16, 0.8, 0.76] : v === 'calm' ? [1.0, 0.92, 0.82] : [0.93, 0.97, 1.02];
   const d = g.getImageData(0, 0, S, S), p = d.data;
@@ -1879,82 +1880,21 @@ function hauntImpact() {
 }
 // ---- the face: alive, not a picture ----
 function hauntJumpScare(onDone) {
-  if (!H.faceSoft) { H.faceSoft = softFace(buildFace('calm')); const hotF = buildFace('hot'); H.faceOpen = softFace(hotF); H.mouthCv = mouthCut(hotF); }
   let cv = H.scareCv;
   if (!cv) { cv = H.scareCv = document.createElement('canvas'); cv.style.cssText = 'position:fixed;inset:0;width:100%;height:100%;z-index:9999;pointer-events:none;display:none'; document.body.appendChild(cv); }
   cv.width = innerWidth; cv.height = innerHeight; cv.style.display = 'block';
-  const g = cv.getContext('2d'), w = cv.width, h = cv.height, FS = H.faceSoft.width;
+  const g = cv.getContext('2d'), w = cv.width, h = cv.height;
   g.fillStyle = '#000'; g.fillRect(0, 0, w, h);
-  const SNAP = 0, DUR = 1700;
-  // part one: almost silence. a low hum and a thin ringing, while it rises toward you out of the tunnel
-  if (AU.ctx && SNAP > 0) {
-    const t = AU.ctx.currentTime;
-    tone(t, AU.master, { f0: 52, f1: 44, type: 'sine', a: 0.4, d: SNAP / 1000, g: 0.35 });
-    tone(t, AU.master, { f0: 2350, f1: 2380, type: 'sine', a: 0.6, d: SNAP / 1000, g: 0.025 });
-    for (let i = 0; i < 4; i++) tone(t + 0.5 + i * 0.16, AU.master, { f0: 380 - i * 22, f1: 300, type: 'triangle', a: 0.01, d: 0.12, g: 0.03 });   // a giggle, barely there
-  }
-  let snapped = false;
-  const t0 = performance.now(); let fr = 0, spin = 0, tilt = 0, tiltT = 0;
-  const loop = () => {
-    const el = Math.min(performance.now() - t0, ++fr * 34), hot = el >= SNAP;
-    if (hot && !snapped) { snapped = true; if (AU.master) AU.master.gain.value = SETTINGS.volume * 1.6; hauntImpact(); hauntAudioScream(true); setTimeout(() => hauntAudioScream(true), 520); }
-    g.setTransform(1, 0, 0, 1, 0, 0); g.globalCompositeOperation = 'source-over'; g.globalAlpha = 1;
-    g.fillStyle = '#000'; g.fillRect(0, 0, w, h);
-    // the tunnel: soft rings sliding inward, the far end always dark
-    const cx = w / 2, cy = h / 2, Rmax = Math.hypot(w, h) * 0.62;
-    spin += hot ? 0.02 : 0.01;
-    const ph = ((hot ? el * 0.0026 : el * 0.00045)) % 1;
-    for (let i = 0; i < (hot ? 0 : 9); i++) {
-      const r = Rmax * Math.pow(0.72, i + ph - 1), a = Math.min(1, i / 2.5) * Math.max(0, 1 - i / 8);
-      if (r < 20) continue;
-      const ox = Math.cos(spin + i * 0.9) * r * 0.05, oy = Math.sin(spin * 1.3 + i * 0.7) * r * 0.04;
-      for (const [lw, al] of [[r * 0.22, 0.05], [r * 0.12, 0.09], [r * 0.05, 0.16]]) {
-        g.strokeStyle = `rgba(${hot ? 170 : 150},${hot ? 120 : 132},${hot ? 100 : 115},${al * a})`; g.lineWidth = lw;
-        g.beginPath(); g.ellipse(cx + ox, cy + oy, r, r * 0.96, 0, 0, 7); g.stroke();
-      }
-    }
-    const vg = g.createRadialGradient(cx, cy, 0, cx, cy, Rmax * 0.55); vg.addColorStop(0, 'rgba(0,0,0,0.9)'); vg.addColorStop(0.5, 'rgba(0,0,0,0.25)'); vg.addColorStop(1, 'rgba(0,0,0,0)');
-    if (!hot) { g.fillStyle = vg; g.fillRect(0, 0, w, h); }
-    // the face
-    const base = Math.min(w, h) / FS;
-    let sc, alpha = 1, jx = 0, jy = 0, rot;
-    if (!hot) {
-      const k = el / SNAP;
-      sc = base * (0.42 + k * k * 0.5); alpha = Math.min(1, el / 900);
-      rot = k > 0.6 ? (k - 0.6) * 0.35 : 0;   // the only movement: the head leans, slowly, too far
-    } else {
-      const e2 = el - SNAP;
-      sc = base * (e2 < 90 ? lerp(0.95, 1.45, Math.pow(e2 / 90, 0.5)) : e2 < 1000 ? 1.45 + e2 / 1000 * 0.25 : lerp(1.7, 3.2, Math.min(1, (e2 - 1000) / 240)));
-      rot = 0.14;   // it holds still and stares; only the impact and the last lunge jolt the frame
-      const sh = e2 < 160 ? 40 * (1 - e2 / 160) : e2 > 1000 ? 25 : 0; jx = (Math.random() - 0.5) * sh; jy = (Math.random() - 0.5) * sh;
-    }
-    g.globalAlpha = alpha;
-    g.translate(cx + jx, cy + jy + (hot ? sc * 20 : 0)); g.rotate(rot); g.scale(sc, sc);
-    g.drawImage(hot ? H.faceOpen : H.faceSoft, -FS / 2, -FS / 2);
-    if (hot) {
-      const jaw = clamp((el - SNAP - 60) / 900, 0, 1), mx = (FACE_PTS.mouth[0] / 512 - 0.5) * FS, my = (FACE_PTS.mouth[1] / 512 - 0.5) * FS;
-      g.save(); g.translate(mx, my); g.scale(1 + jaw * jaw * 0.5, 1 + jaw * 0.3); g.drawImage(H.mouthCv, -FS / 2 - mx, -FS / 2 - my); g.restore();
-    }
-    // in the calm part, once, the eyes open for a single frame
-    if (!hot && el > 1150 && el < 1190) g.drawImage(H.faceOpen, -FS / 2, -FS / 2);
-    g.setTransform(1, 0, 0, 1, 0, 0); g.globalAlpha = 1;
-    if (hot) {
-      const e2 = el - SNAP, tears = e2 < 140 ? 8 : e2 > 1000 ? 4 : 0;
-      for (let i = 0; i < tears; i++) { const y = Math.random() * h, bh = 3 + Math.random() * 40; g.drawImage(cv, 0, y, w, bh, (Math.random() - 0.5) * 140, y, w, bh); }
-      g.globalCompositeOperation = 'lighter'; g.globalAlpha = 0.12; g.drawImage(cv, 6, 0); g.globalAlpha = 1; g.globalCompositeOperation = 'source-over';
-      const rv = g.createRadialGradient(cx, cy, Math.min(w, h) * 0.3, cx, cy, Math.max(w, h) * 0.72);
-      rv.addColorStop(0, 'rgba(0,0,0,0)'); rv.addColorStop(1, 'rgba(110,0,0,0.85)'); g.fillStyle = rv; g.fillRect(0, 0, w, h);
-      const r = Math.random();
-      if (el - SNAP < 60) { g.fillStyle = 'rgba(255,255,255,0.9)'; g.fillRect(0, 0, w, h); }
-      else if (e2 > 1000 && e2 < 1040) { g.globalCompositeOperation = 'difference'; g.fillStyle = '#fff'; g.fillRect(0, 0, w, h); g.globalCompositeOperation = 'source-over'; }
-      
-    }
-    for (let i = 0; i < 300; i++) { g.fillStyle = Math.random() < 0.5 ? 'rgba(255,240,225,0.07)' : 'rgba(0,0,0,0.3)'; g.fillRect(Math.random() * w, Math.random() * h, 2, 2); }
-    if (el >= DUR - 30) { g.fillStyle = '#000'; g.fillRect(0, 0, w, h); }
-    if (el < DUR) requestAnimationFrame(loop);
-    else { if (AU.master) AU.master.gain.value = SETTINGS.volume; if (onDone) onDone(); setTimeout(() => { cv.style.display = 'none'; }, 60); }
-  };
-  requestAnimationFrame(loop);
+  // one still frame: the face as it is, filling the screen top to bottom
+  const sz = Math.max(h, Math.min(w, h * 1.25));
+  if (SCARE_IMG.naturalWidth) g.drawImage(SCARE_IMG, (w - sz) / 2, (h - sz) / 2, sz, sz);
+  if (AU.master) { AU.master.gain.cancelScheduledValues(0); AU.master.gain.value = SETTINGS.volume * 1.6; }
+  hauntImpact(); hauntAudioScream(true); setTimeout(() => hauntAudioScream(true), 450);
+  setTimeout(() => {
+    g.fillStyle = '#000'; g.fillRect(0, 0, w, h);   // hard cut to black
+    if (AU.master) AU.master.gain.value = SETTINGS.volume;
+    if (onDone) onDone(); setTimeout(() => { cv.style.display = 'none'; }, 60);
+  }, 1500);
 }
 
 // ---- caught ----
@@ -1975,14 +1915,14 @@ function hauntCaught(e) {
     $('hud').hidden = true; WEAPON.root.visible = false;
     e.gm.g.scale.set(GS, GS * 1.12, GS); e.gm.body.rotation.x = -0.55; e.gm.neck.rotation.x = 0.6;
     for (const a of [e.gm.armL, e.gm.armR]) { a.sh.rotation.x = 0.15; a.sh.rotation.z = 0; a.el.rotation.x = 0.1; }
-    if (BLADE.rig) BLADE.rig.visible = false; if (GEAR.line) { GEAR.line.visible = false; GEAR.tip.visible = false; } GEAR.hook = null; gearSound(false);
+    bladeHide(); if (GEAR.line) { GEAR.line.visible = false; GEAR.tip.visible = false; } GEAR.hook = null; gearSound(false);
     e.root.updateMatrixWorld(true); e.gm.head.getWorldPosition(_hv);
   } else _hv.set(e.pos.x, camera.position.y, e.pos.z);
   camera.lookAt(_hv); camera.fov = 48; camera.updateProjectionMatrix();
   };
   // no animation at all: cut straight to the face and the scream
   $('hud').hidden = true; WEAPON.root.visible = false;
-  if (BLADE.rig) BLADE.rig.visible = false; if (GEAR.line) { GEAR.line.visible = false; GEAR.tip.visible = false; } GEAR.hook = null; gearSound(false);
+  bladeHide(); if (GEAR.line) { GEAR.line.visible = false; GEAR.tip.visible = false; } GEAR.hook = null; gearSound(false);
   hauntJumpScare(() => {
     $('hud').hidden = true;
     const ov = document.createElement('div');
@@ -2096,45 +2036,77 @@ function gearPhysics(dt, uiBlock) {
 }
 
 // ---------- twin blades (3): hold to attack; everything around you within 3.4 m is cut; perfect block while swinging ----------
-const BLADE = { on: false, atk: false, rig: null, ring: null, t: 0, tick: 0, swishT: 0, hitAcc: new Map() };
+const BLADE = { on: false, atk: false, rig: null, orbit: null, t: 0, tick: 0, swishT: 0, spin: 0, ang: 0, sta: 1, lock: false, rest: 0, ui: null, uiBox: null };
+const SPIN_TIME = 3.2, SPIN_REACH = 3.4;
 function bladeRig() {
   if (BLADE.rig) return;
-  const rig = new THREE.Group(), steel = new THREE.MeshStandardMaterial({ color: 0xd8dde0, metalness: 0.9, roughness: 0.25 }), grip = new THREE.MeshStandardMaterial({ color: 0x2a2a2a, roughness: 0.8 });
+  const steel = new THREE.MeshStandardMaterial({ color: 0xd8dde0, metalness: 0.9, roughness: 0.25 }), grip = new THREE.MeshStandardMaterial({ color: 0x2a2a2a, roughness: 0.8 });
+  const edgeM = new THREE.MeshBasicMaterial({ color: 0xffffff });
+  // in-hand blades (shown when not spinning)
+  const rig = new THREE.Group();
   const mk = (sx) => {
     const h = new THREE.Group(); h.position.set(sx * 0.28, -0.32, -0.45);
-    const handle = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.05, 0.16), grip); h.add(handle);
+    h.add(new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.05, 0.16), grip));
     const blade = new THREE.Mesh(new THREE.BoxGeometry(0.012, 0.07, 0.95), steel); blade.position.z = -0.55; h.add(blade);
-    const edge = new THREE.Mesh(new THREE.BoxGeometry(0.004, 0.012, 0.95), new THREE.MeshBasicMaterial({ color: 0xffffff })); edge.position.set(0, 0.036, -0.55); h.add(edge);
+    const edge = new THREE.Mesh(new THREE.BoxGeometry(0.004, 0.012, 0.95), edgeM); edge.position.set(0, 0.036, -0.55); h.add(edge);
     rig.add(h); return h;
   };
   BLADE.L = mk(-1); BLADE.R = mk(1);
   rig.visible = false; camera.add(rig); BLADE.rig = rig;
-  const ring = new THREE.Mesh(new THREE.RingGeometry(3.0, 3.4, 48, 1), new THREE.MeshBasicMaterial({ color: 0xe8f6ff, transparent: true, opacity: 0, side: THREE.DoubleSide, depthWrite: false }));
-  ring.rotation.x = -Math.PI / 2; scene.add(ring); BLADE.ring = ring;
+  // the whirl: two long blades held out on either side, sweeping a full circle around you
+  const orbit = new THREE.Group();
+  for (const sx of [-1, 1]) {
+    const arm = new THREE.Group(); arm.rotation.y = sx > 0 ? 0 : Math.PI;
+    const blade = new THREE.Mesh(new THREE.BoxGeometry(SPIN_REACH - 0.5, 0.08, 0.015), steel); blade.position.x = 0.5 + (SPIN_REACH - 0.5) / 2; arm.add(blade);
+    const edge = new THREE.Mesh(new THREE.BoxGeometry(SPIN_REACH - 0.5, 0.014, 0.02), edgeM); edge.position.set(blade.position.x, 0.045, 0); arm.add(edge);
+    orbit.add(arm);
+  }
+  // a pale disc of motion blur where the steel passes
+  const blur = new THREE.Mesh(new THREE.RingGeometry(0.6, SPIN_REACH, 48, 1), new THREE.MeshBasicMaterial({ color: 0xe8f6ff, transparent: true, opacity: 0, side: THREE.DoubleSide, depthWrite: false, blending: THREE.AdditiveBlending, fog: false, toneMapped: false }));
+  blur.rotation.x = -Math.PI / 2; orbit.add(blur); BLADE.blur = blur;
+  orbit.visible = false; scene.add(orbit); BLADE.orbit = orbit;
+  // stamina bar, above the gas bar
+  const ui = document.createElement('div');
+  ui.style.cssText = 'position:absolute;left:50%;bottom:calc(36px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);width:180px;font:600 11px var(--f-display);color:#fde68a;letter-spacing:.12em;text-align:center;pointer-events:none;text-shadow:0 1px 2px #000;display:none';
+  ui.innerHTML = '体 <span style="display:inline-block;vertical-align:middle;width:130px;height:6px;background:rgba(255,255,255,.12);border-radius:3px;overflow:hidden"><i style="display:block;height:100%;width:100%;background:linear-gradient(90deg,#f59e0b,#fde68a)"></i></span>';
+  $('hud').appendChild(ui); BLADE.uiBox = ui; BLADE.ui = ui.querySelector('i');
 }
 function bladeOn() {
   bladeRig(); if (BLADE.on) return;
-  BLADE.on = true; WEAPON.root.visible = false; BLADE.rig.visible = true; WEAPON.adsT = 0; INPUT.mouseAds = false;
+  BLADE.on = true; WEAPON.root.visible = false; BLADE.rig.visible = true; BLADE.uiBox.style.display = ''; WEAPON.adsT = 0; INPUT.mouseAds = false;
   sfxClick(1600, 0.1); updateWeaponHUD();
 }
-function bladeOff() { if (!BLADE.on) return; BLADE.on = false; BLADE.atk = false; WEAPON.root.visible = true; if (BLADE.rig) BLADE.rig.visible = false; if (BLADE.ring) BLADE.ring.material.opacity = 0; updateWeaponHUD(); }
+function bladeOff() {
+  if (!BLADE.on) return; BLADE.on = false; BLADE.atk = false; BLADE.spin = 0; WEAPON.root.visible = true;
+  if (BLADE.rig) { BLADE.rig.visible = false; BLADE.orbit.visible = false; BLADE.uiBox.style.display = 'none'; }
+  updateWeaponHUD();
+}
+function bladeHide() { if (BLADE.rig) { BLADE.rig.visible = false; BLADE.orbit.visible = false; BLADE.uiBox.style.display = 'none'; } }
 function bladeClang() { if (!AU.ctx) return; const t = AU.ctx.currentTime; for (const f of [1900, 2650, 3700]) tone(t, AU.master, { f0: f, type: 'square', a: 0.001, d: 0.25, g: 0.08 }); noiseBurst(t, AU.master, { f: 4000, q: 1, a: 0.001, d: 0.08, g: 0.5 }); }
 function bladeUpdate(dt) {
   bladeRig();
   const P = PLAYER, kb = SETTINGS.ctrl === 'keys';
-  BLADE.atk = P.alive && !UI.panelOpen && (INPUT.mouseFire || INPUT.tFire > 0 || (kb && key('KeyJ')));
-  BLADE.t += dt;
-  // viewmodel: rapid alternating cuts while held, resting guard otherwise
-  const sw = BLADE.atk ? BLADE.t * 22 : 0;
-  BLADE.L.rotation.set(BLADE.atk ? Math.sin(sw) * 0.9 : 0.25, BLADE.atk ? Math.cos(sw) * 0.7 : 0.15, BLADE.atk ? Math.sin(sw) * 0.6 : 0.3);
-  BLADE.R.rotation.set(BLADE.atk ? Math.sin(sw + Math.PI) * 0.9 : 0.25, BLADE.atk ? -Math.cos(sw) * 0.7 : -0.15, BLADE.atk ? -Math.sin(sw + Math.PI) * 0.6 : -0.3);
-  BLADE.ring.position.set(P.pos.x, P.pos.y + 0.9, P.pos.z);
-  BLADE.ring.rotation.z += dt * 14;
-  BLADE.ring.material.opacity = damp(BLADE.ring.material.opacity, BLADE.atk ? 0.28 + Math.random() * 0.12 : 0, 18, dt);
+  const want = P.alive && !UI.panelOpen && (INPUT.mouseFire || INPUT.tFire > 0 || (kb && key('KeyJ')));
+  // stamina: about 3 seconds of spinning; empty it and you're winded until it's a third back
+  if (BLADE.sta <= 0 && !BLADE.lock) { BLADE.lock = true; if (AU.ctx) tone(AU.ctx.currentTime, AU.master, { f0: 220, f1: 140, type: 'sawtooth', a: 0.01, d: 0.3, g: 0.06 }); toast('体力耗尽', '#fbbf24'); }
+  if (BLADE.lock && BLADE.sta >= 0.35) BLADE.lock = false;
+  BLADE.atk = want && !BLADE.lock && BLADE.sta > 0;
+  if (BLADE.atk) { BLADE.sta = Math.max(0, BLADE.sta - dt / SPIN_TIME); BLADE.rest = 0; }
+  else { BLADE.rest += dt; if (BLADE.rest > 0.5) BLADE.sta = Math.min(1, BLADE.sta + dt / 3.5); }
+  BLADE.ui.style.width = (BLADE.sta * 100).toFixed(0) + '%';
+  BLADE.ui.style.opacity = BLADE.lock ? (Math.sin(performance.now() * 0.02) > 0 ? '1' : '0.35') : '1';
+  // spin up fast, wind down quickly
+  BLADE.spin = damp(BLADE.spin, BLADE.atk ? 1 : 0, BLADE.atk ? 10 : 6, dt);
+  BLADE.ang += dt * BLADE.spin * 26;   // ~4 turns a second at full speed
+  const spinning = BLADE.spin > 0.08;
+  BLADE.orbit.visible = spinning; BLADE.rig.visible = !spinning;
+  BLADE.orbit.position.set(P.pos.x, P.pos.y + 1.05, P.pos.z);
+  BLADE.orbit.rotation.set(Math.sin(BLADE.ang * 0.5) * 0.05, BLADE.ang, 0);
+  BLADE.blur.visible = false;
+  if (!spinning) { BLADE.L.rotation.set(0.25, 0.15, 0.3); BLADE.R.rotation.set(0.25, -0.15, -0.3); }
   if (!BLADE.atk) return;
   BLADE.swishT -= dt;
-  if (BLADE.swishT <= 0 && AU.ctx) { BLADE.swishT = 0.09; noiseBurst(AU.ctx.currentTime, AU.master, { f: 2600 + Math.random() * 1200, q: 1.5, a: 0.005, d: 0.06, g: 0.18 }); }
-  // continuous cutting in a ring around you; damage is applied in small steps so the feedback isn't a wall of noise
+  if (BLADE.swishT <= 0 && AU.ctx) { BLADE.swishT = 0.12; noiseBurst(AU.ctx.currentTime, AU.master, { f: 2200 + Math.random() * 900, q: 1.2, a: 0.01, d: 0.1, g: 0.22 }); }
   BLADE.tick += dt;
   if (BLADE.tick < 0.06) return;
   const step = BLADE.tick; BLADE.tick = 0;
@@ -2142,13 +2114,13 @@ function bladeUpdate(dt) {
   for (const e of ENEMIES) {
     if (e.dead) continue;
     const dx = e.pos.x - P.pos.x, dz = e.pos.z - P.pos.z, d = Math.hypot(dx, dz);
-    const reach = 3.4 + (e.ghost ? 0.4 * GS : 0.4);
+    const reach = SPIN_REACH + (e.ghost ? 0.4 * GS : 0.4);
     if (d > reach || Math.abs(e.pos.y - P.pos.y) > 4) continue;
-    e.damage(1000 * step, 'body', { peer: null, pos: P.pos });
+    e.damage(1000 * step * BLADE.spin, 'body', { peer: null, pos: P.pos });
     if (!e.dead) { const nx = dx / Math.max(d, 0.01), nz = dz / Math.max(d, 0.01); e.vel.x += nx * 3; e.vel.z += nz * 3; }
     hit = true;
   }
-  if (hit) { WEAPON.kickY -= 0.01; FEEL.shake = Math.min(1, FEEL.shake + 0.25); }
+  if (hit) FEEL.shake = Math.min(1, FEEL.shake + 0.2);
 }
 
 // ---------- ammunition: caches across the map (they restock) + boxes dropped by the dead ----------
@@ -2258,7 +2230,7 @@ function hauntTick(dt) {
   // something screams far away now and then
   H.scrT = (H.scrT == null ? 70 : H.scrT) - dt;
   if (H.scrT <= 0) { H.scrT = rnd(35, 70) * (1 - k * 0.4); const a = Math.random() * 6.28; hauntShriek(_hv.set(P.pos.x + Math.cos(a) * 45, 1.6, P.pos.z + Math.sin(a) * 45)); }
-  const msgs = [[3, '无线电：所有撤离点信号中断。坚持住，等信号恢复。', '#9ca3af'], [9, '绿色光柱是弹药补给。打倒它们也会掉弹药。', '#7dff9a'], [15, IS_TOUCH ? '「钩」射出钩爪 · 空中按住「喷」喷气 · 切枪按钮可切到双刀' : '[Q] 按住钩爪 · 空中按住 [空格] 喷气 · [3] 双刀（按住攻击时完全格挡）', '#7fd6ff'], [40, '他们为什么不开枪？', '#e5e7eb'], [100, '不要让他们靠近你', '#fca5a5'], [170, '别回头', '#ef4444'], [240, '天怎么黑了', '#ef4444'], [300, '撤离信号恢复了。快走。', '#6fe2a8']];
+  const msgs = [[3, '无线电：所有撤离点信号中断。坚持住，等信号恢复。', '#9ca3af'], [9, '绿色光柱是弹药补给。打倒它们也会掉弹药。', '#7dff9a'], [15, IS_TOUCH ? '「钩」射出钩爪 · 空中按住「喷」喷气 · 切枪按钮切到双刀，按住开火旋转斩' : '[Q] 按住钩爪 · 空中按住 [空格] 喷气 · [3] 双刀（按住旋转斩，旋转时完全格挡，体力约 3 秒）', '#7fd6ff'], [40, '他们为什么不开枪？', '#e5e7eb'], [100, '不要让他们靠近你', '#fca5a5'], [170, '别回头', '#ef4444'], [240, '天怎么黑了', '#ef4444'], [300, '撤离信号恢复了。快走。', '#6fe2a8']];
   while (H.msgs < msgs.length && H.t > msgs[H.msgs][0]) { toast(msgs[H.msgs][1], msgs[H.msgs][2]); if (H.msgs >= 2 && H.msgs < 5) hauntWhisper(); H.msgs++; }
   if (Math.random() < dt * 0.04) { document.title = Math.random() < 0.5 ? 'うしろ' : '别回头'; setTimeout(() => { document.title = '灰烬港区'; }, 900); }
 }
@@ -4663,7 +4635,7 @@ function updateWeaponHUD() {
   const w = WEAPON.cur; if (!w) return;
   if (typeof BLADE !== 'undefined' && BLADE.on) {
     $('wName').textContent = '双刀'; const a = $('wAmmo'); a.innerHTML = '∞'; a.classList.remove('low');
-    $('wMode').textContent = '按住攻击 · 攻击时完全格挡';
+    $('wMode').textContent = '按住旋转斩 · 旋转时完全格挡 · 消耗体力';
     $('wSlots').innerHTML = WEAPON.list.map((x, i) => `<span>${i + 1} ${x.def.short}</span>`).join('') + '<span class="on">3 双刀</span>';
     return;
   }
