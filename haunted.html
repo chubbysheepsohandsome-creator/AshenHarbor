@@ -1659,66 +1659,60 @@ function buildMap() {
 // They don't shoot. They only watch. Shoot one and it stops pretending.
 // =====================================================================
 const H = { t: 0, msgs: 0, firstShot: false, finale: false, over: false, ghosts: 0, fog0: 0, scareCv: null, scareT: 0, scareOn: false };
-  function buildFace() {
-  const S = 900, c = document.createElement('canvas'); c.width = S; c.height = S;
-  const g = c.getContext('2d');
-  let seed = 7; const R = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
-  g.translate(S / 2, S / 2);
-  // hair behind the head
-  g.fillStyle = '#020203';
-  g.beginPath(); g.ellipse(0, 40, 330, 440, 0, 0, Math.PI * 2); g.fill();
-  // skin: sickly grey-green, lit from below
-  const sk = g.createRadialGradient(0, 120, 30, 0, 0, 330);
-  sk.addColorStop(0, '#e4e4dc'); sk.addColorStop(0.45, '#b9bbb3'); sk.addColorStop(0.8, '#5c605c'); sk.addColorStop(1, '#141716');
-  g.fillStyle = sk;
-  g.beginPath(); g.moveTo(0, -330);
-  g.bezierCurveTo(230, -330, 250, -80, 215, 60); g.bezierCurveTo(190, 230, 110, 400, 0, 430);
-  g.bezierCurveTo(-110, 400, -190, 230, -215, 60); g.bezierCurveTo(-250, -80, -230, -330, 0, -330); g.fill();
-  // blotches and veins
-  for (let i = 0; i < 70; i++) { g.fillStyle = `rgba(${40 + R() * 40},${30 + R() * 30},${40 + R() * 20},${0.05 + R() * 0.12})`; g.beginPath(); g.arc((R() - 0.5) * 380, (R() - 0.4) * 560, 8 + R() * 40, 0, 7); g.fill(); }
-  g.strokeStyle = 'rgba(40,20,45,0.45)'; g.lineWidth = 1.6;
-  for (let i = 0; i < 18; i++) { let x = (R() - 0.5) * 360, y = (R() - 0.5) * 500; g.beginPath(); g.moveTo(x, y); for (let k = 0; k < 6; k++) { x += (R() - 0.5) * 50; y += (R() - 0.3) * 40; g.lineTo(x, y); } g.stroke(); }
-  // eye sockets: deep, black, bleeding
-  for (const ex of [-95, 95]) {
-    const so = g.createRadialGradient(ex, -60, 10, ex, -60, 120);
-    so.addColorStop(0, '#000'); so.addColorStop(0.55, 'rgba(0,0,0,0.95)'); so.addColorStop(0.8, 'rgba(25,10,20,0.6)'); so.addColorStop(1, 'rgba(0,0,0,0)');
-    g.fillStyle = so; g.beginPath(); g.ellipse(ex, -55, 115, 95, ex < 0 ? 0.25 : -0.25, 0, 7); g.fill();
-    if (ex > 0) { // the visible eye: wide open, bloodshot, tiny pupil
-      g.fillStyle = '#e9e6dc'; g.beginPath(); g.ellipse(ex, -55, 58, 44, -0.15, 0, 7); g.fill();
-      g.strokeStyle = 'rgba(150,20,30,0.55)'; g.lineWidth = 1.5;
-      for (let k = 0; k < 14; k++) { const a0 = R() * 6.28; g.beginPath(); g.moveTo(ex + Math.cos(a0) * 56, -55 + Math.sin(a0) * 42); g.quadraticCurveTo(ex + Math.cos(a0) * 30, -55 + Math.sin(a0 + 0.3) * 24, ex + Math.cos(a0) * 16, -55 + Math.sin(a0) * 12); g.stroke(); }
-      g.fillStyle = '#000'; g.beginPath(); g.arc(ex, -55, 9, 0, 7); g.fill();
-    } else { g.fillStyle = '#000'; g.beginPath(); g.ellipse(ex, -55, 62, 50, 0.2, 0, 7); g.fill(); }
-    // tears of blood
-    g.strokeStyle = 'rgba(90,0,8,0.9)'; g.lineWidth = 7;
-    for (let k = 0; k < 2; k++) { const x0 = ex + (R() - 0.5) * 50; g.beginPath(); g.moveTo(x0, -10); g.bezierCurveTo(x0 + 6, 60, x0 - 8, 120, x0 + (R() - 0.5) * 20, 160 + R() * 120); g.stroke(); }
+// the face. one picture, three moods: 'world' (on the thing's head), 'calm' (rising out of the tunnel), 'hot' (in your face)
+const SCARE_IMG = new Image(); SCARE_IMG.src = 'data:image/jpeg;base64,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28fi+SXSrizkkm+eLb91cdK4u6/10lRrTWat7wxdR2moST3Ad0eJl+TrnIr0XUvjbcXcXlR3F6ke3b80EVeaazrl3qt3JJLOXjdiy7lC9fpWO1NoorvPh3bf6X5n9yWFv1NfRmn6rJFpVvH8/f09TWbrTSeVJJ5n3F/rXhXjqXzZf9yV68+pzU2iinNTxL+62UxVooqRlkqGinNTaKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKcrU2nbqljuXi6balkv5ZcZCfLVaRjIS5pN1Np26im06vT/AIdwfvpPM+T/AFO3/a617po//HpHH9f50uuLJLp9x+7/AHm0fzrwXxlYyebcSeX/ABP6V5rRTaKKduo3U2nUM1Nop1FNooooooooooooooooooooooooooooooooooooooooooop1Pgi82UJ617b4F0X91H/ALsP8Ne3eHdF82KP/dP8PvT9Qtv3Un7v/wAdryLx5pkflSf6On8f8PtXgd4nlzY2Yqu1Nooooooooooooooooooooooooooooooooooooooooooooooooooooooop1dB4Y0/7XqMEcn+1/KvpbwjotvFFb+XH99Y93zGvWtHsY4oo/8AdP8AOrOpeHLf/lnH/D/eNeXeNPDkcsUn7v8Av/xH0r5k8W6L/Z80knl+n8VclTaKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKdTaKKKKKKKKKKKc1C13nw/g/4mFvcSf3n/8AQK+o/BdtH+7/ANvy69a0mz/9BP8AOta4tv8ApnXD+KNF/cyfu3+ff6elfLvxQ0GSKKTy43+8npXh00XlVGtNpzLRTadRTaKc1FFNoooooooooooooooooooooooooooooop1Noooooooooop1C16n8O7bzfL/wB5/wCVfUHhXT/3Vn9z7sdevaHZ/uo/90/zrbjs/wB1XN65Z/6yP614J8QvDXmyyfc8v5PWvmbxN4f+yTSfc7+vrXIPbSA04WkhjzTWhkHZ6iZaKKKbRTqKdtp3kSU9bSSmTReVUNFFFFFFFFFFFFFFFFFFFFFFFFFFFO20vlv6Um2im0UUUUUUU5qK9M+Gd5/pdvH/ALT/APoFfWXgmX/j3/7Y17Lo/wD7Kf511arHXM+ILaT/AMeNePePLOSW0k/3kr5t8XaZJLL+f8XvXH3HhW48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';
+try { await SCARE_IMG.decode(); } catch (e) { /* drawn black if it fails */ }
+const FACE_PTS = { eyeL: [176, 177], eyeR: [330, 170], mouth: [256, 360] };   // in the 512 px picture
+function buildFace(v) {
+  const S = 900, k = S / 512, c = document.createElement('canvas'); c.width = c.height = S;
+  const g = c.getContext('2d', { willReadFrequently: true });
+  g.fillStyle = '#000'; g.fillRect(0, 0, S, S);
+  if (SCARE_IMG.naturalWidth) g.drawImage(SCARE_IMG, 0, 0, S, S);
+  // harder contrast and a tint per mood
+  const tint = v === 'hot' ? [1.16, 0.8, 0.76] : v === 'calm' ? [1.0, 0.92, 0.82] : [0.93, 0.97, 1.02];
+  const d = g.getImageData(0, 0, S, S), p = d.data;
+  for (let i = 0; i < p.length; i += 4) {
+    let l = (p[i] * 0.3 + p[i + 1] * 0.59 + p[i + 2] * 0.11) / 255;
+    const sc = l < 0.5 ? 2 * l * l : 1 - 2 * (1 - l) * (1 - l); l = l * 0.4 + sc * 0.6;
+    if (v === 'calm') l *= 0.9;
+    p[i] = Math.min(255, l * 255 * tint[0]); p[i + 1] = Math.min(255, l * 255 * tint[1]); p[i + 2] = Math.min(255, l * 255 * tint[2]);
   }
-  // nose: just two dark slits
-  g.fillStyle = '#0b0c0c'; g.beginPath(); g.ellipse(-18, 70, 9, 20, 0.3, 0, 7); g.ellipse(18, 70, 9, 20, -0.3, 0, 7); g.fill();
-  // mouth: unhinged, torn down to the chin
-  const mouth = new Path2D(); mouth.moveTo(-120, 150);
-  mouth.bezierCurveTo(-90, 120, 90, 120, 120, 150); mouth.bezierCurveTo(110, 300, 50, 420, 0, 430); mouth.bezierCurveTo(-50, 420, -110, 300, -120, 150);
-  g.fillStyle = '#000'; g.fill(mouth);
-  g.save(); g.clip(mouth);
-  const th = g.createLinearGradient(0, 130, 0, 430); th.addColorStop(0, '#1a0004'); th.addColorStop(0.5, '#000'); g.fillStyle = th; g.fillRect(-140, 120, 280, 330);
-  g.fillStyle = '#cfc6a6';
-
-  g.restore();
-  g.strokeStyle = 'rgba(80,0,10,0.8)'; g.lineWidth = 5; g.stroke(mouth);
-  // wet hair strands hanging over the face
-  g.strokeStyle = '#030304'; g.lineCap = 'round';
-  for (let i = 0; i < 70; i++) {
-    const across = i < 24, side = across ? -1 : (i % 2 ? 1 : -1), x0 = across ? -20 - R() * 170 : side * (165 + R() * 110), w = across ? 4 + R() * 8 : 4 + R() * 10;
-    g.lineWidth = w; g.globalAlpha = 0.6 + R() * 0.4;
-    g.beginPath(); g.moveTo(x0 * 0.4, -340); g.bezierCurveTo(x0, -200, x0 + side * R() * 40, 100, x0 + side * (R() * 60 - 10), 260 + R() * 260); g.stroke();
+  g.putImageData(d, 0, 0);
+  const eyes = [FACE_PTS.eyeL, FACE_PTS.eyeR].map(([x, y]) => [x * k, y * k]);
+  if (v === 'calm') {
+    // the eyes sink into shadow; only a wet point of light shows they're still on you
+    for (const [x, y] of eyes) {
+      const sh = g.createRadialGradient(x, y, 4, x, y, 58 * k); sh.addColorStop(0, 'rgba(0,0,0,0.98)'); sh.addColorStop(0.6, 'rgba(0,0,0,0.9)'); sh.addColorStop(1, 'rgba(0,0,0,0)');
+      g.fillStyle = sh; g.beginPath(); g.arc(x, y, 58 * k, 0, 7); g.fill();
+      g.fillStyle = 'rgba(255,250,240,0.9)'; g.beginPath(); g.arc(x + 3 * k, y - 2 * k, 2.2 * k, 0, 7); g.fill();
+    }
   }
-  g.globalAlpha = 1;
-  // edge darkness
-  const v = g.createRadialGradient(0, 0, 200, 0, 0, 450); v.addColorStop(0, 'rgba(0,0,0,0)'); v.addColorStop(1, 'rgba(0,0,0,1)');
-  g.fillStyle = v; g.fillRect(-S / 2, -S / 2, S, S);
+  if (v === 'hot') {
+    // pupils shrunk to pinpricks, the whites veined, blood running from both eyes
+    for (const [x, y] of eyes) {
+      const lid = g.createRadialGradient(x, y, 18 * k, x, y, 34 * k); lid.addColorStop(0, 'rgba(0,0,0,0)'); lid.addColorStop(1, 'rgba(0,0,0,0.9)');
+      g.fillStyle = lid; g.beginPath(); g.ellipse(x, y, 34 * k, 26 * k, 0, 0, 7); g.fill();
+      g.strokeStyle = 'rgba(95,0,6,0.92)'; g.lineCap = 'round';
+      for (const [ox, len, wdt] of [[-10, 150, 7], [8, 95, 5]]) { g.lineWidth = wdt; g.beginPath(); g.moveTo(x + ox * k, y + 14 * k); g.bezierCurveTo(x + (ox + 4) * k, y + 50 * k, x + (ox - 5) * k, y + (len * 0.6) * k, x + (ox + 2) * k, y + len * k); g.stroke(); g.fillStyle = 'rgba(95,0,6,0.92)'; g.beginPath(); g.arc(x + (ox + 2) * k, y + len * k, wdt * 0.9, 0, 7); g.fill(); }
+    }
+  }
   return c;
 }
-
+// just the grin, cut out with soft edges, so it can be pulled wider than a mouth goes
+function mouthCut(F) {
+  const S = F.width, k = S / 512, c = document.createElement('canvas'); c.width = c.height = S; const g = c.getContext('2d');
+  g.drawImage(F, 0, 0); g.globalCompositeOperation = 'destination-in';
+  const [mx, my] = FACE_PTS.mouth; g.translate(mx * k, my * k); g.scale(1, 0.45);
+  const m = g.createRadialGradient(0, 0, 80 * k, 0, 0, 140 * k); m.addColorStop(0, 'rgba(0,0,0,1)'); m.addColorStop(1, 'rgba(0,0,0,0)');
+  g.fillStyle = m; g.beginPath(); g.arc(0, 0, 140 * k, 0, 7); g.fill(); return c;
+}
+// the face with its frame dissolved into black, so it floats
+function softFace(F) {
+  const c = document.createElement('canvas'); c.width = c.height = F.width; const g = c.getContext('2d'), S = F.width;
+  g.drawImage(F, 0, 0); g.globalCompositeOperation = 'destination-in';
+  const m = g.createRadialGradient(S / 2, S * 0.53, S * 0.18, S / 2, S * 0.53, S * 0.47); m.addColorStop(0, 'rgba(0,0,0,1)'); m.addColorStop(1, 'rgba(0,0,0,0)');
+  g.fillStyle = m; g.fillRect(0, 0, S, S); return c;
+}
 
 let faceCanvas = null;
 
@@ -1726,7 +1720,7 @@ let faceCanvas = null;
 const GH = {};
 function ghostAssets() {
   if (GH.ready) return GH;
-  if (!faceCanvas) faceCanvas = buildFace();
+  if (!faceCanvas) faceCanvas = buildFace('world');
   // the face with its dark frame faded out, so it reads as a face and not a picture
   const fc = document.createElement('canvas'); fc.width = fc.height = 512; const fg = fc.getContext('2d');
   fg.drawImage(faceCanvas, 0, 0, 512, 512);
@@ -1885,59 +1879,77 @@ function hauntImpact() {
 }
 // ---- the face: alive, not a picture ----
 function hauntJumpScare(onDone) {
-  if (!faceCanvas) faceCanvas = buildFace();
+  if (!H.faceSoft) { H.faceSoft = softFace(buildFace('calm')); const hotF = buildFace('hot'); H.faceOpen = softFace(hotF); H.mouthCv = mouthCut(hotF); }
   let cv = H.scareCv;
   if (!cv) { cv = H.scareCv = document.createElement('canvas'); cv.style.cssText = 'position:fixed;inset:0;width:100%;height:100%;z-index:9999;pointer-events:none;display:none'; document.body.appendChild(cv); }
   cv.width = innerWidth; cv.height = innerHeight; cv.style.display = 'block';
-  const g = cv.getContext('2d'), w = cv.width, h = cv.height, F = faceCanvas, FS = F.width;
-  if (AU.master) AU.master.gain.value = SETTINGS.volume * 1.5;
-  hauntImpact(); hauntAudioScream(true);
-  setTimeout(() => hauntAudioScream(true), 700);
-  const t0 = performance.now(), DUR = 2300; let fr = 0, tilt = 0, tiltT = 0, eyeX = 0, eyeY = 0;
-  const MOUTH = 0.62 * FS;   // where the jaw starts in the face picture
+  const g = cv.getContext('2d'), w = cv.width, h = cv.height, FS = H.faceSoft.width;
+  const SNAP = 1650, DUR = 3150;
+  // part one: almost silence. a low hum and a thin ringing, while it rises toward you out of the tunnel
+  if (AU.ctx) {
+    const t = AU.ctx.currentTime;
+    tone(t, AU.master, { f0: 52, f1: 44, type: 'sine', a: 0.4, d: SNAP / 1000, g: 0.35 });
+    tone(t, AU.master, { f0: 2350, f1: 2380, type: 'sine', a: 0.6, d: SNAP / 1000, g: 0.025 });
+    for (let i = 0; i < 4; i++) tone(t + 0.5 + i * 0.16, AU.master, { f0: 380 - i * 22, f1: 300, type: 'triangle', a: 0.01, d: 0.12, g: 0.03 });   // a giggle, barely there
+  }
+  let snapped = false;
+  const t0 = performance.now(); let fr = 0, spin = 0, tilt = 0, tiltT = 0;
   const loop = () => {
-    const el = Math.min(performance.now() - t0, ++fr * 34), k = el / DUR;
-    g.setTransform(1, 0, 0, 1, 0, 0); g.globalCompositeOperation = 'source-over'; g.globalAlpha = 1; g.filter = 'none';
+    const el = Math.min(performance.now() - t0, ++fr * 34), hot = el >= SNAP;
+    if (hot && !snapped) { snapped = true; if (AU.master) AU.master.gain.value = SETTINGS.volume * 1.6; hauntImpact(); hauntAudioScream(true); setTimeout(() => hauntAudioScream(true), 520); }
+    g.setTransform(1, 0, 0, 1, 0, 0); g.globalCompositeOperation = 'source-over'; g.globalAlpha = 1;
     g.fillStyle = '#000'; g.fillRect(0, 0, w, h);
-    // scale: slams in from small in 110 ms, hovers in your face, then one last lunge
-    const base = Math.min(w / 640, h / 820);
-    let sc = el < 110 ? lerp(0.35, 1.55, Math.pow(el / 110, 0.5)) : el < 1750 ? 1.55 + Math.sin(el * 0.05) * 0.03 : lerp(1.55, 2.6, Math.min(1, (el - 1750) / 260));
-    sc *= base;
-    // the jaw keeps opening, far past where a jaw can go
-    const jaw = clamp((el - 150) / 1100, 0, 1), jawK = 1 + jaw * jaw * 1.6;
-    // the head snaps between angles in jerks
-    if (el > tiltT) { tilt = (Math.random() - 0.5) * (el > 900 ? 0.9 : 0.4); tiltT = el + 90 + Math.random() * 200; }
-    const sh = el < 1750 ? 26 : 50, jx = (Math.random() - 0.5) * sh, jy = (Math.random() - 0.5) * sh;
-    g.translate(w / 2 + jx, h / 2 + jy - sc * 60); g.rotate(tilt * 0.35); g.scale(sc, sc);
-    // upper face as drawn, lower face stretched downward = the mouth tearing open
-    g.drawImage(F, 0, 0, FS, MOUTH, -FS / 2, -FS / 2, FS, MOUTH);
-    g.drawImage(F, 0, MOUTH, FS, FS - MOUTH, -FS / 2, -FS / 2 + MOUTH - 1, FS, (FS - MOUTH) * jawK);
-    // the eye: pupil darting, then fixed on you; sometimes the white floods black
-    if (Math.random() < 0.18) { eyeX = (Math.random() - 0.5) * 30; eyeY = (Math.random() - 0.5) * 20; }
-    if (el > 1300) { eyeX *= 0.7; eyeY *= 0.7; }
-    const ex = 95, ey = -55;
-    if (Math.random() < 0.07 && el > 400) { g.fillStyle = '#000'; g.beginPath(); g.ellipse(ex, ey, 58, 44, -0.15, 0, 7); g.fill(); }
-    else { g.fillStyle = '#e9e6dc'; g.beginPath(); g.ellipse(ex, ey, 46, 34, -0.15, 0, 7); g.fill(); g.fillStyle = '#000'; g.beginPath(); g.arc(ex + eyeX, ey + eyeY, el > 1300 ? 6 : 9, 0, 7); g.fill(); }
-    g.setTransform(1, 0, 0, 1, 0, 0);
-    // tearing: slices of the frame shoved sideways
-    const tears = el < 140 ? 10 : Math.random() < 0.35 ? 6 : 1;
-    for (let i = 0; i < tears; i++) { const y = Math.random() * h, bh = 3 + Math.random() * 40; g.drawImage(cv, 0, y, w, bh, (Math.random() - 0.5) * 140, y, w, bh); }
-    // red/cyan ghost
-    g.globalCompositeOperation = 'lighter'; g.globalAlpha = 0.18; g.drawImage(cv, 8 + Math.random() * 12, 0); g.globalAlpha = 1;
-    g.globalCompositeOperation = 'source-over';
-    // grain and blood-red veins of light
-    for (let i = 0; i < 380; i++) { g.fillStyle = Math.random() < 0.5 ? 'rgba(255,255,255,0.14)' : 'rgba(0,0,0,0.35)'; g.fillRect(Math.random() * w, Math.random() * h, 2, 2); }
-    const vg = g.createRadialGradient(w / 2, h / 2, Math.min(w, h) * 0.25, w / 2, h / 2, Math.max(w, h) * 0.7);
-    vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, `rgba(${90 + Math.random() * 60},0,0,0.85)`); g.fillStyle = vg; g.fillRect(0, 0, w, h);
-    // flashes: white on impact, then the occasional inverted frame or black frame
-    if (fr <= 2) { g.fillStyle = 'rgba(255,255,255,0.92)'; g.fillRect(0, 0, w, h); }
-    else {
-      const r = Math.random();
-      if (r < 0.06) { g.globalCompositeOperation = 'difference'; g.fillStyle = '#fff'; g.fillRect(0, 0, w, h); g.globalCompositeOperation = 'source-over'; }
-      else if (r < 0.12) { g.fillStyle = '#000'; g.fillRect(0, 0, w, h); }
-      else if (r < 0.17) { g.fillStyle = 'rgba(200,0,20,0.5)'; g.fillRect(0, 0, w, h); }
+    // the tunnel: soft rings sliding inward, the far end always dark
+    const cx = w / 2, cy = h / 2, Rmax = Math.hypot(w, h) * 0.62;
+    spin += hot ? 0.02 : 0.01;
+    const ph = ((hot ? el * 0.0026 : el * 0.00045)) % 1;
+    for (let i = 0; i < 9; i++) {
+      const r = Rmax * Math.pow(0.72, i + ph - 1), a = Math.min(1, i / 2.5) * Math.max(0, 1 - i / 8);
+      if (r < 20) continue;
+      const ox = Math.cos(spin + i * 0.9) * r * 0.05, oy = Math.sin(spin * 1.3 + i * 0.7) * r * 0.04;
+      for (const [lw, al] of [[r * 0.22, 0.05], [r * 0.12, 0.09], [r * 0.05, 0.16]]) {
+        g.strokeStyle = `rgba(${hot ? 170 : 150},${hot ? 120 : 132},${hot ? 100 : 115},${al * a})`; g.lineWidth = lw;
+        g.beginPath(); g.ellipse(cx + ox, cy + oy, r, r * 0.96, 0, 0, 7); g.stroke();
+      }
     }
-    if (el >= DUR - 30) { g.fillStyle = '#000'; g.fillRect(0, 0, w, h); }   // hard cut
+    const vg = g.createRadialGradient(cx, cy, 0, cx, cy, Rmax * 0.55); vg.addColorStop(0, 'rgba(0,0,0,0.9)'); vg.addColorStop(0.5, 'rgba(0,0,0,0.25)'); vg.addColorStop(1, 'rgba(0,0,0,0)');
+    g.fillStyle = vg; g.fillRect(0, 0, w, h);
+    // the face
+    const base = Math.min(w, h) / FS;
+    let sc, alpha = 1, jx = 0, jy = 0, rot;
+    if (!hot) {
+      const k = el / SNAP;
+      sc = base * (0.42 + k * k * 0.5); alpha = Math.min(1, el / 900);
+      rot = k > 0.6 ? (k - 0.6) * 0.35 : 0;   // the only movement: the head leans, slowly, too far
+    } else {
+      const e2 = el - SNAP;
+      sc = base * (e2 < 90 ? lerp(0.95, 1.45, Math.pow(e2 / 90, 0.5)) : e2 < 1150 ? 1.45 + e2 / 1150 * 0.25 : lerp(1.7, 3.2, Math.min(1, (e2 - 1150) / 240)));
+      rot = 0.14;   // it holds still and stares; only the impact and the last lunge jolt the frame
+      const sh = e2 < 160 ? 40 * (1 - e2 / 160) : e2 > 1150 ? 25 : 0; jx = (Math.random() - 0.5) * sh; jy = (Math.random() - 0.5) * sh;
+    }
+    g.globalAlpha = alpha;
+    g.translate(cx + jx, cy + jy + (hot ? sc * 20 : 0)); g.rotate(rot); g.scale(sc, sc);
+    g.drawImage(hot ? H.faceOpen : H.faceSoft, -FS / 2, -FS / 2);
+    if (hot) {
+      const jaw = clamp((el - SNAP - 60) / 900, 0, 1), mx = (FACE_PTS.mouth[0] / 512 - 0.5) * FS, my = (FACE_PTS.mouth[1] / 512 - 0.5) * FS;
+      g.save(); g.translate(mx, my); g.scale(1 + jaw * jaw * 0.5, 1 + jaw * 0.3); g.drawImage(H.mouthCv, -FS / 2 - mx, -FS / 2 - my); g.restore();
+    }
+    // in the calm part, once, the eyes open for a single frame
+    if (!hot && el > 1150 && el < 1190) g.drawImage(H.faceOpen, -FS / 2, -FS / 2);
+    g.setTransform(1, 0, 0, 1, 0, 0); g.globalAlpha = 1;
+    if (hot) {
+      const e2 = el - SNAP, tears = e2 < 140 ? 8 : e2 > 1150 ? 4 : 0;
+      for (let i = 0; i < tears; i++) { const y = Math.random() * h, bh = 3 + Math.random() * 40; g.drawImage(cv, 0, y, w, bh, (Math.random() - 0.5) * 140, y, w, bh); }
+      g.globalCompositeOperation = 'lighter'; g.globalAlpha = 0.12; g.drawImage(cv, 6, 0); g.globalAlpha = 1; g.globalCompositeOperation = 'source-over';
+      const rv = g.createRadialGradient(cx, cy, Math.min(w, h) * 0.3, cx, cy, Math.max(w, h) * 0.72);
+      rv.addColorStop(0, 'rgba(0,0,0,0)'); rv.addColorStop(1, 'rgba(110,0,0,0.85)'); g.fillStyle = rv; g.fillRect(0, 0, w, h);
+      const r = Math.random();
+      if (el - SNAP < 60) { g.fillStyle = 'rgba(255,255,255,0.9)'; g.fillRect(0, 0, w, h); }
+      else if (e2 > 1150 && e2 < 1190) { g.globalCompositeOperation = 'difference'; g.fillStyle = '#fff'; g.fillRect(0, 0, w, h); g.globalCompositeOperation = 'source-over'; }
+      
+    }
+    for (let i = 0; i < 300; i++) { g.fillStyle = Math.random() < 0.5 ? 'rgba(255,240,225,0.07)' : 'rgba(0,0,0,0.3)'; g.fillRect(Math.random() * w, Math.random() * h, 2, 2); }
+    if (el >= DUR - 30) { g.fillStyle = '#000'; g.fillRect(0, 0, w, h); }
     if (el < DUR) requestAnimationFrame(loop);
     else { if (AU.master) AU.master.gain.value = SETTINGS.volume; if (onDone) onDone(); setTimeout(() => { cv.style.display = 'none'; }, 60); }
   };
@@ -1953,17 +1965,19 @@ function hauntCaught(e) {
   const stageIt = () => {
     camera.position.copy(camP);
   // stage it: the thing stands 0.9 m in front of your eyes, face level with yours, staring
-  e.pos.set(camera.position.x + fx * 1.4, PLAYER.pos.y, camera.position.z + fz * 1.4);
+  e.pos.set(camera.position.x + fx * 2.5, PLAYER.pos.y, camera.position.z + fz * 2.5);
   e.root.position.copy(e.pos); e.root.rotation.set(0, Math.atan2(fx, fz), 0); e.root.scale.setScalar(1);
   if (e.gm) {
     e.gm.g.visible = true; for (const k of ['thL', 'thR', 'upper']) e.s[k].visible = false;
     animateGhost(e.gm, e.ghostT, 0.2, 'run', 0); e.gm.body.rotation.x = -0.2; e.gm.body.position.set(0, 0, 0); e.gm.neck.rotation.x = 0.1;
     e.gm.head.rotation.z = 0.32; for (const st of e.gm.hair) if (st.userData.front) st.visible = false;
     $('hud').hidden = true; WEAPON.root.visible = false;
-    e.gm.g.scale.set(1, (camera.position.y - PLAYER.pos.y + 0.05) / 1.95, 1);
+    e.gm.g.scale.set(GS, GS * 1.12, GS); e.gm.body.rotation.x = -0.55; e.gm.neck.rotation.x = 0.6;
+    for (const a of [e.gm.armL, e.gm.armR]) { a.sh.rotation.x = 0.15; a.sh.rotation.z = 0; a.el.rotation.x = 0.1; }
+    if (BLADE.rig) BLADE.rig.visible = false; if (GEAR.line) { GEAR.line.visible = false; GEAR.tip.visible = false; } GEAR.hook = null; gearSound(false);
     e.root.updateMatrixWorld(true); e.gm.head.getWorldPosition(_hv);
   } else _hv.set(e.pos.x, camera.position.y, e.pos.z);
-  camera.lookAt(_hv); camera.fov = 55; camera.updateProjectionMatrix();
+  camera.lookAt(_hv); camera.fov = 48; camera.updateProjectionMatrix();
   };
   stageIt();
   const holdT0 = performance.now(); const hold = () => { if (performance.now() - holdT0 > 950) return; stageIt(); requestAnimationFrame(hold); }; requestAnimationFrame(hold);
@@ -1993,7 +2007,150 @@ function seenByPlayer(e) {
   return losClear(camera.position.x, camera.position.y, camera.position.z, e.pos.x, e.pos.y + 1.4, e.pos.z);
 }
 function state_shake() { if (typeof FEEL !== 'undefined') { FEEL.shake = 1; FEEL.fovK = 3; } }
+
+// ---------- manoeuvre gear: grappling hook (Q) + gas jets (hold Space in the air) ----------
+const GEAR = { gas: 100, hook: null, line: null, tip: null, prevQ: false, momentum: false, jetN: null, jetG: null, airT: 0, ui: null };
+function gearInit() {
+  if (GEAR.line) return;
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute([0, 0, 0, 0, 0, 0], 3));
+  GEAR.line = new THREE.Line(g, new THREE.LineBasicMaterial({ color: 0xcfd6d8 })); GEAR.line.frustumCulled = false; GEAR.line.visible = false; scene.add(GEAR.line);
+  GEAR.tip = new THREE.Mesh(new THREE.ConeGeometry(0.07, 0.22, 6), new THREE.MeshBasicMaterial({ color: 0x8a9496 })); GEAR.tip.visible = false; scene.add(GEAR.tip);
+  const ui = document.createElement('div'); ui.id = 'gasHud';
+  ui.style.cssText = 'position:absolute;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);width:180px;font:600 11px var(--f-display);color:#cfe;letter-spacing:.12em;text-align:center;pointer-events:none;text-shadow:0 1px 2px #000';
+  ui.innerHTML = '气 <span style="display:inline-block;vertical-align:middle;width:130px;height:6px;background:rgba(255,255,255,.12);border-radius:3px;overflow:hidden"><i style="display:block;height:100%;width:100%;background:linear-gradient(90deg,#7fd6ff,#e6fbff)"></i></span>';
+  $('hud').appendChild(ui); GEAR.ui = ui.querySelector('i');
+  if (IS_TOUCH) {
+    const mk = (id, label, right, bottom, prop) => {
+      const b = document.createElement('button'); b.className = 'tbtn m'; b.id = id; b.textContent = label;
+      b.style.cssText = `right:calc(${right}px + env(safe-area-inset-right,0px));bottom:calc(${bottom}px + env(safe-area-inset-bottom,0px));font-size:15px`;
+      b.addEventListener('pointerdown', (ev) => { ev.preventDefault(); ev.stopPropagation(); INPUT[prop] = true; b.classList.add('on'); try { b.setPointerCapture(ev.pointerId); } catch (e) { /* */ } });
+      const up = () => { INPUT[prop] = false; b.classList.remove('on'); };
+      b.addEventListener('pointerup', up); b.addEventListener('pointercancel', up); b.addEventListener('lostpointercapture', up);
+      $('touch').appendChild(b);
+    };
+    mk('tHook', '钩', 34, 104, 'tHook'); mk('tJet', '喷', 104, 28, 'tJet');
+  }
+}
+function gearSound(on) {
+  if (!AU.ctx) return;
+  if (!GEAR.jetN) {
+    const s = AU.ctx.createBufferSource(); s.buffer = AU.noise; s.loop = true;
+    const f = AU.ctx.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = 1400; f.Q.value = 0.7;
+    const g = AU.ctx.createGain(); g.gain.value = 0; s.connect(f); f.connect(g); g.connect(AU.master); s.start();
+    GEAR.jetN = s; GEAR.jetG = g;
+  }
+  GEAR.jetG.gain.setTargetAtTime(on ? 0.22 : 0, AU.ctx.currentTime, 0.05);
+}
+const _gd = new THREE.Vector3();
+function gearPhysics(dt, uiBlock) {
+  gearInit();
+  const P = PLAYER;
+  const qDown = !uiBlock && (key('KeyQ') || INPUT.tHook);
+  // fire the hook on press
+  if (qDown && !GEAR.prevQ && !GEAR.hook) {
+    _gd.set(0, 0, -1).applyQuaternion(camera.quaternion);
+    const t = raycast(camera.position.x, camera.position.y, camera.position.z, _gd.x, _gd.y, _gd.z, 70, false);
+    if (t < 70 && HIT.c && !HIT.c.water) {
+      GEAR.hook = new THREE.Vector3(camera.position.x + _gd.x * t, camera.position.y + _gd.y * t, camera.position.z + _gd.z * t);
+      if (AU.ctx) { tone(AU.ctx.currentTime, AU.master, { f0: 900, f1: 200, type: 'square', a: 0.001, d: 0.08, g: 0.15 }); noiseBurst(AU.ctx.currentTime + 0.05, AU.master, { f: 2500, q: 2, a: 0.001, d: 0.05, g: 0.3 }); }
+      if (P.onGround) { P.vel.y = Math.max(P.vel.y, 4); P.onGround = false; }
+    } else if (AU.ctx) sfxClick(300, 0.08);
+  }
+  if (!qDown) GEAR.hook = null;
+  GEAR.prevQ = qDown;
+  let using = false;
+  if (GEAR.hook) {
+    _gd.copy(GEAR.hook).sub(camera.position); const L = _gd.length();
+    if (L < 1.6) GEAR.hook = null;
+    else {
+      _gd.multiplyScalar(1 / L);
+      const pull = GEAR.gas > 0 ? 38 : 16;
+      P.vel.x += _gd.x * pull * dt; P.vel.y += (_gd.y * pull + 13) * dt; P.vel.z += _gd.z * pull * dt;
+      GEAR.gas = Math.max(0, GEAR.gas - 7 * dt); using = true; GEAR.momentum = true; P.onGround = false;
+    }
+  }
+  // jets: hold jump while airborne
+  GEAR.airT = P.onGround ? 0 : GEAR.airT + dt;
+  const jet = !uiBlock && (key('Space') || INPUT.tJet) && !P.onGround && GEAR.airT > 0.12 && GEAR.gas > 0;
+  if (jet) {
+    _gd.set(0, 0, -1).applyQuaternion(camera.quaternion); _gd.y = 0; _gd.normalize();
+    P.vel.y += 30 * dt; P.vel.x += _gd.x * 12 * dt; P.vel.z += _gd.z * 12 * dt;
+    GEAR.gas = Math.max(0, GEAR.gas - 26 * dt); using = true; GEAR.momentum = true;
+  }
+  if (INPUT.tJet && P.onGround) { P.vel.y = 6; P.onGround = false; }
+  gearSound(jet || !!GEAR.hook);
+  // speed cap, refill on the ground
+  const sp = Math.hypot(P.vel.x, P.vel.y, P.vel.z); if (sp > 28) P.vel.multiplyScalar(28 / sp);
+  if (P.onGround && !using) { GEAR.gas = Math.min(100, GEAR.gas + 16 * dt); GEAR.momentum = false; }
+  const hs = Math.hypot(P.vel.x, P.vel.z); if (hs > 10) FEEL.fovK = Math.max(FEEL.fovK, Math.min(6, (hs - 10) * 0.45));
+  if (GEAR.ui) GEAR.ui.style.width = GEAR.gas.toFixed(0) + '%';
+  // the cable
+  if (GEAR.hook) {
+    const p = GEAR.line.geometry.attributes.position;
+    _gd.set(0.25, -0.35, -0.3).applyQuaternion(camera.quaternion).add(camera.position);
+    p.setXYZ(0, _gd.x, _gd.y, _gd.z); p.setXYZ(1, GEAR.hook.x, GEAR.hook.y, GEAR.hook.z); p.needsUpdate = true;
+    GEAR.line.visible = true; GEAR.tip.visible = true; GEAR.tip.position.copy(GEAR.hook);
+  } else { GEAR.line.visible = false; GEAR.tip.visible = false; }
+}
+
+// ---------- twin blades (3): hold to attack; everything around you within 3.4 m is cut; perfect block while swinging ----------
+const BLADE = { on: false, atk: false, rig: null, ring: null, t: 0, tick: 0, swishT: 0, hitAcc: new Map() };
+function bladeRig() {
+  if (BLADE.rig) return;
+  const rig = new THREE.Group(), steel = new THREE.MeshStandardMaterial({ color: 0xd8dde0, metalness: 0.9, roughness: 0.25 }), grip = new THREE.MeshStandardMaterial({ color: 0x2a2a2a, roughness: 0.8 });
+  const mk = (sx) => {
+    const h = new THREE.Group(); h.position.set(sx * 0.28, -0.32, -0.45);
+    const handle = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.05, 0.16), grip); h.add(handle);
+    const blade = new THREE.Mesh(new THREE.BoxGeometry(0.012, 0.07, 0.95), steel); blade.position.z = -0.55; h.add(blade);
+    const edge = new THREE.Mesh(new THREE.BoxGeometry(0.004, 0.012, 0.95), new THREE.MeshBasicMaterial({ color: 0xffffff })); edge.position.set(0, 0.036, -0.55); h.add(edge);
+    rig.add(h); return h;
+  };
+  BLADE.L = mk(-1); BLADE.R = mk(1);
+  rig.visible = false; camera.add(rig); BLADE.rig = rig;
+  const ring = new THREE.Mesh(new THREE.RingGeometry(3.0, 3.4, 48, 1), new THREE.MeshBasicMaterial({ color: 0xe8f6ff, transparent: true, opacity: 0, side: THREE.DoubleSide, depthWrite: false }));
+  ring.rotation.x = -Math.PI / 2; scene.add(ring); BLADE.ring = ring;
+}
+function bladeOn() {
+  bladeRig(); if (BLADE.on) return;
+  BLADE.on = true; WEAPON.root.visible = false; BLADE.rig.visible = true; WEAPON.adsT = 0; INPUT.mouseAds = false;
+  sfxClick(1600, 0.1); updateWeaponHUD();
+}
+function bladeOff() { if (!BLADE.on) return; BLADE.on = false; BLADE.atk = false; WEAPON.root.visible = true; if (BLADE.rig) BLADE.rig.visible = false; if (BLADE.ring) BLADE.ring.material.opacity = 0; updateWeaponHUD(); }
+function bladeClang() { if (!AU.ctx) return; const t = AU.ctx.currentTime; for (const f of [1900, 2650, 3700]) tone(t, AU.master, { f0: f, type: 'square', a: 0.001, d: 0.25, g: 0.08 }); noiseBurst(t, AU.master, { f: 4000, q: 1, a: 0.001, d: 0.08, g: 0.5 }); }
+function bladeUpdate(dt) {
+  bladeRig();
+  const P = PLAYER, kb = SETTINGS.ctrl === 'keys';
+  BLADE.atk = P.alive && !UI.panelOpen && (INPUT.mouseFire || INPUT.tFire > 0 || (kb && key('KeyJ')));
+  BLADE.t += dt;
+  // viewmodel: rapid alternating cuts while held, resting guard otherwise
+  const sw = BLADE.atk ? BLADE.t * 22 : 0;
+  BLADE.L.rotation.set(BLADE.atk ? Math.sin(sw) * 0.9 : 0.25, BLADE.atk ? Math.cos(sw) * 0.7 : 0.15, BLADE.atk ? Math.sin(sw) * 0.6 : 0.3);
+  BLADE.R.rotation.set(BLADE.atk ? Math.sin(sw + Math.PI) * 0.9 : 0.25, BLADE.atk ? -Math.cos(sw) * 0.7 : -0.15, BLADE.atk ? -Math.sin(sw + Math.PI) * 0.6 : -0.3);
+  BLADE.ring.position.set(P.pos.x, P.pos.y + 0.9, P.pos.z);
+  BLADE.ring.rotation.z += dt * 14;
+  BLADE.ring.material.opacity = damp(BLADE.ring.material.opacity, BLADE.atk ? 0.28 + Math.random() * 0.12 : 0, 18, dt);
+  if (!BLADE.atk) return;
+  BLADE.swishT -= dt;
+  if (BLADE.swishT <= 0 && AU.ctx) { BLADE.swishT = 0.09; noiseBurst(AU.ctx.currentTime, AU.master, { f: 2600 + Math.random() * 1200, q: 1.5, a: 0.005, d: 0.06, g: 0.18 }); }
+  // continuous cutting in a ring around you; damage is applied in small steps so the feedback isn't a wall of noise
+  BLADE.tick += dt;
+  if (BLADE.tick < 0.06) return;
+  const step = BLADE.tick; BLADE.tick = 0;
+  let hit = false;
+  for (const e of ENEMIES) {
+    if (e.dead) continue;
+    const dx = e.pos.x - P.pos.x, dz = e.pos.z - P.pos.z, d = Math.hypot(dx, dz);
+    const reach = 3.4 + (e.ghost ? 0.4 * GS : 0.4);
+    if (d > reach || Math.abs(e.pos.y - P.pos.y) > 4) continue;
+    e.damage(1000 * step, 'body', { peer: null, pos: P.pos });
+    if (!e.dead) { const nx = dx / Math.max(d, 0.01), nz = dz / Math.max(d, 0.01); e.vel.x += nx * 3; e.vel.z += nz * 3; }
+    hit = true;
+  }
+  if (hit) { WEAPON.kickY -= 0.01; FEEL.shake = Math.min(1, FEEL.shake + 0.25); }
+}
+
 // ---------- ammunition: caches across the map (they restock) + boxes dropped by the dead ----------
+const GS = 1.7;   // ghost size
 const AMMO = { list: [], geo: null, mat: null, beamGeo: null, beamMat: null };
 function ammoMeshes() {
   if (AMMO.geo) return;
@@ -2024,7 +2181,7 @@ function ammoTick(dt) {
       let got = 0;
       for (const w of WEAPON.list) { const add = Math.round(w.def.mag * a.mags); const cap = w.def.reserve * 4; const before = w.reserve; w.reserve = Math.min(cap, w.reserve + add); got += w.reserve - before; }
       if (got > 0) {
-        sfxPickup(1); toast(a.drop ? `捡到弹药 +${got}` : `弹药补给 +${got}`, '#7dff9a');
+        sfxPickup(1); updateWeaponHUD(); toast(a.drop ? `捡到弹药 +${got}` : `弹药补给 +${got}`, '#7dff9a');
         if (a.respawn > 0) { a.g.visible = false; a.down = a.respawn; } else { a.g.visible = false; a.gone = true; }
       }
     }
@@ -2064,6 +2221,7 @@ function hauntTick(dt) {
     // nobody starts right on top of you; and you will need the ammunition
     for (const e of ENEMIES) if (!e.dead && e.pos.distanceTo(PLAYER.pos) < 35) hauntRelocate(e, 45, 70);
     for (const w of WEAPON.list) w.reserve *= 2;
+    updateWeaponHUD();
     placeAmmoCaches(12);
   }
   ammoTick(dt);
@@ -2098,7 +2256,7 @@ function hauntTick(dt) {
   // something screams far away now and then
   H.scrT = (H.scrT == null ? 70 : H.scrT) - dt;
   if (H.scrT <= 0) { H.scrT = rnd(35, 70) * (1 - k * 0.4); const a = Math.random() * 6.28; hauntShriek(_hv.set(P.pos.x + Math.cos(a) * 45, 1.6, P.pos.z + Math.sin(a) * 45)); }
-  const msgs = [[3, '无线电：所有撤离点信号中断。坚持住，等信号恢复。', '#9ca3af'], [9, '绿色光柱是弹药补给。打倒它们也会掉弹药。', '#7dff9a'], [40, '他们为什么不开枪？', '#e5e7eb'], [100, '不要让他们靠近你', '#fca5a5'], [170, '别回头', '#ef4444'], [240, '天怎么黑了', '#ef4444'], [300, '撤离信号恢复了。快走。', '#6fe2a8']];
+  const msgs = [[3, '无线电：所有撤离点信号中断。坚持住，等信号恢复。', '#9ca3af'], [9, '绿色光柱是弹药补给。打倒它们也会掉弹药。', '#7dff9a'], [15, IS_TOUCH ? '「钩」射出钩爪 · 空中按住「喷」喷气 · 切枪按钮可切到双刀' : '[Q] 按住钩爪 · 空中按住 [空格] 喷气 · [3] 双刀（按住攻击时完全格挡）', '#7fd6ff'], [40, '他们为什么不开枪？', '#e5e7eb'], [100, '不要让他们靠近你', '#fca5a5'], [170, '别回头', '#ef4444'], [240, '天怎么黑了', '#ef4444'], [300, '撤离信号恢复了。快走。', '#6fe2a8']];
   while (H.msgs < msgs.length && H.t > msgs[H.msgs][0]) { toast(msgs[H.msgs][1], msgs[H.msgs][2]); if (H.msgs >= 2 && H.msgs < 5) hauntWhisper(); H.msgs++; }
   if (Math.random() < dt * 0.04) { document.title = Math.random() < 0.5 ? 'うしろ' : '别回头'; setTimeout(() => { document.title = '灰烬港区'; }, 900); }
 }
@@ -3276,14 +3434,15 @@ function playerUpdate(dt) {
   if (P.inWater) speed *= 0.5;
   const s = Math.sin(P.yaw), c = Math.cos(P.yaw);
   const wx = (fx * c + fz * s) * speed * len, wz = (-fx * s + fz * c) * speed * len;
-  const acc = P.onGround ? 13 : 2.5;
+  const acc = P.onGround ? 13 : (GEAR.momentum ? 0.35 : 2.5);
   const lx = len > 0 ? wx / len : 0, lz = len > 0 ? wz / len : 0;
   P.vel.x = damp(P.vel.x, len > 0 ? lx * len : 0, acc, dt);
   P.vel.z = damp(P.vel.z, len > 0 ? lz * len : 0, acc, dt);
   if (!uiBlock && (key('Space') || INPUT.tJump) && P.onGround && P.crouch < 0.5) { P.vel.y = 6.0; P.onGround = false; INPUT.tJump = false; }
   INPUT.tJump = false;
+  gearPhysics(dt, uiBlock);
   integrateBody(P, dt);
-  if (P.landV > 4) { WEAPON.kickY -= Math.min(0.06, P.landV * 0.006); sfxStep(true); if (P.landV > 13) damagePlayer((P.landV - 13) * 9, null, 'fall'); }
+  if (P.landV > 4) { WEAPON.kickY -= Math.min(0.06, P.landV * 0.006); sfxStep(true); }
   P.landV = 0;
   if (P.onGround && !P.inWater) P.lastSafe.copy(P.pos);
   if (P.pos.y < -20) { P.pos.copy(P.lastSafe); P.vel.set(0, 0, 0); }
@@ -3302,7 +3461,7 @@ function playerUpdate(dt) {
 
   // ---- lean (Q/E) with wall check ----
   let leanWant = 0;
-  if (!uiBlock && !P.sprinting) { if (key('KeyQ')) leanWant -= 1; if (key('KeyE')) leanWant += 1; }
+  if (!uiBlock && !P.sprinting) { if (key('KeyE')) leanWant += 1; }
   P.lean = damp(P.lean, leanWant, 10, dt);
 
   // ---- heal ----
@@ -3822,6 +3981,18 @@ class Enemy {
   get eyeY() { return this.pos.y + lerp(1.62, 1.1, this.crouch); }
   rayHit(o, d, maxT) {
     if (this.dead) return null;
+    if (this.ghost && this.gm && this.gm.shown) {
+      const crawl = this.gm.body.rotation.x < -0.6;
+      const top = crawl ? 1.3 * GS * 0.55 : 2.0 * GS, r = 0.42 * GS;
+      const hx = this.pos.x, hz = this.pos.z, hy = this.pos.y + (crawl ? 0.75 * GS : 1.9 * GS);
+      let best = maxT, part = null;
+      { const fx = o.x - hx, fy = o.y - hy, fz = o.z - hz, b = fx * d.x + fy * d.y + fz * d.z, c = fx * fx + fy * fy + fz * fz - (0.2 * GS) ** 2, disc = b * b - c;
+        if (disc > 0) { const t = -b - Math.sqrt(disc); if (t > 0 && t < best) { best = t; part = 'head'; } } }
+      { const fx = o.x - hx, fz = o.z - hz, a = d.x * d.x + d.z * d.z;
+        if (a > 1e-8) { const b = 2 * (fx * d.x + fz * d.z), c = fx * fx + fz * fz - r * r, disc = b * b - 4 * a * c;
+          if (disc >= 0) { const sq = Math.sqrt(disc); for (const t of [(-b - sq) / (2 * a), (-b + sq) / (2 * a)]) { if (t <= 0 || t >= best) continue; const y = o.y + d.y * t; if (y >= this.pos.y && y <= this.pos.y + top) { best = t; part = 'body'; break; } } } } }
+      return part ? { t: best, part } : null;
+    }
     const dx = this.pos.x - o.x, dz = this.pos.z - o.z;
     if (dx * dx + dz * dz > (maxT + 2) * (maxT + 2)) return null;
     let best = maxT, part = null;
@@ -3863,7 +4034,7 @@ class Enemy {
       const G = this.gm, t0 = performance.now();
       this.die(part === 'head', shooter); this.root.visible = true;
       for (const k of ['thL', 'thR', 'upper']) this.s[k].visible = false;
-      if (G) { G.g.visible = true; const fold = () => { const k = (performance.now() - t0) / 900; if (k >= 1) { G.g.visible = false; this.root.visible = false; return; } G.g.scale.set(1 + k * 0.6, Math.max(0.02, 1.1 * (1 - k)), 1 + k * 0.6); G.g.rotation.z = Math.sin(k * 40) * 0.2 * (1 - k); requestAnimationFrame(fold); }; requestAnimationFrame(fold); }
+      if (G) { G.g.visible = true; const fold = () => { const k = (performance.now() - t0) / 900; if (k >= 1) { G.g.visible = false; this.root.visible = false; return; } G.g.scale.set(GS * (1 + k * 0.6), GS * Math.max(0.02, 1.1 * (1 - k)), GS * (1 + k * 0.6)); G.g.rotation.z = Math.sin(k * 40) * 0.2 * (1 - k); requestAnimationFrame(fold); }; requestAnimationFrame(fold); }
     }
     return;
     this.hurtT = TIME; this.suppress = Math.min(1, this.suppress + 0.4); this.coverT = Math.min(this.coverT, 0.15);
@@ -4133,7 +4304,15 @@ class Enemy {
       // you got far enough away and stopped looking: it puts the soldier back on
       if (!this.finalHunt && dist > 28 && !seenByPlayer(this)) { this.farT = (this.farT || 0) + dt; if (this.farT > 2.5) this.unGhost(); } else this.farT = 0;
       // it has to actually reach you
-      if (dist < 0.95 && Math.abs(P.pos.y - this.pos.y) < 1.6 && P.alive && !H.over) { hauntCaught(this); return; }
+      if (dist < 1.5 && Math.abs(P.pos.y - this.pos.y) < 3.2 && P.alive && !H.over) {
+        if (BLADE.on && BLADE.atk) {
+          // blades up: a perfect block. It is thrown back instead of taking you.
+          const nx = -dx / Math.max(dist, 0.01), nz = -dz / Math.max(dist, 0.01);
+          this.pos.x += nx * 2.2; this.pos.z += nz * 2.2; this.vel.set(nx * 9, 0, nz * 9); this.stagger = 0.7; this.flinch = 1.2;
+          bladeClang(); FEEL.shake = 1; return;
+        }
+        hauntCaught(this); return;
+      }
     } else {
       // every one of them walks toward you. Slowly. Looking at you the whole way.
       this.losT = (this.losT || 0) - dt;
@@ -4185,14 +4364,14 @@ class Enemy {
         this.root.scale.set(1 - this.ghostT * 0.5, 1 + this.ghostT * 0.9, 1 - this.ghostT * 0.5);
         if (this.ghostT > T0 * 0.7) G.g.visible = Math.random() < 0.5;
       } else {
-        if (!G.shown) { G.shown = true; for (const k of ['thL', 'thR', 'upper']) this.s[k].visible = false; this.root.scale.setScalar(1); G.g.scale.set(1, 1, 1); }
+        if (!G.shown) { G.shown = true; for (const k of ['thL', 'thR', 'upper']) this.s[k].visible = false; this.root.scale.setScalar(1); G.g.scale.set(GS, GS, GS); }
         // stop-motion: the drawn position only catches up 13 times a second
         this.dispT += dt;
         if (this.dispT > 1 / 13) { this.dispT = 0; this.dispPos.copy(this.pos); G.g.visible = Math.random() > 0.035; }
         this.root.position.copy(this.dispPos);
         const mode = dist < 9 && dist > 1.4 ? 'crawl' : 'run';
         animateGhost(G, this.ghostT, dt, mode, this.vel.length());
-        G.g.scale.y = 1.12 + Math.sin(this.ghostT * 2) * 0.02;
+        G.g.scale.y = GS * (1.12 + Math.sin(this.ghostT * 2) * 0.02);
       }
     } else if ((this.stareT || 0) > 3) {
       this.s.upper.rotation.z = Math.sin(Math.min(1, (this.stareT - 3) / 4) * 1.2) * 0.35 * (this.id % 2 ? 1 : -1);
@@ -4480,11 +4659,17 @@ function banner(big, small, dur = 3.5) {
 }
 function updateWeaponHUD() {
   const w = WEAPON.cur; if (!w) return;
+  if (typeof BLADE !== 'undefined' && BLADE.on) {
+    $('wName').textContent = '双刀'; const a = $('wAmmo'); a.innerHTML = '∞'; a.classList.remove('low');
+    $('wMode').textContent = '按住攻击 · 攻击时完全格挡';
+    $('wSlots').innerHTML = WEAPON.list.map((x, i) => `<span>${i + 1} ${x.def.short}</span>`).join('') + '<span class="on">3 双刀</span>';
+    return;
+  }
   $('wName').textContent = w.def.name;
   const a = $('wAmmo'); a.innerHTML = `${w.mag}<small> / ${w.reserve}</small>`;
   a.classList.toggle('low', w.mag <= Math.ceil(w.def.mag * 0.2));
   $('wMode').textContent = w.reloadT > 0 ? '换弹中…' : w.def.modes[w.mode];
-  $('wSlots').innerHTML = WEAPON.list.map((x, i) => `<span class="${i === WEAPON.idx ? 'on' : ''}">${i + 1} ${x.def.short}</span>`).join('');
+  $('wSlots').innerHTML = WEAPON.list.map((x, i) => `<span class="${i === WEAPON.idx ? 'on' : ''}">${i + 1} ${x.def.short}</span>`).join('') + '<span>3 双刀</span>';
 }
 // ----- map base (top-down render of colliders) -----
 const MAPE = 140;
@@ -5002,12 +5187,13 @@ addEventListener('keydown', (e) => {
       break;
     default:
       if (UI.panelOpen || !P.alive) return;
-      if (e.code === 'KeyR') startReload();
+      if (e.code === 'KeyR') { if (!BLADE.on) startReload(); }
       else if (e.code === 'KeyH') useMed();
       else if (e.code === 'KeyG') usePlate();
       else if (e.code === 'KeyB') cycleMode();
-      else if (e.code === 'Digit1') equip(0);
-      else if (e.code === 'Digit2') equip(1);
+      else if (e.code === 'Digit1') { bladeOff(); equip(0); }
+      else if (e.code === 'Digit2') { bladeOff(); equip(1); }
+      else if (e.code === 'Digit3') bladeOn();
       else if (e.code === 'KeyC') P.crouchWant = !P.crouchWant;
   }
 });
@@ -5087,7 +5273,7 @@ tapBtn('tAds', () => { INPUT.tAds = !INPUT.tAds; $('tAds').classList.toggle('on'
 tapBtn('tJump', () => { INPUT.tJump = true; PLAYER.crouchWant = false; INPUT.tCrouch = false; $('tCrouch').classList.remove('on'); });
 tapBtn('tCrouch', () => { INPUT.tCrouch = !INPUT.tCrouch; $('tCrouch').classList.toggle('on', INPUT.tCrouch); });
 tapBtn('tReload', () => startReload());
-tapBtn('tSwap', () => equip(WEAPON.idx === 0 ? 1 : 0));
+tapBtn('tSwap', () => { if (BLADE.on) { bladeOff(); equip(0); } else if (WEAPON.idx === 1) bladeOn(); else equip(1); });
 tapBtn('tHeal', () => useMed());
 tapBtn('tPlate', () => usePlate());
 tapBtn('tInteract', () => doInteract());
@@ -5285,7 +5471,7 @@ function gameUpdate(dt) {
   STATE.timeLeft -= dt;
   if (STATE.timeLeft <= 0 && P.alive) { endRaid('mia'); return; }
   playerUpdate(dt);
-  weaponUpdate(dt);
+  if (BLADE.on) bladeUpdate(dt); else weaponUpdate(dt);
   hauntTick(dt);
   for (const e of ENEMIES) e.update(dt);
   lootTick(dt);
