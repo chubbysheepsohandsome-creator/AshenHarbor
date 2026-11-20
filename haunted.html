@@ -1721,6 +1721,103 @@ const H = { t: 0, msgs: 0, firstShot: false, finale: false, over: false, ghosts:
 
 
 let faceCanvas = null;
+
+// ---------- the real shape: tall, starved, white robe, hair to the waist, that face ----------
+const GH = {};
+function ghostAssets() {
+  if (GH.ready) return GH;
+  if (!faceCanvas) faceCanvas = buildFace();
+  // the face with its dark frame faded out, so it reads as a face and not a picture
+  const fc = document.createElement('canvas'); fc.width = fc.height = 512; const fg = fc.getContext('2d');
+  fg.drawImage(faceCanvas, 0, 0, 512, 512);
+  fg.globalCompositeOperation = 'destination-in';
+  const m = fg.createRadialGradient(256, 262, 120, 256, 262, 232); m.addColorStop(0, 'rgba(0,0,0,1)'); m.addColorStop(0.8, 'rgba(0,0,0,0.9)'); m.addColorStop(1, 'rgba(0,0,0,0)');
+  fg.fillStyle = m; fg.beginPath(); fg.ellipse(256, 262, 200, 245, 0, 0, Math.PI * 2); fg.fill();
+  const tex = new THREE.CanvasTexture(fc); tex.colorSpace = THREE.SRGBColorSpace;
+  GH.faceMat = new THREE.MeshBasicMaterial({ map: tex, fog: true, transparent: true, alphaTest: 0.02 });
+  GH.robeMat = new THREE.MeshLambertMaterial({ color: 0xd9d6cc, emissive: 0x5a5c5a, side: THREE.DoubleSide, fog: true });
+  GH.skinMat = new THREE.MeshLambertMaterial({ color: 0xc9cbc4, emissive: 0x4a4c4a, fog: true });
+  GH.hairMat = new THREE.MeshBasicMaterial({ color: 0x030304, side: THREE.DoubleSide, fog: true });
+  // robe: a tapered tube with a torn, ragged hem
+  const robe = new THREE.CylinderGeometry(0.15, 0.42, 1.55, 14, 8, true);
+  const p = robe.attributes.position;
+  for (let i = 0; i < p.count; i++) {
+    const y = p.getY(i), x = p.getX(i), z = p.getZ(i), a = Math.atan2(z, x);
+    const k = (0.78 - y) / 1.55;                       // 0 at the shoulders, 1 at the hem
+    const tear = y < -0.6 ? (Math.sin(a * 7) * 0.5 + 0.5) * 0.28 * (Math.sin(a * 13 + 1) > 0 ? 1 : 0.3) : 0;
+    const wob = 1 + Math.sin(a * 5 + y * 6) * 0.06 * k;
+    p.setXYZ(i, x * wob, y + tear, z * wob);
+  }
+  robe.computeVertexNormals(); GH.robe = robe;
+  GH.limb = new THREE.CylinderGeometry(0.028, 0.022, 1, 6); GH.limb.translate(0, -0.5, 0);
+  GH.finger = new THREE.CylinderGeometry(0.008, 0.004, 1, 4); GH.finger.translate(0, -0.5, 0);
+  GH.head = new THREE.SphereGeometry(0.13, 12, 10); GH.head.scale(0.85, 1.15, 0.9);
+  GH.face = new THREE.PlaneGeometry(0.34, 0.34);
+  GH.strand = new THREE.PlaneGeometry(0.035, 1); GH.strand.translate(0, -0.5, 0);
+  GH.ready = true; return GH;
+}
+function buildGhostMesh() {
+  const A = ghostAssets(), g = new THREE.Group();
+  const body = new THREE.Group(); body.position.y = 0; g.add(body);
+  const robe = new THREE.Mesh(A.robe, A.robeMat); robe.position.y = 0.95; body.add(robe);
+  const chest = new THREE.Group(); chest.position.y = 1.72; body.add(chest);
+  const neck = new THREE.Group(); neck.position.y = 0.06; chest.add(neck);
+  const head = new THREE.Group(); head.position.y = 0.16; neck.add(head);
+  head.add(new THREE.Mesh(A.head, A.skinMat));
+  const face = new THREE.Mesh(A.face, A.faceMat); face.position.set(0, -0.02, -0.12); face.rotation.y = Math.PI; head.add(face);
+  const hair = [];
+  for (let i = 0; i < 46; i++) {
+    const a = (i / 46) * Math.PI * 2, front = Math.cos(a) < -0.55;          // a few strands hang over the face
+    const st = new THREE.Mesh(A.strand, A.hairMat);
+    st.position.set(Math.sin(a) * 0.12, 0.13, Math.cos(a) * 0.11);
+    st.rotation.y = -a; st.scale.y = front ? 0.45 + Math.random() * 0.25 : 0.75 + Math.random() * 0.5;
+    if (front && Math.random() < 0.5) continue;
+    st.userData.ph = Math.random() * 6; st.userData.front = front; head.add(st); hair.push(st);
+  }
+  const mkArm = (sx) => {
+    const sh = new THREE.Group(); sh.position.set(sx * 0.17, 0, 0); chest.add(sh);
+    const up = new THREE.Mesh(A.limb, A.skinMat); up.scale.y = 0.42; sh.add(up);
+    const el = new THREE.Group(); el.position.y = -0.42; sh.add(el);
+    const lo = new THREE.Mesh(A.limb, A.skinMat); lo.scale.y = 0.44; el.add(lo);
+    const hand = new THREE.Group(); hand.position.y = -0.44; el.add(hand);
+    for (let f = 0; f < 4; f++) { const fi = new THREE.Mesh(A.finger, A.skinMat); fi.scale.y = 0.17 + f * 0.02; fi.position.x = (f - 1.5) * 0.018; fi.rotation.z = (f - 1.5) * 0.12; hand.add(fi); }
+    return { sh, el, hand };
+  };
+  const armL = mkArm(-1), armR = mkArm(1);
+  const mkLeg = (sx) => { const hip = new THREE.Group(); hip.position.set(sx * 0.09, 0.85, 0); body.add(hip); const l = new THREE.Mesh(A.limb, A.skinMat); l.scale.y = 0.85; hip.add(l); return hip; };
+  const legL = mkLeg(-1), legR = mkLeg(1);
+  g.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.frustumCulled = false; } });
+  return { g, body, robe, chest, neck, head, face, hair, armL, armR, legL, legR };
+}
+function animateGhost(G, t, dt, mode, speed) {
+  // mode: 'rise' (transforming), 'run', 'crawl'
+  const jit = () => (Math.random() - 0.5);
+  for (const h of G.hair) h.rotation.x = Math.sin(t * 3 + h.userData.ph) * 0.08 + (mode === 'run' ? 0.35 : 0) + (mode === 'crawl' ? -0.9 : 0);
+  if (mode === 'crawl') {
+    // down on all fours, head craned up at you, limbs scrabbling
+    G.body.rotation.x = damp(G.body.rotation.x, -1.15, 10, dt); G.body.position.y = damp(G.body.position.y, 0.18, 10, dt); G.body.position.z = damp(G.body.position.z, 1.1, 10, dt);
+    G.neck.rotation.x = damp(G.neck.rotation.x, 1.3, 10, dt);
+    const c = t * (8 + speed * 1.2);
+    G.armL.sh.rotation.x = 1.6 + Math.sin(c) * 0.55; G.armR.sh.rotation.x = 1.6 + Math.sin(c + Math.PI) * 0.55;
+    G.armL.el.rotation.x = -0.5 + Math.cos(c) * 0.4; G.armR.el.rotation.x = -0.5 + Math.cos(c + Math.PI) * 0.4;
+    G.legL.rotation.x = 0.25 + Math.sin(c + Math.PI) * 0.45; G.legR.rotation.x = 0.25 + Math.sin(c) * 0.45;
+    G.head.rotation.z = Math.sin(t * 19) * 0.25 + jit() * 0.3;
+  } else {
+    G.body.rotation.x = damp(G.body.rotation.x, mode === 'run' ? -0.35 : 0.05, 8, dt); G.body.position.y = damp(G.body.position.y, 0, 8, dt); G.body.position.z = damp(G.body.position.z, 0, 8, dt);
+    G.neck.rotation.x = damp(G.neck.rotation.x, mode === 'run' ? 0.3 : -0.15, 8, dt);
+    const c = t * (mode === 'run' ? 10 : 2);
+    // arms stretched out toward you, fingers twitching
+    G.armL.sh.rotation.x = (mode === 'rise' ? 0.2 : 1.8) + jit() * 0.12; G.armR.sh.rotation.x = (mode === 'rise' ? 0.3 : 1.7) + jit() * 0.12;
+    G.armL.sh.rotation.z = 0.12; G.armR.sh.rotation.z = -0.12;
+    G.armL.el.rotation.x = 0.15 + Math.sin(t * 27) * 0.1; G.armR.el.rotation.x = 0.1 + Math.sin(t * 23) * 0.1;
+    G.legL.rotation.x = mode === 'run' ? Math.sin(c) * 0.9 : 0; G.legR.rotation.x = mode === 'run' ? Math.sin(c + Math.PI) * 0.9 : 0;
+    // the head: snapping sideways in jerks, sometimes folded right over onto the shoulder
+    if (Math.random() < dt * 4) G.tiltT = (Math.random() < 0.3 ? 1.35 : 0.5) * (Math.random() < 0.5 ? -1 : 1);
+    G.head.rotation.z = damp(G.head.rotation.z, G.tiltT || 0, 25, dt) + jit() * 0.15;
+  }
+  for (const a of [G.armL, G.armR]) for (const f of a.hand.children) f.rotation.x = Math.sin(t * 40 + f.position.x * 90) * 0.5;
+}
+
 const GHOST_MAT = new THREE.MeshBasicMaterial({ color: 0xdfe3e2, fog: true });
 const GHOST_HAIR = new THREE.MeshBasicMaterial({ color: 0x050506, fog: true });
 const GHOST_EYE = new THREE.MeshBasicMaterial({ color: 0xff2222, fog: false });
@@ -1740,6 +1837,24 @@ function hauntAudioScream(big) {
   noiseBurst(at, ws, { f: 2400, q: 0.6, type: 'highpass', a: 0.01, d: dur, g: 0.5 });
   tone(at, AU.master, { f0: 90, f1: 25, a: 0.003, d: 0.55, g: big ? 1 : 0.6 });
 }
+function hauntShriek(pos, dying) {
+  if (!AU.ctx) return;
+  const ctx = AU.ctx, at = ctx.currentTime + 0.01, dur = dying ? 1.6 : 0.85, pf = panFor(pos);
+  const vol = (dying ? 0.5 : 0.75) * clamp(1.2 - pf.dist / 40, 0.15, 1);
+  const out = ctx.createGain(); const p = ctx.createStereoPanner ? ctx.createStereoPanner() : null;
+  if (p) { p.pan.value = clamp(pf.pan, -1, 1); out.connect(p); p.connect(AU.master); } else out.connect(AU.master);
+  const ws = ctx.createWaveShaper(); const cv = new Float32Array(1024); for (let i = 0; i < 1024; i++) { const x = i / 512 - 1; cv[i] = Math.tanh(x * 5); } ws.curve = cv; ws.connect(out);
+  out.gain.setValueAtTime(0.0001, at); out.gain.exponentialRampToValueAtTime(vol, at + 0.02); out.gain.exponentialRampToValueAtTime(0.0008, at + dur);
+  for (const det of [0, 9, -13]) {
+    const o = ctx.createOscillator(); o.type = 'sawtooth';
+    if (dying) { o.frequency.setValueAtTime(700 + det * 4, at); o.frequency.exponentialRampToValueAtTime(90, at + dur); }
+    else { o.frequency.setValueAtTime(420 + det * 3, at); o.frequency.exponentialRampToValueAtTime(980 + det * 6, at + dur * 0.4); o.frequency.exponentialRampToValueAtTime(600, at + dur); }
+    const vib = ctx.createOscillator(), vg = ctx.createGain(); vib.frequency.value = 27 + det; vg.gain.value = 50; vib.connect(vg); vg.connect(o.frequency);
+    for (const [f, q] of [[1000, 6], [2200, 8], [3400, 10]]) { const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = f; bp.Q.value = q; o.connect(bp); bp.connect(ws); }
+    o.start(at); o.stop(at + dur + 0.05); vib.start(at); vib.stop(at + dur + 0.05);
+  }
+}
+function hauntHeart(k) { if (!AU.ctx) return; const t = AU.ctx.currentTime; tone(t, AU.master, { f0: 62, f1: 40, a: 0.004, d: 0.12, g: 0.5 * k }); tone(t + 0.16, AU.master, { f0: 55, f1: 36, a: 0.004, d: 0.14, g: 0.38 * k }); }
 function hauntCroak(pos, k = 0.6) {
   if (!AU.ctx) return;
   const t = AU.ctx.currentTime, pf = pos ? panFor(pos) : { pan: 0, dist: 0 };
@@ -1751,35 +1866,80 @@ function hauntCroak(pos, k = 0.6) {
 function hauntWhisper() { if (!AU.ctx) return; const t = AU.ctx.currentTime; for (let i = 0; i < 3; i++) noiseBurst(t + i * 0.3, AU.master, { f: 1300 + i * 400, q: 5, a: 0.08, d: 0.35, g: 0.12 }); }
 
 // ---- the full-screen face ----
+function hauntWhoosh(dur) {
+  // the sharp in-breath before it hits: rising filtered noise
+  if (!AU.ctx) return;
+  const ctx = AU.ctx, t = ctx.currentTime, s = ctx.createBufferSource(); s.buffer = AU.noise;
+  const f = ctx.createBiquadFilter(); f.type = 'bandpass'; f.Q.value = 1.4;
+  f.frequency.setValueAtTime(300, t); f.frequency.exponentialRampToValueAtTime(5000, t + dur);
+  const g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.9, t + dur * 0.95); g.gain.linearRampToValueAtTime(0, t + dur);
+  s.connect(f); f.connect(g); g.connect(AU.master); s.start(t, Math.random()); s.stop(t + dur + 0.05);
+}
+function hauntImpact() {
+  if (!AU.ctx) return;
+  const ctx = AU.ctx, t = ctx.currentTime;
+  tone(t, AU.master, { f0: 120, f1: 28, a: 0.002, d: 0.7, g: 1.4 });            // body blow
+  tone(t, AU.master, { f0: 55, f1: 22, type: 'square', a: 0.002, d: 0.5, g: 0.5 });
+  noiseBurst(t, AU.master, { f: 3000, q: 0.5, type: 'highpass', a: 0.001, d: 0.25, g: 1.0 });   // crack
+  for (const f of [1170, 1660, 2490, 3320]) tone(t, AU.master, { f0: f, type: 'square', a: 0.001, d: 0.4, g: 0.07 }); // metallic sting
+}
+// ---- the face: alive, not a picture ----
 function hauntJumpScare(onDone) {
   if (!faceCanvas) faceCanvas = buildFace();
   let cv = H.scareCv;
   if (!cv) { cv = H.scareCv = document.createElement('canvas'); cv.style.cssText = 'position:fixed;inset:0;width:100%;height:100%;z-index:9999;pointer-events:none;display:none'; document.body.appendChild(cv); }
   cv.width = innerWidth; cv.height = innerHeight; cv.style.display = 'block';
-  const g = cv.getContext('2d'), w = cv.width, h = cv.height;
-  if (AU.master) { const m = AU.master.gain, now = AU.ctx.currentTime; m.cancelScheduledValues(now); m.setValueAtTime(0.02, now); m.setValueAtTime(SETTINGS.volume * 1.4, now + 0.3); }
-  setTimeout(() => hauntAudioScream(true), 300);
-  const t0 = performance.now(), silence = 300, dur = 1900; let fr = 0;
+  const g = cv.getContext('2d'), w = cv.width, h = cv.height, F = faceCanvas, FS = F.width;
+  if (AU.master) AU.master.gain.value = SETTINGS.volume * 1.5;
+  hauntImpact(); hauntAudioScream(true);
+  setTimeout(() => hauntAudioScream(true), 700);
+  const t0 = performance.now(), DUR = 2300; let fr = 0, tilt = 0, tiltT = 0, eyeX = 0, eyeY = 0;
+  const MOUTH = 0.62 * FS;   // where the jaw starts in the face picture
   const loop = () => {
-    // never skip the face on a slow device: time advances at most 40ms per drawn frame
-    const el = Math.min(performance.now() - t0, ++fr * 40);
-    g.globalCompositeOperation = 'source-over'; g.globalAlpha = 1;
-    if (el < silence) { g.fillStyle = `rgba(0,0,0,${el / silence})`; g.fillRect(0, 0, w, h); }
+    const el = Math.min(performance.now() - t0, ++fr * 34), k = el / DUR;
+    g.setTransform(1, 0, 0, 1, 0, 0); g.globalCompositeOperation = 'source-over'; g.globalAlpha = 1; g.filter = 'none';
+    g.fillStyle = '#000'; g.fillRect(0, 0, w, h);
+    // scale: slams in from small in 110 ms, hovers in your face, then one last lunge
+    const base = Math.min(w / 640, h / 820);
+    let sc = el < 110 ? lerp(0.35, 1.55, Math.pow(el / 110, 0.5)) : el < 1750 ? 1.55 + Math.sin(el * 0.05) * 0.03 : lerp(1.55, 2.6, Math.min(1, (el - 1750) / 260));
+    sc *= base;
+    // the jaw keeps opening, far past where a jaw can go
+    const jaw = clamp((el - 150) / 1100, 0, 1), jawK = 1 + jaw * jaw * 1.6;
+    // the head snaps between angles in jerks
+    if (el > tiltT) { tilt = (Math.random() - 0.5) * (el > 900 ? 0.9 : 0.4); tiltT = el + 90 + Math.random() * 200; }
+    const sh = el < 1750 ? 26 : 50, jx = (Math.random() - 0.5) * sh, jy = (Math.random() - 0.5) * sh;
+    g.translate(w / 2 + jx, h / 2 + jy - sc * 60); g.rotate(tilt * 0.35); g.scale(sc, sc);
+    // upper face as drawn, lower face stretched downward = the mouth tearing open
+    g.drawImage(F, 0, 0, FS, MOUTH, -FS / 2, -FS / 2, FS, MOUTH);
+    g.drawImage(F, 0, MOUTH, FS, FS - MOUTH, -FS / 2, -FS / 2 + MOUTH - 1, FS, (FS - MOUTH) * jawK);
+    // the eye: pupil darting, then fixed on you; sometimes the white floods black
+    if (Math.random() < 0.18) { eyeX = (Math.random() - 0.5) * 30; eyeY = (Math.random() - 0.5) * 20; }
+    if (el > 1300) { eyeX *= 0.7; eyeY *= 0.7; }
+    const ex = 95, ey = -55;
+    if (Math.random() < 0.07 && el > 400) { g.fillStyle = '#000'; g.beginPath(); g.ellipse(ex, ey, 58, 44, -0.15, 0, 7); g.fill(); }
+    else { g.fillStyle = '#e9e6dc'; g.beginPath(); g.ellipse(ex, ey, 46, 34, -0.15, 0, 7); g.fill(); g.fillStyle = '#000'; g.beginPath(); g.arc(ex + eyeX, ey + eyeY, el > 1300 ? 6 : 9, 0, 7); g.fill(); }
+    g.setTransform(1, 0, 0, 1, 0, 0);
+    // tearing: slices of the frame shoved sideways
+    const tears = el < 140 ? 10 : Math.random() < 0.35 ? 6 : 1;
+    for (let i = 0; i < tears; i++) { const y = Math.random() * h, bh = 3 + Math.random() * 40; g.drawImage(cv, 0, y, w, bh, (Math.random() - 0.5) * 140, y, w, bh); }
+    // red/cyan ghost
+    g.globalCompositeOperation = 'lighter'; g.globalAlpha = 0.18; g.drawImage(cv, 8 + Math.random() * 12, 0); g.globalAlpha = 1;
+    g.globalCompositeOperation = 'source-over';
+    // grain and blood-red veins of light
+    for (let i = 0; i < 380; i++) { g.fillStyle = Math.random() < 0.5 ? 'rgba(255,255,255,0.14)' : 'rgba(0,0,0,0.35)'; g.fillRect(Math.random() * w, Math.random() * h, 2, 2); }
+    const vg = g.createRadialGradient(w / 2, h / 2, Math.min(w, h) * 0.25, w / 2, h / 2, Math.max(w, h) * 0.7);
+    vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, `rgba(${90 + Math.random() * 60},0,0,0.85)`); g.fillStyle = vg; g.fillRect(0, 0, w, h);
+    // flashes: white on impact, then the occasional inverted frame or black frame
+    if (fr <= 2) { g.fillStyle = 'rgba(255,255,255,0.92)'; g.fillRect(0, 0, w, h); }
     else {
-      const k = (el - silence) / (dur - silence);
-      g.fillStyle = '#000'; g.fillRect(0, 0, w, h);
-      const sc = Math.min(w / 700, h / 900) * (0.95 + Math.min(1, k * 3) * 0.45) * (1 + Math.sin(el * 0.09) * 0.015);
-      const jx = (Math.random() - 0.5) * 60 * (1 - k * 0.5), jy = (Math.random() - 0.5) * 60 * (1 - k * 0.5), fw = 900 * sc;
-      g.drawImage(faceCanvas, w / 2 - fw / 2 + jx, h / 2 - fw * 0.5 + jy, fw, fw);
-      g.globalCompositeOperation = 'lighter'; g.globalAlpha = 0.16; g.drawImage(faceCanvas, w / 2 - fw / 2 + jx + 14 + Math.random() * 16, h / 2 - fw * 0.5 + jy, fw, fw);
-      g.globalCompositeOperation = 'source-over'; g.globalAlpha = 1;
-      for (let i = 0; i < 3; i++) { const y = Math.random() * h, bh = 4 + Math.random() * 22; g.drawImage(cv, 0, y, w, bh, (Math.random() - 0.5) * 70, y, w, bh); }
-      for (let i = 0; i < 260; i++) { g.fillStyle = Math.random() < 0.5 ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.3)'; g.fillRect(Math.random() * w, Math.random() * h, 2, 2); }
-      const r = Math.random(); if (r < 0.1) { g.fillStyle = '#000'; g.fillRect(0, 0, w, h); } else if (r < 0.16) { g.fillStyle = 'rgba(180,0,20,0.55)'; g.fillRect(0, 0, w, h); }
-      if (k > 0.88) { g.fillStyle = `rgba(0,0,0,${(k - 0.88) / 0.12})`; g.fillRect(0, 0, w, h); }
+      const r = Math.random();
+      if (r < 0.06) { g.globalCompositeOperation = 'difference'; g.fillStyle = '#fff'; g.fillRect(0, 0, w, h); g.globalCompositeOperation = 'source-over'; }
+      else if (r < 0.12) { g.fillStyle = '#000'; g.fillRect(0, 0, w, h); }
+      else if (r < 0.17) { g.fillStyle = 'rgba(200,0,20,0.5)'; g.fillRect(0, 0, w, h); }
     }
-    if (el < dur) requestAnimationFrame(loop);
-    else { if (AU.master) AU.master.gain.value = SETTINGS.volume; if (onDone) onDone(); setTimeout(() => { cv.style.display = 'none'; }, 50); }
+    if (el >= DUR - 30) { g.fillStyle = '#000'; g.fillRect(0, 0, w, h); }   // hard cut
+    if (el < DUR) requestAnimationFrame(loop);
+    else { if (AU.master) AU.master.gain.value = SETTINGS.volume; if (onDone) onDone(); setTimeout(() => { cv.style.display = 'none'; }, 60); }
   };
   requestAnimationFrame(loop);
 }
@@ -1787,19 +1947,39 @@ function hauntJumpScare(onDone) {
 // ---- caught ----
 function hauntCaught(e) {
   if (H.over) return;
-  H.over = true; STATE.mode = 'result';
+  H.over = true; STATE.mode = 'caught';   // own state: the menu orbit camera must not take over
   try { document.exitPointerLock(); } catch (er) { /* */ }
-  hauntJumpScare(() => {
+  const fx = -Math.sin(PLAYER.yaw), fz = -Math.cos(PLAYER.yaw), camP = camera.position.clone();
+  const stageIt = () => {
+    camera.position.copy(camP);
+  // stage it: the thing stands 0.9 m in front of your eyes, face level with yours, staring
+  e.pos.set(camera.position.x + fx * 1.4, PLAYER.pos.y, camera.position.z + fz * 1.4);
+  e.root.position.copy(e.pos); e.root.rotation.set(0, Math.atan2(fx, fz), 0); e.root.scale.setScalar(1);
+  if (e.gm) {
+    e.gm.g.visible = true; for (const k of ['thL', 'thR', 'upper']) e.s[k].visible = false;
+    animateGhost(e.gm, e.ghostT, 0.2, 'run', 0); e.gm.body.rotation.x = -0.2; e.gm.body.position.set(0, 0, 0); e.gm.neck.rotation.x = 0.1;
+    e.gm.head.rotation.z = 0.32; for (const st of e.gm.hair) if (st.userData.front) st.visible = false;
+    $('hud').hidden = true; WEAPON.root.visible = false;
+    e.gm.g.scale.set(1, (camera.position.y - PLAYER.pos.y + 0.05) / 1.95, 1);
+    e.root.updateMatrixWorld(true); e.gm.head.getWorldPosition(_hv);
+  } else _hv.set(e.pos.x, camera.position.y, e.pos.z);
+  camera.lookAt(_hv); camera.fov = 55; camera.updateProjectionMatrix();
+  };
+  stageIt();
+  const holdT0 = performance.now(); const hold = () => { if (performance.now() - holdT0 > 950) return; stageIt(); requestAnimationFrame(hold); }; requestAnimationFrame(hold);
+  if (AU.master) { const m = AU.master.gain, now = AU.ctx.currentTime; m.cancelScheduledValues(now); m.setValueAtTime(0.0001, now); }
+  setTimeout(() => { if (AU.master) { AU.master.gain.cancelScheduledValues(0); AU.master.gain.value = SETTINGS.volume * 1.3; } hauntWhoosh(0.32); }, 600);
+  setTimeout(() => hauntJumpScare(() => {
     $('hud').hidden = true;
     const ov = document.createElement('div');
     ov.style.cssText = 'position:fixed;inset:0;z-index:9998;background:#000;color:#b91c1c;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:serif;text-align:center;gap:18px;padding:24px';
     ov.innerHTML = `<div style="font-size:clamp(28px,6vw,64px);letter-spacing:.3em">你 被 找 到 了</div>
-      <div style="color:#6b7280;font-size:14px;line-height:2">击杀：0　·　撤离：0　·　港区里的人：${ENEMIES.length + 1}<br>他们一直都在看着你。<br>他们没有开枪，是因为他们不需要。</div>
+      <div style="color:#6b7280;font-size:14px;line-height:2">坚持了 ${Math.floor(H.t / 60)} 分 ${Math.floor(H.t % 60)} 秒　·　击退：${PLAYER.kills}<br>他们一直都在看着你。<br>他们没有开枪，是因为他们不需要。</div>
       <button id="hauntAgain" style="margin-top:16px;padding:10px 28px;background:none;border:1px solid #7f1d1d;color:#fca5a5;font-size:15px;cursor:pointer;letter-spacing:.2em">再来一局</button>`;
     document.body.appendChild(ov);
     document.title = '灰烬港区';
     ov.querySelector('#hauntAgain').addEventListener('click', () => location.reload());
-  });
+  }), 920);
 }
 
 // ---- per-frame director ----
@@ -1816,20 +1996,39 @@ function state_shake() { if (typeof FEEL !== 'undefined') { FEEL.shake = 1; FEEL
 function hauntTick(dt) {
   if (H.over) return;
   H.t += dt;
-  const P = PLAYER;
-  // the world slowly goes wrong
-  const k = clamp(H.t / 180, 0, 1) + (H.firstShot ? 0.35 : 0);
+  const P = PLAYER, k = clamp(H.t / 300, 0, 1);        // 0 → 1 over the five minutes you must survive
+  // dusk falls far too fast: the sun sinks, the light turns red, then almost nothing
   if (scene.fog) {
     if (!H.fog0) H.fog0 = scene.fog.density;
-    scene.fog.density = H.fog0 * (1 + k * 2.2);
-    scene.fog.color.lerp(_hColor.setRGB(0.16, 0.08, 0.08), dt * 0.02 * (H.firstShot ? 4 : 1));
+    scene.fog.density = H.fog0 * (1 + k * 2.6 + (H.ghosts > 0 ? 0.6 : 0));
+    scene.fog.color.lerp(_hColor.setRGB(0.12 * (1 - k * 0.6), 0.04, 0.04), dt * 0.03);
   }
-  if (sun) { sun.intensity = damp(sun.intensity, (MAP_ID === 'desert' ? 4.0 : 3.6) * (1 - Math.min(0.75, k * 0.6)), 0.4, dt); sun.color.lerp(_hColor.setRGB(1, 0.35, 0.25), dt * 0.01); }
-  const msgs = [[20, '无线电：……沙沙……沙沙……', '#9ca3af'], [45, '他们为什么不开枪？', '#e5e7eb'], [80, '他们一直在看着你', '#fca5a5'], [130, '别回头', '#ef4444'], [190, '你已经来过这里了', '#ef4444']];
-  while (H.msgs < msgs.length && H.t > msgs[H.msgs][0]) { toast(msgs[H.msgs][1], msgs[H.msgs][2]); if (H.msgs >= 2) hauntWhisper(); H.msgs++; }
+  if (sky && !H.sun0) { H.sun0 = sky.material.uniforms.sunPosition.value.clone(); }
+  if (sky) {
+    const el = lerp(Math.asin(clamp(H.sun0.y, -1, 1)), -0.06, Math.pow(k, 0.8));
+    const az = Math.atan2(H.sun0.z, H.sun0.x);
+    sky.material.uniforms.sunPosition.value.set(Math.cos(el) * Math.cos(az), Math.sin(el), Math.cos(el) * Math.sin(az));
+    sky.material.uniforms.rayleigh.value = lerp(MAP_ID === 'desert' ? 1.4 : 2.4, 4, k);
+  }
+  if (sun) { sun.intensity = (MAP_ID === 'desert' ? 4.0 : 3.6) * Math.max(0.12, 1 - k * 0.95); sun.color.setRGB(1, lerp(0.78, 0.25, k), lerp(0.56, 0.18, k)); }
+  renderer.toneMappingExposure = lerp(0.82, 0.62, k);
+  // lamps: flicker more and more, and one by one they go out
+  for (let i = 0; i < LAMPS.length; i++) {
+    const l = LAMPS[i]; if (!l.pl) continue;
+    const dead = H.t > 90 && (i * 37 % 100) / 100 < (H.t - 90) / 400;
+    const flick = Math.random() < 0.02 + k * 0.12 ? 0.05 : 1;
+    l.pl.intensity = dead ? 0 : l.intensity * flick * (0.6 + 0.4 * (1 - k * 0.5));
+  }
+  // the closest hunter: heartbeat
+  let near = 1e9; for (const e of ENEMIES) if (e.ghost && !e.dead) near = Math.min(near, e.pos.distanceTo(P.pos));
+  H.heartT = (H.heartT || 0) - dt;
+  if (near < 30 && H.heartT <= 0) { hauntHeart(clamp(1.3 - near / 30, 0.25, 1)); H.heartT = lerp(0.42, 1.1, clamp(near / 30, 0, 1)); }
+  // something screams far away now and then
+  H.scrT = (H.scrT == null ? 70 : H.scrT) - dt;
+  if (H.scrT <= 0) { H.scrT = rnd(35, 70) * (1 - k * 0.4); const a = Math.random() * 6.28; hauntShriek(_hv.set(P.pos.x + Math.cos(a) * 45, 1.6, P.pos.z + Math.sin(a) * 45)); }
+  const msgs = [[3, '无线电：所有撤离点信号中断。坚持住，等信号恢复。', '#9ca3af'], [40, '他们为什么不开枪？', '#e5e7eb'], [100, '不要让他们靠近你', '#fca5a5'], [170, '别回头', '#ef4444'], [240, '天怎么黑了', '#ef4444'], [300, '撤离信号恢复了。快走。', '#6fe2a8']];
+  while (H.msgs < msgs.length && H.t > msgs[H.msgs][0]) { toast(msgs[H.msgs][1], msgs[H.msgs][2]); if (H.msgs >= 2 && H.msgs < 5) hauntWhisper(); H.msgs++; }
   if (Math.random() < dt * 0.04) { document.title = Math.random() < 0.5 ? 'うしろ' : '别回头'; setTimeout(() => { document.title = '灰烬港区'; }, 900); }
-  // finale: reach an extraction point and they are all already waiting there
-  if (!H.finale) for (const ex of STATE.extracts) if (Math.hypot(P.pos.x - ex.x, P.pos.z - ex.z) < 9) { hauntFinale(); break; }
 }
 const _hColor = new THREE.Color();
 function hauntFinale() {
@@ -2490,7 +2689,7 @@ const flashLight = new THREE.PointLight(0xffb070, 0, 14, 2);
 function buildLamps() {
   for (const l of LAMPS) {
     const pl = new THREE.PointLight(l.color, l.intensity, 34, 2);
-    pl.position.set(l.x, l.y, l.z);
+    pl.position.set(l.x, l.y, l.z); l.pl = pl;
     scene.add(pl);
   }
   scene.add(flashLight);
@@ -3581,7 +3780,18 @@ class Enemy {
   damage(dmg, part, from, shooter = LOCALT) {
     if (this.dead) return;
     // you can't kill what is already dead
-    if (!this.ghost) this.becomeGhost(false); else { this.stagger = 0.22; this.flinch = 1; }
+    if (!this.ghost) this.becomeGhost(false);
+    this.ghostHp -= dmg * (part === 'head' ? 1.7 : 1);
+    this.flinch = 1; if (this.stagger < -0.5) this.stagger = 0.16;     // full-auto can't stun-lock it
+    const gk = this.ghostHp <= 0;
+    if (shooter === LOCALT) { showHitmarker(part === 'head', gk); sfxHit(part === 'head', gk); }
+    if (gk) {
+      hauntShriek(this.pos, true); H.ghosts = Math.max(0, H.ghosts - 1);
+      const G = this.gm, t0 = performance.now();
+      this.die(part === 'head', shooter); this.root.visible = true;
+      for (const k of ['thL', 'thR', 'upper']) this.s[k].visible = false;
+      if (G) { G.g.visible = true; const fold = () => { const k = (performance.now() - t0) / 900; if (k >= 1) { G.g.visible = false; this.root.visible = false; return; } G.g.scale.set(1 + k * 0.6, Math.max(0.02, 1.1 * (1 - k)), 1 + k * 0.6); G.g.rotation.z = Math.sin(k * 40) * 0.2 * (1 - k); requestAnimationFrame(fold); }; requestAnimationFrame(fold); }
+    }
     return;
     this.hurtT = TIME; this.suppress = Math.min(1, this.suppress + 0.4); this.coverT = Math.min(this.coverT, 0.15);
     let d = dmg;
@@ -3612,7 +3822,7 @@ class Enemy {
   }
   update(dt) {
     if (this.puppet) { this.puppetUpdate(dt); return; }
-    if (this.dead) { this.deathAnim(dt); return; }
+    if (this.dead) { if (!this.gm) this.deathAnim(dt); return; }
     this.hauntUpdate(dt); return;
     const D = DIFF[RAID_DIFF] || DIFF.normal;
     this.root.visible = this.pos.distanceTo(camera.position) < 190;
@@ -3825,33 +4035,47 @@ class Enemy {
     const face = Math.atan2(-dx, -dz);
     let mvx = 0, mvz = 0, spd = 0;
     if (this.frozen > 0) this.frozen -= dt;
+    this.stagger = (this.stagger || 0) - dt;
     if (this.ghost) {
       this.ghostT += dt;
-      if (this.stagger > 0) this.stagger -= dt;
       this.yawT = face;
-      if (this.ghostT > 0.75 && this.stagger <= 0 && this.frozen <= 0) {
-        mvx = dx / Math.max(dist, 0.01); mvz = dz / Math.max(dist, 0.01); spd = 8.2;
+      // as fast as you can run; the last few metres it lunges
+      if (this.ghostT > 0.55 && this.stagger <= 0 && this.frozen <= 0 && P.alive) {
+        mvx = dx / Math.max(dist, 0.01); mvz = dz / Math.max(dist, 0.01);
+        spd = dist < 4 ? 6.8 : 6.3;
       }
-      if (this.ghostT > 0.75 && Math.random() < dt * 0.7) hauntCroak(this.pos, 0.5);
-      // stuck behind a wall? it is simply somewhere else now
+      if (this.ghostT > 0.55 && Math.random() < dt * (dist < 12 ? 1.6 : 0.6)) hauntCroak(this.pos, dist < 12 ? 0.7 : 0.4);
+      // stuck behind something? it is simply somewhere else now — but never where you are looking
       this.stuck2 = (this.stuck2 || 0) + dt;
-      if (this.stuck2 > 1.2) {
-        if (this.pos.distanceTo(this.lastPos2 || this.pos) < 1.0 && dist > 4) {
-          const back = Math.atan2(-Math.sin(P.yaw), -Math.cos(P.yaw)) + Math.PI;
-          for (let r = 10; r < 18; r += 2) { const x = P.pos.x + Math.sin(back) * r, z = P.pos.z + Math.cos(back) * r; if (spotFree(x, z, 0.5)) { this.pos.set(x, groundAt(x, z, P.pos.y + 1), z); break; } }
+      if (this.stuck2 > 1.4) {
+        if (this.lastPos2 && this.pos.distanceTo(this.lastPos2) < 1.2 && dist > 5 && this.frozen <= 0) {
+          const back = P.yaw;   // camera looks along -yaw; "behind" is +yaw direction
+          for (let r = 14; r < 24; r += 2) {
+            const x = P.pos.x + Math.sin(back) * r, z = P.pos.z + Math.cos(back) * r;
+            if (spotFree(x, z, 0.5)) { this.pos.set(x, groundAt(x, z, P.pos.y + 1), z); break; }
+          }
         }
         this.lastPos2 = (this.lastPos2 || new THREE.Vector3()).copy(this.pos); this.stuck2 = 0;
       }
-      if (dist < 1.35 && Math.abs(P.pos.y - this.pos.y) < 2.2 && P.alive) hauntCaught(this);
+      // you got far enough away and stopped looking: it puts the soldier back on
+      if (!this.finalHunt && dist > 28 && !seenByPlayer(this)) { this.farT = (this.farT || 0) + dt; if (this.farT > 2.5) this.unGhost(); } else this.farT = 0;
+      // it has to actually reach you
+      if (dist < 0.95 && Math.abs(P.pos.y - this.pos.y) < 1.6 && P.alive && !H.over) { hauntCaught(this); return; }
     } else {
-      // soldiers that never shoot. They turn to look at you, and stay looking.
-      const seen = dist < 60 && seenByPlayer(this);
+      // a soldier on patrol, at a normal pace. It never raises its rifle.
       const sees = dist < 70 && losClear(this.pos.x, this.pos.y + 1.6, this.pos.z, camera.position.x, camera.position.y, camera.position.z);
-      if (sees || dist < 25) { this.yawT = face; this.stareT = (this.stareT || 0) + dt; }
-      else { this.stareT = 0; this.yawT += Math.sin(H.t * 0.3 + this.id) * dt * 0.2; }
-      // while you aren't looking they come closer (only after a while, and never too close)
-      if (!seen && H.t > 35 && dist > 9 && this.frozen <= 0) { mvx = dx / dist; mvz = dz / dist; spd = H.firstShot ? 3.4 : 1.6; this.yawT = face; }
-      if (seen && sees && !this.noticed && dist < 40) { this.noticed = true; if (Math.random() < 0.35) hauntCroak(this.pos, 0.25); }
+      if (dist < 20 && H.t > 5 && P.alive && (sees || dist < 9)) { this.becomeGhost(false); }
+      else if (sees && dist < 45 && (this.stareT || 0) < 6) {
+        this.stareT = (this.stareT || 0) + dt; this.yawT = face;     // stops and watches you for a while
+      } else {
+        if (!sees) this.stareT = Math.max(0, (this.stareT || 0) - dt * 0.5);
+        const p = this.pts[this.pi % this.pts.length];
+        const stalk = H.t > 60 && dist < 70 && !seenByPlayer(this);   // later on they drift toward you when unseen
+        const tx = stalk ? P.pos.x : p[0], tz = stalk ? P.pos.z : p[1];
+        const ddx = tx - this.pos.x, ddz = tz - this.pos.z, dd = Math.hypot(ddx, ddz);
+        if (dd > 1.2 && (this.wait || 0) <= 0) { mvx = ddx / dd; mvz = ddz / dd; spd = stalk ? 2.2 : 1.6; this.yawT = Math.atan2(-ddx, -ddz); }
+        else if (!stalk) { this.wait = (this.wait || 0) - dt; if (this.wait <= -0.01 && dd <= 1.2) { this.pi++; this.wait = rnd(1.5, 4); } }
+      }
     }
     const ml = Math.hypot(mvx, mvz);
     if (ml > 0.001) { mvx /= ml; mvz /= ml; }
@@ -3860,41 +4084,55 @@ class Enemy {
       const ex = this.pos.x - o.pos.x, ez = this.pos.z - o.pos.z, d2 = ex * ex + ez * ez;
       if (d2 < 1.0 && d2 > 1e-6) { const d = Math.sqrt(d2); mvx += ex / d * 0.6; mvz += ez / d * 0.6; }
     }
-    this.vel.x = damp(this.vel.x, mvx * spd, this.ghost ? 14 : 6, dt); this.vel.z = damp(this.vel.z, mvz * spd, this.ghost ? 14 : 6, dt);
+    this.vel.x = damp(this.vel.x, mvx * spd, this.ghost ? 12 : 6, dt); this.vel.z = damp(this.vel.z, mvz * spd, this.ghost ? 12 : 6, dt);
     this.crouch = 0; this.h = 1.75;
     integrateBody(this, dt, 0.42);
-    this.yaw += clamp(angDiff(this.yaw, this.yawT), -(this.ghost ? 14 : 2.2) * dt, (this.ghost ? 14 : 2.2) * dt);
+    this.yaw += clamp(angDiff(this.yaw, this.yawT), -(this.ghost ? 14 : 2.6) * dt, (this.ghost ? 14 : 2.6) * dt);
     this.root.position.copy(this.pos); this.root.rotation.y = this.yaw;
     const aimP = Math.atan2(camera.position.y - (this.pos.y + 1.5), Math.max(dist, 0.5)) * 0.8;
-    this.aimPitch = damp(this.aimPitch, aimP, 6, dt);
-    animateSoldier(this.s, dt, this.vel.x, this.vel.z, this.yaw, 0, this.aimPitch, this.ghost ? 0 : 1);
-    if (this.ghost) {
-      // arms reaching out, head twitching
-      this.s.arms.rotation.x = -1.35 + Math.sin(this.ghostT * 31) * 0.08;
-      this.s.upper.rotation.z = (Math.random() - 0.5) * 0.18;
-      this.s.upper.rotation.x = 0.25 + (Math.random() - 0.5) * 0.1;
-      if (this.headM) this.headM.rotation.z = Math.sin(this.ghostT * 23) * 0.5 + (Math.random() - 0.5) * 0.4;
-    } else if (this.stareT > 4) {
-      // head slowly tilting as it keeps staring
-      this.s.upper.rotation.z = Math.sin(Math.min(1, (this.stareT - 4) / 6) * 1.2) * 0.35 * (this.id % 2 ? 1 : -1);
+    this.aimPitch = damp(this.aimPitch, this.ghost || (this.stareT || 0) > 0 ? aimP : 0, 6, dt);
+    if (!this.ghost) animateSoldier(this.s, dt, this.vel.x, this.vel.z, this.yaw, 0, this.aimPitch, 1);
+    if (this.ghost && this.gm) {
+      const G = this.gm, T0 = 0.55;
+      if (this.ghostT < T0) {
+        // transformation: the soldier convulses and is torn upward, then something else is standing there
+        animateSoldier(this.s, dt, 0, 0, this.yaw, 0, 0.6, 0);
+        this.s.upper.rotation.x = -0.6 + Math.sin(this.ghostT * 60) * 0.25; this.s.upper.rotation.z = (Math.random() - 0.5) * 0.6;
+        this.root.scale.set(1 - this.ghostT * 0.5, 1 + this.ghostT * 0.9, 1 - this.ghostT * 0.5);
+        if (this.ghostT > T0 * 0.7) G.g.visible = Math.random() < 0.5;
+      } else {
+        if (!G.shown) { G.shown = true; for (const k of ['thL', 'thR', 'upper']) this.s[k].visible = false; this.root.scale.setScalar(1); G.g.scale.set(1, 1, 1); }
+        // stop-motion: the drawn position only catches up 13 times a second
+        this.dispT += dt;
+        if (this.dispT > 1 / 13) { this.dispT = 0; this.dispPos.copy(this.pos); G.g.visible = Math.random() > 0.035; }
+        this.root.position.copy(this.dispPos);
+        const mode = dist < 9 && dist > 1.4 ? 'crawl' : 'run';
+        animateGhost(G, this.ghostT, dt, mode, this.vel.length());
+        G.g.scale.y = 1.12 + Math.sin(this.ghostT * 2) * 0.02;
+      }
+    } else if ((this.stareT || 0) > 3) {
+      this.s.upper.rotation.z = Math.sin(Math.min(1, (this.stareT - 3) / 4) * 1.2) * 0.35 * (this.id % 2 ? 1 : -1);
     }
     this.applyFlinch(dt);
+  }
+  unGhost() {
+    if (!this.ghost || this.dead) return;
+    this.ghost = false; this.farT = 0; this.stareT = 0;
+    if (this.gm) this.gm.g.visible = false;
+    for (const k of ['thL', 'thR', 'upper']) this.s[k].visible = true;
+    this.root.scale.setScalar(1); H.ghosts = Math.max(0, H.ghosts - 1);
   }
   becomeGhost(chorus) {
     if (this.ghost) return;
     this.ghost = true; this.ghostT = 0; this.stagger = 0; this.frozen = chorus ? 0.3 : 0;
     H.ghosts++; H.firstShot = true;
-    this.root.traverse((o) => { if (o.isMesh) o.material = GHOST_MAT; });
-    if (this.s.arms.children[1]) this.s.arms.children[1].visible = false;  // the rifle falls away
-    // long black hair + a face that is not a face
-    const head = new THREE.Group(); head.position.set(0, 1.62, 0.02);
-    const hair = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.75, 0.3), GHOST_HAIR); hair.position.set(0, -0.12, 0.02); head.add(hair);
-    const front = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.6, 0.06), GHOST_HAIR); front.position.set(0, -0.12, -0.17); head.add(front);
-    const eye = new THREE.Mesh(new THREE.SphereGeometry(0.03, 8, 6), GHOST_EYE); eye.position.set(0.06, 0.02, -0.21); head.add(eye);
-    this.s.upper.add(head); this.headM = head;
-    this.root.scale.setScalar(1.08);
-    if (!chorus || Math.random() < 0.4) hauntAudioScream(false);
-    state_shake();
+    if (this.ghostHp == null) this.ghostHp = this.boss ? 2600 : 1400;
+    if (!this.gm) { this.gm = buildGhostMesh(); this.root.add(this.gm.g); }
+    this.gm.shown = false;
+    this.gm.g.visible = false; this.gm.g.scale.set(1, 0.2, 1);
+    this.dispT = 0; this.dispPos = this.pos.clone();
+    if (!chorus || Math.random() < 0.4) hauntShriek(this.pos);
+    if (this.pos.distanceTo(PLAYER.pos) < 22) state_shake();
   }
   hear(pos, jitter) {
     if (this.state === 'combat') return;
@@ -4981,7 +5219,16 @@ function gameUpdate(dt) {
   let inZone = null;
   for (const e of STATE.extracts) { if (Math.hypot(P.pos.x - e.x, P.pos.z - e.z) < 4.5 && Math.abs(P.pos.y - e.y) < 2) inZone = e; }
   const pg = $('progress');
-  if (inZone && P.alive) {
+  if (inZone && P.alive && H.t < 300) {
+    pg.hidden = false; STATE.extractT = 0;
+    const left = Math.ceil(300 - H.t);
+    pg.querySelector('.label').textContent = `撤离点没有回应…… 还要坚持 ${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}`;
+    pg.querySelector('i').style.width = Math.min(100, H.t / 300 * 100) + '%';
+  } else if (inZone && P.alive) {
+    if (!H.finale) {   // the moment you start extracting, every one of them knows
+      H.finale = true; toast('它们都听见了', '#ef4444');
+      for (const e of ENEMIES) if (!e.dead && e.pos.distanceTo(P.pos) < 90) { e.finalHunt = true; e.becomeGhost(Math.random() < 0.7); }
+    }
     const XT = P.perks.has('perk_extract') ? 5 : 8;
     STATE.extractT += dt; pg.hidden = false;
     pg.querySelector('.label').textContent = `撤离中 · ${inZone.name} · ${Math.max(0, XT - STATE.extractT).toFixed(1)}s`;
@@ -5029,7 +5276,7 @@ function frame() {
   FX_ADD.pts.material.uniforms.uScale.value = ps; FX_SMOKE.pts.material.uniforms.uScale.value = ps;
   // shadows follow the camera (biased forward)
   _focus.set(0, 0, -1).applyQuaternion(camera.quaternion).multiplyScalar(Q.shadowRange * 0.35).add(camera.position);
-  if (STATE.mode !== 'playing' && STATE.mode !== 'paused') _focus.set(-10, 0, -10);
+  if (STATE.mode !== 'playing' && STATE.mode !== 'paused' && STATE.mode !== 'caught') _focus.set(-10, 0, -10);
   _focus.y = 0;
   if (Q.shadows) updateSunShadow(_focus);
   if (Q.refl && REFL.mesh) renderReflection();
