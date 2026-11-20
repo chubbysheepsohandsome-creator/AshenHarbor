@@ -479,7 +479,7 @@ input[type=range]{width:100%;accent-color:var(--amber)}
         <button class="btn" id="btnHelp">操作说明 <em>CONTROLS</em></button>
       </div>
       <div class="coop" id="coopBox" style="display:none">
-        <div class="coopHead"><span class="fl">联机组队 · 最多 3 人</span><i class="dot wait" id="coopDot"></i></div>
+        <div class="coopHead"><span class="fl">联机 · 鬼抓人 · 最多 3 人</span><i class="dot wait" id="coopDot"></i></div>
         <div class="hint" id="coopStatus">正在连接联机服务…</div>
         <div class="coopRow" id="coopCtl" hidden>
           <input id="nick" maxlength="10" placeholder="你的代号" aria-label="你的代号" autocomplete="off">
@@ -1940,6 +1940,14 @@ function hauntCaught(e) {
 
 // ---- per-frame director ----
 const _hv = new THREE.Vector3();
+function coopNearest(e) {
+  let best = PLAYER.alive && STATE.mode === 'playing' ? PLAYER : null, bd = best ? e.pos.distanceTo(PLAYER.pos) : 1e9;
+  for (const r of NET.remotes.values()) {
+    if (r.st !== 'play' || !r.alive || r.run !== NET.startedRun) continue;
+    const d = e.pos.distanceTo(r.pos); if (d < bd) { bd = d; best = r; }
+  }
+  return best || PLAYER;
+}
 function seenByPlayer(e) {
   // in the camera's view cone and not hidden behind a wall
   _hv.set(e.pos.x, e.pos.y + 1.4, e.pos.z).sub(camera.position);
@@ -1950,13 +1958,163 @@ function seenByPlayer(e) {
 }
 function state_shake() { if (typeof FEEL !== 'undefined') { FEEL.shake = 1; FEEL.fovK = 3; } }
 
+
+// ---------- detailed gear models: hilts, segmented blades, grapple heads, cable, gas ----------
+const GEARV = {};
+function gearEnv() {
+  if (GEARV.env) return GEARV.env;
+  // a small bright studio so polished steel reads as steel even at night
+  const sc = new THREE.Scene();
+  const c = document.createElement('canvas'); c.width = 16; c.height = 256; const g = c.getContext('2d');
+  const gr = g.createLinearGradient(0, 0, 0, 256);
+  gr.addColorStop(0, '#ffffff'); gr.addColorStop(0.3, '#a9b3bc'); gr.addColorStop(0.48, '#2a2e33'); gr.addColorStop(0.55, '#8d8topd'.slice(0,0) + '#9a8f84'); gr.addColorStop(1, '#3a3530');
+  g.fillStyle = gr; g.fillRect(0, 0, 16, 256);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
+  sc.add(new THREE.Mesh(new THREE.SphereGeometry(10, 32, 16), new THREE.MeshBasicMaterial({ map: t, side: THREE.BackSide })));
+  for (const [x, y, z, w, h] of [[7, 3, 1, 0.7, 9], [-6, 2, 4, 0.5, 7], [0, 6, -7, 9, 0.6], [2, -1, 8, 4, 0.4]]) {
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide })); m.position.set(x, y, z); m.lookAt(0, 0, 0); sc.add(m);
+  }
+  const pm = new THREE.PMREMGenerator(renderer); GEARV.env = pm.fromScene(sc, 0.015).texture; pm.dispose();
+  return GEARV.env;
+}
+function gearMats() {
+  if (GEARV.m) return GEARV.m;
+  const env = gearEnv(), S = (o) => new THREE.MeshStandardMaterial(Object.assign({ envMap: env }, o));
+  GEARV.m = {
+    steel: S({ color: 0xf2f6f9, metalness: 1, roughness: 0.14, envMapIntensity: 2.3 }),
+    edge: S({ color: 0xffffff, metalness: 1, roughness: 0.03, envMapIntensity: 2.4 }),
+    score: S({ color: 0x30363c, metalness: 0.8, roughness: 0.45, envMapIntensity: 0.6 }),
+    gun: S({ color: 0x5a6168, metalness: 0.9, roughness: 0.3, envMapIntensity: 1.2 }),
+    dark: S({ color: 0x1b1e21, metalness: 0.6, roughness: 0.42, envMapIntensity: 0.8 }),
+    brass: S({ color: 0xb8925a, metalness: 1, roughness: 0.28, envMapIntensity: 1.2 }),
+    leather: S({ color: 0x3b2b21, metalness: 0, roughness: 0.82, envMapIntensity: 0.3 }),
+    cable: S({ color: 0x33373b, metalness: 0.75, roughness: 0.35, envMapIntensity: 0.9 }),
+    red: S({ color: 0x8b1a1a, metalness: 0.3, roughness: 0.5, envMapIntensity: 0.5 }),
+  };
+  for (const m of Object.values(GEARV.m)) m.fog = true;
+  return GEARV.m;
+}
+// a long, very slightly curved blade with an angled tip, a bright honed edge and scored snap-off segments.
+// lies along +X, width along Y (edge down), thickness along Z.
+function bladeMesh(L, W) {
+  const M = gearMats(), grp = new THREE.Group(), c = L * 0.03;
+  const s = new THREE.Shape();
+  s.moveTo(0, -W / 2);
+  s.quadraticCurveTo(L * 0.5, -W / 2 - c, L, -W / 2 - c * 0.6);
+  s.lineTo(L - W * 1.15, W / 2 - c * 0.75);
+  s.quadraticCurveTo(L * 0.45, W / 2 - c, 0, W / 2);
+  s.lineTo(0, -W / 2);
+  const g = new THREE.ExtrudeGeometry(s, { depth: 0.004, bevelEnabled: true, bevelThickness: 0.0022, bevelSize: 0.005, bevelSegments: 2, curveSegments: 28, steps: 1 });
+  g.translate(0, 0, -0.002); g.computeVertexNormals();
+  grp.add(new THREE.Mesh(g, M.steel));
+  const V = (x, y) => new THREE.Vector3(x, y, 0);
+  // honed edge and the spine groove
+  grp.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.QuadraticBezierCurve3(V(0.01, -W / 2 - 0.002), V(L * 0.5, -W / 2 - c - 0.002), V(L - 0.004, -W / 2 - c * 0.6 - 0.002)), 48, 0.0022, 5), M.edge));
+  for (const zz of [0.0045, -0.0045]) {
+    const groove = new THREE.Mesh(new THREE.TubeGeometry(new THREE.QuadraticBezierCurve3(V(0.03, W * 0.28), V(L * 0.45, W * 0.28 - c), V(L - W * 1.6, W * 0.28 - c * 0.8)), 40, 0.0016, 4), M.score);
+    groove.position.z = zz; grp.add(groove);
+  }
+  // scored segment lines, parallel to the tip
+  const segs = Math.max(4, Math.round(L / 0.16));
+  for (let i = 1; i < segs; i++) {
+    const x = (L - W * 0.6) * i / segs;
+    const ln = new THREE.Mesh(new THREE.BoxGeometry(0.0028, W * 1.02, 0.0104), M.score);
+    ln.position.set(x - W * 0.08, -c * (1 - Math.pow(2 * x / L - 1, 2)) * 0.9, 0); ln.rotation.z = Math.atan(1.15);
+    grp.add(ln);
+  }
+  return grp;
+}
+// the hilt: leather-wrapped grip, trigger and guard, a machined housing with bolts, the clamp holding the blade, and the cable to the gear
+function hiltMesh(withCable) {
+  const M = gearMats(), h = new THREE.Group();
+  const grip = new THREE.Group(); grip.rotation.x = -0.3; h.add(grip);
+  const core = new THREE.Mesh(new THREE.CylinderGeometry(0.019, 0.021, 0.14, 14), M.dark); core.position.y = -0.075; grip.add(core);
+  for (let i = 0; i < 7; i++) { const r = new THREE.Mesh(new THREE.TorusGeometry(0.0205, 0.0042, 6, 18), M.leather); r.rotation.x = Math.PI / 2; r.position.y = -0.02 - i * 0.018; grip.add(r); }
+  const pom = new THREE.Mesh(new THREE.CylinderGeometry(0.026, 0.022, 0.026, 14), M.gun); pom.position.y = -0.155; grip.add(pom);
+  const pomRing = new THREE.Mesh(new THREE.TorusGeometry(0.024, 0.003, 6, 18), M.brass); pomRing.rotation.x = Math.PI / 2; pomRing.position.y = -0.143; grip.add(pomRing);
+  // housing on top of the grip, running forward
+  const hous = new THREE.Mesh(new THREE.BoxGeometry(0.046, 0.05, 0.17), M.gun); hous.position.set(0, 0.012, -0.04); h.add(hous);
+  const top = new THREE.Mesh(new THREE.BoxGeometry(0.034, 0.012, 0.15), M.dark); top.position.set(0, 0.043, -0.04); h.add(top);
+  for (const sx of [-1, 1]) {
+    const plate = new THREE.Mesh(new THREE.BoxGeometry(0.004, 0.036, 0.12), M.dark); plate.position.set(sx * 0.0245, 0.01, -0.045); h.add(plate);
+    for (const z of [-0.1, -0.06, -0.015, 0.025]) { const b = new THREE.Mesh(new THREE.CylinderGeometry(0.0045, 0.0045, 0.006, 8), M.brass); b.rotation.z = Math.PI / 2; b.position.set(sx * 0.0275, 0.018, z); h.add(b); }
+    const fin = new THREE.Mesh(new THREE.BoxGeometry(0.003, 0.02, 0.05), M.gun); fin.position.set(sx * 0.02, 0.05, 0.02); h.add(fin);
+  }
+  // clamp jaws where the blade seats
+  const clamp1 = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.07, 0.035), M.dark); clamp1.position.set(0, -0.004, -0.14); h.add(clamp1);
+  const clampLip = new THREE.Mesh(new THREE.BoxGeometry(0.036, 0.012, 0.04), M.gun); clampLip.position.set(0, 0.034, -0.14); h.add(clampLip);
+  const rel = new THREE.Mesh(new THREE.CylinderGeometry(0.006, 0.006, 0.04, 10), M.red); rel.rotation.z = Math.PI / 2; rel.position.set(0, 0.018, -0.115); h.add(rel);
+  // trigger and guard
+  const guard = new THREE.Mesh(new THREE.TorusGeometry(0.032, 0.0042, 6, 18, Math.PI * 1.1), M.gun); guard.rotation.set(0, Math.PI / 2, Math.PI * 0.55); guard.position.set(0, -0.035, -0.045); h.add(guard);
+  const trig = new THREE.Mesh(new THREE.BoxGeometry(0.008, 0.038, 0.012), M.brass); trig.position.set(0, -0.025, -0.05); trig.rotation.x = 0.35; h.add(trig);
+  // cable out of the pommel, curling away down and back
+  if (withCable) {
+    const pts = [new THREE.Vector3(0, -0.15, 0.04), new THREE.Vector3(0.01, -0.28, 0.13), new THREE.Vector3(0.05, -0.5, 0.2), new THREE.Vector3(0.12, -0.9, 0.3)];
+    h.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 24, 0.005, 6), M.cable));
+  }
+  return h;
+}
+function swordMesh(L, W, withCable) {
+  const g = new THREE.Group(); g.add(hiltMesh(withCable));
+  const b = bladeMesh(L, W); b.rotation.y = Math.PI / 2; b.position.set(0, 0.0, -0.15); g.add(b);   // +X → -Z
+  g.userData.blade = b; return g;
+}
+// grapple head, modelled pointing along +Z
+function hookMesh() {
+  const M = gearMats(), g = new THREE.Group();
+  const body = new THREE.Mesh(new THREE.CylinderGeometry(0.028, 0.034, 0.12, 14), M.gun); body.rotation.x = Math.PI / 2; g.add(body);
+  const band = new THREE.Mesh(new THREE.TorusGeometry(0.034, 0.004, 6, 18), M.brass); band.position.z = -0.03; g.add(band);
+  const tip = new THREE.Mesh(new THREE.ConeGeometry(0.028, 0.11, 14), M.steel); tip.rotation.x = Math.PI / 2; tip.position.z = 0.115; g.add(tip);
+  for (let i = 0; i < 3; i++) {
+    const a = i / 3 * Math.PI * 2, ca = Math.cos(a), sa = Math.sin(a), V = (r, z) => new THREE.Vector3(ca * r, sa * r, z);
+    const curve = new THREE.CatmullRomCurve3([V(0.026, 0.04), V(0.06, 0.0), V(0.085, -0.06), V(0.07, -0.1)]);
+    g.add(new THREE.Mesh(new THREE.TubeGeometry(curve, 12, 0.0065, 5), M.steel));
+    const barb = new THREE.Mesh(new THREE.ConeGeometry(0.009, 0.03, 6), M.edge); barb.position.copy(V(0.07, -0.11)); barb.rotation.x = Math.PI; g.add(barb);
+  }
+  const eye = new THREE.Mesh(new THREE.TorusGeometry(0.014, 0.004, 6, 14), M.brass); eye.position.z = -0.07; g.add(eye);
+  return g;
+}
+// launcher on the right hip, seen at the bottom of the view while the line is out
+function launcherMesh() {
+  const M = gearMats(), g = new THREE.Group();
+  const box = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.07, 0.2), M.gun); g.add(box);
+  const spool = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 0.05, 20), M.dark); spool.rotation.z = Math.PI / 2; spool.position.set(0, 0.0, 0.03); g.add(spool);
+  for (const sx of [-1, 1]) { const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.008, 16), M.brass); cap.rotation.z = Math.PI / 2; cap.position.set(sx * 0.03, 0, 0.03); g.add(cap); }
+  const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.022, 0.12, 12), M.dark); barrel.rotation.x = Math.PI / 2; barrel.position.z = -0.15; g.add(barrel);
+  const muzzle = new THREE.Mesh(new THREE.TorusGeometry(0.02, 0.005, 6, 14), M.steel); muzzle.position.z = -0.21; g.add(muzzle);
+  g.userData.spool = spool; return g;
+}
+// gas: soft puffs that drift and fade
+const PUFF = { list: [], tex: null, i: 0 };
+function puffTex() {
+  if (PUFF.tex) return PUFF.tex;
+  const c = document.createElement('canvas'); c.width = c.height = 64; const g = c.getContext('2d');
+  const gr = g.createRadialGradient(32, 32, 2, 32, 32, 30); gr.addColorStop(0, 'rgba(255,255,255,0.9)'); gr.addColorStop(0.5, 'rgba(235,240,245,0.35)'); gr.addColorStop(1, 'rgba(255,255,255,0)');
+  g.fillStyle = gr; g.fillRect(0, 0, 64, 64); PUFF.tex = new THREE.CanvasTexture(c); return PUFF.tex;
+}
+function puff(x, y, z, vx, vy, vz, size) {
+  if (PUFF.list.length < 48) { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: puffTex(), transparent: true, depthWrite: false, opacity: 0 })); sp.visible = false; scene.add(sp); PUFF.list.push({ sp, t: 1, v: new THREE.Vector3() }); }
+  const p = PUFF.list[PUFF.i++ % PUFF.list.length];
+  p.sp.position.set(x, y, z); p.v.set(vx, vy, vz); p.t = 0; p.size = size; p.sp.visible = true;
+}
+function puffTick(dt) {
+  for (const p of PUFF.list) {
+    if (p.t >= 1) { p.sp.visible = false; continue; }
+    p.t += dt / 0.9; p.sp.position.addScaledVector(p.v, dt); p.v.multiplyScalar(Math.max(0, 1 - dt * 2.5));
+    const s = p.size * (0.4 + p.t * 1.8); p.sp.scale.set(s, s, s); p.sp.material.opacity = 0.8 * (1 - p.t) * Math.min(1, p.t * 6);
+  }
+}
+
 // ---------- manoeuvre gear: grappling hook (Q) + gas jets (hold Space in the air) ----------
 const GEAR = { gas: 100, hook: null, line: null, tip: null, prevQ: false, momentum: false, jetN: null, jetG: null, airT: 0, ui: null };
 function gearInit() {
   if (GEAR.line) return;
   const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute([0, 0, 0, 0, 0, 0], 3));
-  GEAR.line = new THREE.Line(g, new THREE.LineBasicMaterial({ color: 0xcfd6d8 })); GEAR.line.frustumCulled = false; GEAR.line.visible = false; scene.add(GEAR.line);
-  GEAR.tip = new THREE.Mesh(new THREE.ConeGeometry(0.07, 0.22, 6), new THREE.MeshBasicMaterial({ color: 0x8a9496 })); GEAR.tip.visible = false; scene.add(GEAR.tip);
+  const cg = new THREE.CylinderGeometry(1, 1, 1, 6, 1, true); cg.translate(0, 0.5, 0);
+  GEAR.line = new THREE.Mesh(cg, gearMats().cable); GEAR.line.frustumCulled = false; GEAR.line.visible = false; scene.add(GEAR.line);
+  GEAR.tip = hookMesh(); GEAR.tip.visible = false; scene.add(GEAR.tip);
+  GEAR.launcher = launcherMesh(); GEAR.launcher.position.set(0.3, -0.36, -0.34); GEAR.launcher.visible = false; camera.add(GEAR.launcher);
+  GEAR.fly = 1; GEAR.hookD = 1; GEAR.hookN = new THREE.Vector3(0, 1, 0); GEAR.from = new THREE.Vector3();
   const ui = document.createElement('div'); ui.id = 'gasHud';
   ui.style.cssText = 'position:absolute;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);width:180px;font:600 11px var(--f-display);color:#cfe;letter-spacing:.12em;text-align:center;pointer-events:none;text-shadow:0 1px 2px #000';
   ui.innerHTML = '气 <span style="display:inline-block;vertical-align:middle;width:130px;height:6px;background:rgba(255,255,255,.12);border-radius:3px;overflow:hidden"><i style="display:block;height:100%;width:100%;background:linear-gradient(90deg,#7fd6ff,#e6fbff)"></i></span>';
@@ -1983,7 +2141,7 @@ function gearSound(on) {
   }
   GEAR.jetG.gain.setTargetAtTime(on ? 0.22 : 0, AU.ctx.currentTime, 0.05);
 }
-const _gd = new THREE.Vector3();
+const _gd = new THREE.Vector3(), _yAxis = new THREE.Vector3(0, 1, 0);
 function gearPhysics(dt, uiBlock) {
   gearInit();
   const P = PLAYER;
@@ -1994,6 +2152,7 @@ function gearPhysics(dt, uiBlock) {
     const t = raycast(camera.position.x, camera.position.y, camera.position.z, _gd.x, _gd.y, _gd.z, 70, false);
     if (t < 70 && HIT.c && !HIT.c.water) {
       GEAR.hook = new THREE.Vector3(camera.position.x + _gd.x * t, camera.position.y + _gd.y * t, camera.position.z + _gd.z * t);
+      GEAR.fly = 0; GEAR.hookD = t; GEAR.hookN.set(HIT.nx || 0, HIT.ny || 0, HIT.nz || 0); GEAR.dir = _gd.clone();
       if (AU.ctx) { tone(AU.ctx.currentTime, AU.master, { f0: 900, f1: 200, type: 'square', a: 0.001, d: 0.08, g: 0.15 }); noiseBurst(AU.ctx.currentTime + 0.05, AU.master, { f: 2500, q: 2, a: 0.001, d: 0.05, g: 0.3 }); }
       if (P.onGround) { P.vel.y = Math.max(P.vel.y, 4); P.onGround = false; }
     } else if (AU.ctx) sfxClick(300, 0.08);
@@ -2003,7 +2162,14 @@ function gearPhysics(dt, uiBlock) {
   let using = false;
   if (GEAR.hook) {
     _gd.copy(GEAR.hook).sub(camera.position); const L = _gd.length();
-    if (L < 1.6) GEAR.hook = null;
+    if (GEAR.fly < 1) {   // the head is still in the air
+      GEAR.fly = Math.min(1, GEAR.fly + dt * 230 / Math.max(GEAR.hookD, 1));
+      if (GEAR.fly >= 1) {
+        if (AU.ctx) { const t0 = AU.ctx.currentTime; noiseBurst(t0, AU.master, { f: 1800, q: 1.5, a: 0.001, d: 0.07, g: 0.45 }); tone(t0, AU.master, { f0: 160, f1: 70, type: 'square', a: 0.001, d: 0.09, g: 0.12 }); }
+        try { fxImpact(GEAR.hook.x, GEAR.hook.y, GEAR.hook.z, GEAR.hookN.x, GEAR.hookN.y, GEAR.hookN.z, 'metal'); } catch (e) { /* */ }
+      }
+    }
+    else if (L < 1.6) GEAR.hook = null;
     else {
       _gd.multiplyScalar(1 / L);
       const pull = GEAR.gas > 0 ? 38 : 16;
@@ -2017,6 +2183,8 @@ function gearPhysics(dt, uiBlock) {
   if (jet) {
     _gd.set(0, 0, -1).applyQuaternion(camera.quaternion); _gd.y = 0; _gd.normalize();
     P.vel.y += 30 * dt; P.vel.x += _gd.x * 12 * dt; P.vel.z += _gd.z * 12 * dt;
+    GEAR.puffT = (GEAR.puffT || 0) - dt;
+    if (GEAR.puffT <= 0) { GEAR.puffT = 0.035; for (const sx of [-0.38, 0.38]) { const r = _tmpV2.set(sx, 0, -0.05).applyAxisAngle(_yAxis, P.yaw); puff(P.pos.x + r.x, P.pos.y + 0.85, P.pos.z + r.z, r.x * 3 + (Math.random() - 0.5), -5 - Math.random() * 2, r.z * 3 + (Math.random() - 0.5), 0.45); } }
     GEAR.gas = Math.max(0, GEAR.gas - 26 * dt); using = true; GEAR.momentum = true;
   }
   if (INPUT.tJet && P.onGround) { P.vel.y = 6; P.onGround = false; }
@@ -2026,12 +2194,20 @@ function gearPhysics(dt, uiBlock) {
   if (P.onGround && !using) { GEAR.gas = Math.min(100, GEAR.gas + 16 * dt); GEAR.momentum = false; }
   const hs = Math.hypot(P.vel.x, P.vel.z); if (hs > 10) FEEL.fovK = Math.max(FEEL.fovK, Math.min(6, (hs - 10) * 0.45));
   if (GEAR.ui) GEAR.ui.style.width = GEAR.gas.toFixed(0) + '%';
-  // the cable
+  // the cable: from the launcher muzzle to the head, which flies out first and then bites
+  puffTick(dt);
+  GEAR.launcher.visible = !!GEAR.hook && !CURSE.me;
   if (GEAR.hook) {
-    const p = GEAR.line.geometry.attributes.position;
-    _gd.set(0.25, -0.35, -0.3).applyQuaternion(camera.quaternion).add(camera.position);
-    p.setXYZ(0, _gd.x, _gd.y, _gd.z); p.setXYZ(1, GEAR.hook.x, GEAR.hook.y, GEAR.hook.z); p.needsUpdate = true;
-    GEAR.line.visible = true; GEAR.tip.visible = true; GEAR.tip.position.copy(GEAR.hook);
+    GEAR.launcher.userData.spool.rotation.x += dt * (GEAR.fly < 1 ? 60 : 25);
+    GEAR.from.set(0.3, -0.36, -0.55).applyQuaternion(camera.quaternion).add(camera.position);
+    const head = _gd.copy(GEAR.from).lerp(GEAR.hook, GEAR.fly);
+    GEAR.tip.position.copy(head);
+    GEAR.tip.lookAt(head.x + (GEAR.dir ? GEAR.dir.x : 0), head.y + (GEAR.dir ? GEAR.dir.y : 0), head.z + (GEAR.dir ? GEAR.dir.z : 1));
+    const v = _tmpV2.copy(head).sub(GEAR.from), len = v.length();
+    GEAR.line.position.copy(GEAR.from); GEAR.line.scale.set(0.009, Math.max(0.01, len - 0.05), 0.009);
+    GEAR.line.quaternion.setFromUnitVectors(_yAxis, v.multiplyScalar(1 / Math.max(len, 1e-4)));
+    GEAR.line.visible = true; GEAR.tip.visible = true;
+    if (GEAR.fly >= 1 && Math.random() < dt * 20) puff(GEAR.from.x, GEAR.from.y - 0.3, GEAR.from.z, (Math.random() - 0.5), -2, (Math.random() - 0.5), 0.2);
   } else { GEAR.line.visible = false; GEAR.tip.visible = false; }
 }
 
@@ -2040,39 +2216,35 @@ const BLADE = { on: false, atk: false, rig: null, orbit: null, t: 0, tick: 0, sw
 const SPIN_TIME = 3.2, SPIN_REACH = 3.4;
 function bladeRig() {
   if (BLADE.rig) return;
-  const steel = new THREE.MeshStandardMaterial({ color: 0xd8dde0, metalness: 0.9, roughness: 0.25 }), grip = new THREE.MeshStandardMaterial({ color: 0x2a2a2a, roughness: 0.8 });
-  const edgeM = new THREE.MeshBasicMaterial({ color: 0xffffff });
-  // in-hand blades (shown when not spinning)
   const rig = new THREE.Group();
   const mk = (sx) => {
-    const h = new THREE.Group(); h.position.set(sx * 0.28, -0.32, -0.45);
-    h.add(new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.05, 0.16), grip));
-    const blade = new THREE.Mesh(new THREE.BoxGeometry(0.012, 0.07, 0.95), steel); blade.position.z = -0.55; h.add(blade);
-    const edge = new THREE.Mesh(new THREE.BoxGeometry(0.004, 0.012, 0.95), edgeM); edge.position.set(0, 0.036, -0.55); h.add(edge);
+    const h = new THREE.Group(); h.position.set(sx * 0.2, -0.25, -0.36);
+    const sw = swordMesh(0.95, 0.075, true); sw.rotation.set(0.32, -sx * 0.95, sx * 0.35, 'YXZ'); if (sx < 0) sw.scale.x = -1; h.add(sw);
     rig.add(h); return h;
   };
   BLADE.L = mk(-1); BLADE.R = mk(1);
   rig.visible = false; camera.add(rig); BLADE.rig = rig;
-  // the whirl: two long blades held out on either side, sweeping a full circle around you
-  const orbit = new THREE.Group();
+  // the whirl: two swords held out at arm's length, plus fading afterimages of the steel
+  const orbit = new THREE.Group(); BLADE.ghosts = [];
   for (const sx of [-1, 1]) {
-    const arm = new THREE.Group(); arm.rotation.y = sx > 0 ? 0 : Math.PI;
-    const blade = new THREE.Mesh(new THREE.BoxGeometry(SPIN_REACH - 0.5, 0.08, 0.015), steel); blade.position.x = 0.5 + (SPIN_REACH - 0.5) / 2; arm.add(blade);
-    const edge = new THREE.Mesh(new THREE.BoxGeometry(SPIN_REACH - 0.5, 0.014, 0.02), edgeM); edge.position.set(blade.position.x, 0.045, 0); arm.add(edge);
-    orbit.add(arm);
+    const arm = new THREE.Group(); arm.rotation.y = sx > 0 ? 0 : Math.PI; orbit.add(arm);
+    const sw = swordMesh(2.3, 0.11, false); sw.rotation.set(0, -Math.PI / 2, 0); sw.rotateZ(Math.PI / 2 - 0.3); sw.position.x = 0.55; arm.add(sw);
+    for (let k = 1; k <= 3; k++) {
+      const gh = bladeMesh(2.3, 0.11); const mat = new THREE.MeshBasicMaterial({ color: 0xdfeeff, transparent: true, opacity: 0, depthWrite: false });
+      gh.traverse((o) => { if (o.isMesh) o.material = mat; });
+      const holder = new THREE.Group(); holder.rotation.y = -k * 0.2 * (sx > 0 ? 1 : 1); holder.add(gh); gh.rotation.x = Math.PI / 2 - 0.3; gh.position.x = 0.7; arm.add(holder);
+      BLADE.ghosts.push({ mat, k });
+    }
   }
-  // a pale disc of motion blur where the steel passes
-  const blur = new THREE.Mesh(new THREE.RingGeometry(0.6, SPIN_REACH, 48, 1), new THREE.MeshBasicMaterial({ color: 0xe8f6ff, transparent: true, opacity: 0, side: THREE.DoubleSide, depthWrite: false, blending: THREE.AdditiveBlending, fog: false, toneMapped: false }));
-  blur.rotation.x = -Math.PI / 2; orbit.add(blur); BLADE.blur = blur;
+  const blur = new THREE.Object3D(); blur.material = { opacity: 0 }; orbit.add(blur); BLADE.blur = blur;
   orbit.visible = false; scene.add(orbit); BLADE.orbit = orbit;
-  // stamina bar, above the gas bar
   const ui = document.createElement('div');
   ui.style.cssText = 'position:absolute;left:50%;bottom:calc(36px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);width:180px;font:600 11px var(--f-display);color:#fde68a;letter-spacing:.12em;text-align:center;pointer-events:none;text-shadow:0 1px 2px #000;display:none';
   ui.innerHTML = '体 <span style="display:inline-block;vertical-align:middle;width:130px;height:6px;background:rgba(255,255,255,.12);border-radius:3px;overflow:hidden"><i style="display:block;height:100%;width:100%;background:linear-gradient(90deg,#f59e0b,#fde68a)"></i></span>';
   $('hud').appendChild(ui); BLADE.uiBox = ui; BLADE.ui = ui.querySelector('i');
 }
 function bladeOn() {
-  bladeRig(); if (BLADE.on) return;
+  bladeRig(); if (BLADE.on || CURSE.me) return;
   BLADE.on = true; WEAPON.root.visible = false; BLADE.rig.visible = true; BLADE.uiBox.style.display = ''; WEAPON.adsT = 0; INPUT.mouseAds = false;
   sfxClick(1600, 0.1); updateWeaponHUD();
 }
@@ -2102,8 +2274,8 @@ function bladeUpdate(dt) {
   BLADE.orbit.visible = spinning; BLADE.rig.visible = !spinning;
   BLADE.orbit.position.set(P.pos.x, P.pos.y + 1.05, P.pos.z);
   BLADE.orbit.rotation.set(Math.sin(BLADE.ang * 0.5) * 0.05, BLADE.ang, 0);
-  BLADE.blur.visible = false;
-  if (!spinning) { BLADE.L.rotation.set(0.25, 0.15, 0.3); BLADE.R.rotation.set(0.25, -0.15, -0.3); }
+  for (const gh of BLADE.ghosts) gh.mat.opacity = BLADE.spin * (0.3 / gh.k);
+  if (!spinning) { const br = Math.sin(BLADE.t * 1.6) * 0.015; BLADE.t += dt; BLADE.L.rotation.set(br, 0, 0); BLADE.R.rotation.set(-br, 0, 0); }
   if (!BLADE.atk) return;
   BLADE.swishT -= dt;
   if (BLADE.swishT <= 0 && AU.ctx) { BLADE.swishT = 0.12; noiseBurst(AU.ctx.currentTime, AU.master, { f: 2200 + Math.random() * 900, q: 1.2, a: 0.01, d: 0.1, g: 0.22 }); }
@@ -2197,10 +2369,12 @@ function hauntTick(dt) {
     for (const w of WEAPON.list) w.reserve *= 2;
     updateWeaponHUD();
     placeAmmoCaches(12);
+    if (H.coop) { cursePlace(); if (scene.fog) scene.fog.color.setRGB(0.07, 0.025, 0.025); }
   }
+  if (H.coop) { curseTick(dt); phantomTick(dt); }
   ammoTick(dt);
   H.t += dt;
-  const P = PLAYER, k = clamp(H.t / 300, 0, 1);        // 0 → 1 over the five minutes you must survive
+  const P = PLAYER, envT = H.coop ? H.t + 240 : H.t, k = clamp(envT / 300, 0, 1);        // 0 → 1 over the five minutes you must survive (co-op starts in the dark)
   // dusk falls far too fast: the sun sinks, the light turns red, then almost nothing
   if (scene.fog) {
     if (!H.fog0) H.fog0 = scene.fog.density;
@@ -2209,28 +2383,30 @@ function hauntTick(dt) {
   }
   if (sky && !H.sun0) { H.sun0 = sky.material.uniforms.sunPosition.value.clone(); }
   if (sky) {
-    const el = lerp(Math.asin(clamp(H.sun0.y, -1, 1)), -0.06, Math.pow(k, 0.8));
+    const el = lerp(Math.asin(clamp(H.sun0.y, -1, 1)), H.coop ? -0.35 : -0.06, Math.pow(k, 0.8));
     const az = Math.atan2(H.sun0.z, H.sun0.x);
     sky.material.uniforms.sunPosition.value.set(Math.cos(el) * Math.cos(az), Math.sin(el), Math.cos(el) * Math.sin(az));
     sky.material.uniforms.rayleigh.value = lerp(MAP_ID === 'desert' ? 1.4 : 2.4, 4, k);
   }
   if (sun) { sun.intensity = (MAP_ID === 'desert' ? 4.0 : 3.6) * Math.max(0.12, 1 - k * 0.95); sun.color.setRGB(1, lerp(0.78, 0.25, k), lerp(0.56, 0.18, k)); }
-  renderer.toneMappingExposure = lerp(0.82, 0.62, k);
+  renderer.toneMappingExposure = H.coop ? 0.5 : lerp(0.82, 0.62, k);
   // lamps: flicker more and more, and one by one they go out
   for (let i = 0; i < LAMPS.length; i++) {
     const l = LAMPS[i]; if (!l.pl) continue;
-    const dead = H.t > 90 && (i * 37 % 100) / 100 < (H.t - 90) / 400;
+    const dead = envT > 90 && (i * 37 % 100) / 100 < (envT - 90) / 400;
     const flick = Math.random() < 0.02 + k * 0.12 ? 0.05 : 1;
     l.pl.intensity = dead ? 0 : l.intensity * flick * (0.6 + 0.4 * (1 - k * 0.5));
   }
   // the closest hunter: heartbeat
   let near = 1e9; for (const e of ENEMIES) if (e.ghost && !e.dead) near = Math.min(near, e.pos.distanceTo(P.pos));
+  if (H.coop && CURSE.holder && !CURSE.me) { const r = NET.remotes.get(CURSE.holder); if (r && r.st === 'play') near = Math.min(near, r.pos.distanceTo(P.pos)); }
   H.heartT = (H.heartT || 0) - dt;
   if (near < 30 && H.heartT <= 0) { hauntHeart(clamp(1.3 - near / 30, 0.25, 1)); H.heartT = lerp(0.42, 1.1, clamp(near / 30, 0, 1)); }
   // something screams far away now and then
   H.scrT = (H.scrT == null ? 70 : H.scrT) - dt;
   if (H.scrT <= 0) { H.scrT = rnd(35, 70) * (1 - k * 0.4); const a = Math.random() * 6.28; hauntShriek(_hv.set(P.pos.x + Math.cos(a) * 45, 1.6, P.pos.z + Math.sin(a) * 45)); }
   const msgs = [[3, '无线电：所有撤离点信号中断。坚持住，等信号恢复。', '#9ca3af'], [9, '绿色光柱是弹药补给。打倒它们也会掉弹药。', '#7dff9a'], [15, IS_TOUCH ? '「钩」射出钩爪 · 空中按住「喷」喷气 · 切枪按钮切到双刀，按住开火旋转斩' : '[Q] 按住钩爪 · 空中按住 [空格] 喷气 · [3] 双刀（按住旋转斩，旋转时完全格挡，体力约 3 秒）', '#7fd6ff'], [40, '他们为什么不开枪？', '#e5e7eb'], [100, '不要让他们靠近你', '#fca5a5'], [170, '别回头', '#ef4444'], [240, '天怎么黑了', '#ef4444'], [300, '撤离信号恢复了。快走。', '#6fe2a8']];
+  if (H.coop) msgs.splice(0, msgs.length, [3, '无线电：所有撤离点信号中断。', '#9ca3af'], [7, '地图某处藏着一张照片。谁捡到它，谁就会变成「它」。', '#ef4444'], [13, '靠近时能听见八音盒的声音。', '#fca5a5'], [20, msgs[2][1], '#7fd6ff'], [60, '远处站着的那些…… 不是你的队友。', '#e5e7eb'], [300, '撤离信号恢复了。「它」走不了。', '#6fe2a8']);
   while (H.msgs < msgs.length && H.t > msgs[H.msgs][0]) { toast(msgs[H.msgs][1], msgs[H.msgs][2]); if (H.msgs >= 2 && H.msgs < 5) hauntWhisper(); H.msgs++; }
   if (Math.random() < dt * 0.04) { document.title = Math.random() < 0.5 ? 'うしろ' : '别回头'; setTimeout(() => { document.title = '灰烬港区'; }, 900); }
 }
@@ -2248,6 +2424,166 @@ function hauntFinale() {
     e.hState = 'stare'; e.frozen = 1.2 + i * 0.12;
   });
   setTimeout(() => { if (H.over) return; for (const e of alive.slice(0, 14)) e.becomeGhost(true); }, 2600);
+}
+
+
+// =====================================================================
+// co-op: 鬼抓人. A photograph is hidden somewhere on the map. Whoever picks it up becomes the thing.
+// =====================================================================
+function hauntReset(opts) {
+  H.t = 0; H.msgs = 0; H.started = false; H.over = false; H.finale = false; H.ghosts = 0; H.heartT = 0; H.scrT = null;
+  H.seed = (opts.seed ?? 0) | 0; H.coop = !!NET.rm;
+  for (const a of AMMO.list) if (a.g && a.g.parent) a.g.parent.remove(a.g);
+  AMMO.list = [];
+  curseReset(); phantomReset();
+}
+const CURSE = { holder: null, n: 0, item: null, light: null, pending: 0, me: false, caught: 0, cd: new Map(), scaredUntil: 0, noteT: 0, note: 0, ov: null, banner: null };
+function curseReset() {
+  if (CURSE.me) curseLeave();
+  CURSE.holder = null; CURSE.n = 0; CURSE.pending = 0; CURSE.caught = 0; CURSE.cd.clear(); CURSE.scaredUntil = 0;
+  if (CURSE.item) CURSE.item.visible = false;
+}
+function curseSpot(n) {
+  const rng = mulberry32((H.seed ^ Math.imul(n + 1, 0x2f6b1d)) | 0);
+  for (let i = 0; i < 500; i++) {
+    const x = MAP_X0 + 12 + rng() * (MAP_X1 - MAP_X0 - 24), z = MAP_Z0 + 12 + rng() * (MAP_Z1 - MAP_Z0 - 24);
+    if (x > SEA_X - 3 || !spotFree(x, z, 1.2, 0.05, 2.5)) continue;
+    if (SPAWNS.some((p) => Math.hypot(p[0] - x, p[1] - z) < 35)) continue;
+    return [x, z];
+  }
+  return [0, 0];
+}
+function curseBuild() {
+  if (CURSE.item) return;
+  const g = new THREE.Group();
+  const stand = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.8, 0.5), new THREE.MeshLambertMaterial({ color: 0x1a1414 })); stand.position.y = 0.4; g.add(stand);
+  const tex = new THREE.Texture(SCARE_IMG); tex.colorSpace = THREE.SRGBColorSpace; tex.needsUpdate = true;
+  const frame = new THREE.Group(); frame.position.y = 1.25; g.add(frame);
+  frame.add(new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.8, 0.04), new THREE.MeshLambertMaterial({ color: 0x2a1a12 })));
+  for (const zz of [0.022, -0.022]) { const ph = new THREE.Mesh(new THREE.PlaneGeometry(0.7, 0.7), new THREE.MeshBasicMaterial({ map: tex, fog: false })); ph.position.z = zz; if (zz < 0) ph.rotation.y = Math.PI; frame.add(ph); }
+  const light = new THREE.PointLight(0xff2a1a, 5, 9, 2); light.position.y = 1.4; g.add(light);
+  CURSE.frame = frame; CURSE.light = light; CURSE.item = g; g.visible = false; scene.add(g);
+}
+function cursePlace() {
+  curseBuild();
+  const [x, z] = curseSpot(CURSE.n);
+  CURSE.item.position.set(x, groundAt(x, z, 1), z);
+  CURSE.item.visible = !CURSE.holder;
+}
+function curseApply(n, holder) {
+  if (n !== CURSE.n) { CURSE.n = n; if (H.started) cursePlace(); }
+  holder = holder || null;
+  if (holder === CURSE.holder) return;
+  CURSE.holder = holder; CURSE.pending = 0;
+  if (CURSE.item) CURSE.item.visible = !holder;
+  const mine = !!holder && holder === (NET.me || 'host');
+  if (mine && !CURSE.me) curseBecome();
+  else if (!mine && CURSE.me) curseLeave();
+  if (holder && !mine) {
+    const r = NET.remotes.get(holder);
+    toast(`${r ? r.nm : '有人'} 捡起了那张照片…… 快跑`, '#ef4444');
+    if (r) hauntShriek(r.pos); hauntWhisper();
+  }
+  if (!holder && n > 0) toast('那张照片又出现在别处了', '#fca5a5');
+}
+function curseBecome() {
+  CURSE.me = true; CURSE.caught = 0;
+  bladeOff(); bladeHide(); WEAPON.root.visible = false; WEAPON.adsT = 0; INPUT.mouseAds = false;
+  if (!CURSE.ov) {
+    const ov = document.createElement('div');
+    ov.style.cssText = 'position:fixed;inset:0;pointer-events:none;z-index:5;background:radial-gradient(ellipse at center,rgba(0,0,0,0) 35%,rgba(90,0,0,.55) 80%,rgba(20,0,0,.9) 100%);mix-blend-mode:multiply';
+    document.body.appendChild(ov); CURSE.ov = ov;
+    const b = document.createElement('div');
+    b.style.cssText = 'position:fixed;left:50%;top:calc(64px + env(safe-area-inset-top,0px));transform:translateX(-50%);z-index:6;pointer-events:none;color:#fecaca;font:600 14px serif;letter-spacing:.25em;text-shadow:0 0 8px #000,0 0 2px #000;text-align:center';
+    document.body.appendChild(b); CURSE.banner = b;
+  }
+  CURSE.ov.style.display = ''; CURSE.banner.style.display = '';
+  curseBanner();
+  if (AU.ctx) { hauntShriek(PLAYER.pos); hauntWhisper(); }
+  toast('你变成了「它」。去找他们。', '#ef4444');
+}
+function curseBanner() { if (CURSE.banner) CURSE.banner.innerHTML = `你 是「它」<br><span style="font-size:12px;letter-spacing:.12em;color:#fca5a5">碰到队友就能吓他 · 已经抓到 ${CURSE.caught} 次</span>`; }
+function curseLeave() {
+  CURSE.me = false;
+  if (CURSE.ov) { CURSE.ov.style.display = 'none'; CURSE.banner.style.display = 'none'; }
+  if (STATE.mode === 'playing') WEAPON.root.visible = true;
+}
+function curseScared(peer) {
+  const now = performance.now();
+  if (now < CURSE.scaredUntil || STATE.mode !== 'playing') return;
+  CURSE.scaredUntil = now + 5000;
+  hauntJumpScare(() => { toast('它摸到你了…… 快跑', '#ef4444'); });
+}
+// a little music box, only audible near the photograph
+const CURSE_TUNE = [76, 74, 72, 71, 72, 69, 0, 64, 69, 71, 72, 71, 69, 68, 69, 0];
+function curseTick(dt) {
+  const P = PLAYER;
+  if (CURSE.item && CURSE.item.visible) {
+    CURSE.frame.rotation.y = Math.atan2(camera.position.x - CURSE.item.position.x, camera.position.z - CURSE.item.position.z) + Math.sin(TIME * 0.7) * 0.25; CURSE.frame.position.y = 1.25 + Math.sin(TIME * 1.7) * 0.05;
+    CURSE.light.intensity = Math.random() < 0.06 ? 0.5 : 5;
+    const d = Math.hypot(P.pos.x - CURSE.item.position.x, P.pos.z - CURSE.item.position.z);
+    CURSE.noteT -= dt;
+    if (d < 40 && CURSE.noteT <= 0 && AU.ctx) {
+      CURSE.noteT = 0.34; const m = CURSE_TUNE[CURSE.note++ % CURSE_TUNE.length];
+      if (m) { const f = 440 * Math.pow(2, (m - 69) / 12), k = clamp(1 - d / 40, 0, 1); tone(AU.ctx.currentTime, AU.master, { f0: f, type: 'triangle', a: 0.004, d: 0.6, g: 0.07 * k * k }); tone(AU.ctx.currentTime, AU.master, { f0: f * 2.01, type: 'sine', a: 0.002, d: 0.3, g: 0.02 * k * k }); }
+    }
+    // touch it
+    if (d < 1.4 && Math.abs(P.pos.y - CURSE.item.position.y) < 2 && P.alive && performance.now() > CURSE.pending) {
+      if (NET.hosting) curseApply(CURSE.n, NET.me || 'host');
+      else { CURSE.pending = performance.now() + 2500; netEvent('cu', CURSE.n); }
+    }
+  }
+  if (NET.hosting && CURSE.holder && CURSE.holder !== (NET.me || 'host')) {
+    // the one who held it left or is gone: the photograph finds a new place
+    const r = NET.remotes.get(CURSE.holder);
+    if (!r || r.st !== 'play' || r.run !== NET.startedRun) curseApply(CURSE.n + 1, null);
+  }
+  if (CURSE.me) {
+    WEAPON.root.visible = false;
+    for (const r of NET.remotes.values()) {
+      if (r.st !== 'play' || !r.alive || r.run !== NET.startedRun) continue;
+      const d = Math.hypot(r.pos.x - P.pos.x, r.pos.z - P.pos.z);
+      if (d < 1.6 && Math.abs(r.pos.y - P.pos.y) < 2.5 && performance.now() > (CURSE.cd.get(r.peer) || 0)) {
+        CURSE.cd.set(r.peer, performance.now() + 5500);
+        netEvent('jc', r.peer); CURSE.caught++; curseBanner();
+        toast(`抓到了 ${r.nm}`, '#ef4444'); hauntCroak(r.pos, 0.9);
+      }
+    }
+  }
+}
+
+// ---- phantoms: pale figures standing far off. Get close, or keep looking, and they are not there any more ----
+const PHANTOM = { list: [] };
+function phantomReset() { for (const f of PHANTOM.list) scene.remove(f.g); PHANTOM.list = []; }
+function phantomSpot(f) {
+  const P = PLAYER;
+  for (let i = 0; i < 30; i++) {
+    const a = Math.random() * Math.PI * 2, r = rnd(28, 70);
+    const x = P.pos.x + Math.cos(a) * r, z = P.pos.z + Math.sin(a) * r;
+    if (x < MAP_X0 + 4 || x > Math.min(MAP_X1 - 4, SEA_X - 2) || z < MAP_Z0 + 4 || z > MAP_Z1 - 4 || !spotFree(x, z, 0.6)) continue;
+    f.g.position.set(x, groundAt(x, z, 1), z);
+    if (phantomSeen(f)) continue;
+    f.g.visible = true; f.lookT = 0; return;
+  }
+  f.g.visible = false; f.down = 3;
+}
+function phantomSeen(f) {
+  _hv.set(f.g.position.x, f.g.position.y + 1.6, f.g.position.z).sub(camera.position);
+  const d = _hv.length(); const fwd = _tmpV2.set(0, 0, -1).applyQuaternion(camera.quaternion);
+  if (_hv.dot(fwd) / d < Math.cos(camera.fov * 0.55 * Math.PI / 180)) return false;
+  return losClear(camera.position.x, camera.position.y, camera.position.z, f.g.position.x, f.g.position.y + 1.6, f.g.position.z);
+}
+function phantomTick(dt) {
+  if (!PHANTOM.list.length) for (let i = 0; i < 9; i++) { const G = buildGhostMesh(); G.g.scale.set(1.08, 1.15, 1.08); scene.add(G.g); const f = { G, g: G.g, lookT: 0, down: rnd(0, 6), chk: 0 }; G.g.visible = false; PHANTOM.list.push(f); }
+  const P = PLAYER;
+  for (const f of PHANTOM.list) {
+    if (!f.g.visible) { f.down -= dt; if (f.down <= 0) phantomSpot(f); continue; }
+    f.g.rotation.y = Math.atan2(camera.position.x - f.g.position.x, camera.position.z - f.g.position.z);
+    const d = Math.hypot(P.pos.x - f.g.position.x, P.pos.z - f.g.position.z);
+    f.chk -= dt; if (f.chk <= 0) { f.chk = 0.2; f.seen = phantomSeen(f); }
+    f.lookT = f.seen ? f.lookT + dt : Math.max(0, f.lookT - dt * 0.5);
+    if (d < 16 || f.lookT > 1.6 + (f.g.id % 5) * 0.3) { f.g.visible = false; f.down = rnd(8, 22); if (d < 30) hauntWhisper(); }
+  }
 }
 
 // ---------- shared cover helpers ----------
@@ -3406,6 +3742,7 @@ function playerUpdate(dt) {
   if (WEAPON.cur && WEAPON.cur.def.speedMul) speed *= WEAPON.cur.def.speedMul;
   if (P.healT > 0) speed *= 0.5;
   if (P.inWater) speed *= 0.5;
+  if (CURSE.me) speed *= 1.18;
   const s = Math.sin(P.yaw), c = Math.cos(P.yaw);
   const wx = (fx * c + fz * s) * speed * len, wz = (-fx * s + fz * c) * speed * len;
   const acc = P.onGround ? 13 : (GEAR.momentum ? 0.35 : 2.5);
@@ -3478,6 +3815,7 @@ function surfaceUnder(p) {
 }
 function damagePlayer(dmg, fromPos, kind = 'bullet', head = false) {
   const P = PLAYER;
+  if (CURSE.me) return;
   if (!P.alive || STATE.mode !== 'playing') return;
   let d = dmg;
   if (kind === 'bullet') {
@@ -4247,7 +4585,7 @@ class Enemy {
     return best;
   }
   hauntUpdate(dt) {
-    const P = PLAYER;
+    const P = H.coop ? coopNearest(this) : PLAYER;
     this.root.visible = this.pos.distanceTo(camera.position) < 190;
     const dx = P.pos.x - this.pos.x, dz = P.pos.z - this.pos.z, dist = Math.hypot(dx, dz);
     const face = Math.atan2(-dx, -dz);
@@ -4296,7 +4634,8 @@ class Enemy {
         this.seen = dist < 90 && seenByPlayer(this);
       }
       const k = clamp(H.t / 300, 0, 1);
-      if (dist < 20 && H.t > 5 && P.alive && (this.sees || dist < 9)) { this.becomeGhost(false); }
+      if (!H.coop && dist < 20 && H.t > 5 && P.alive && (this.sees || dist < 9)) { this.becomeGhost(false); }
+      else if (H.coop && dist < 14) { this.yawT = face; this.stareT = (this.stareT || 0) + dt; }
       else if (P.alive) {
         let ax = dx / Math.max(dist, 0.01), az = dz / Math.max(dist, 0.01);
         if (this.detourT > 0) { this.detourT -= dt; const a0 = Math.atan2(ax, az) + this.detourDir * 1.25; ax = Math.sin(a0); az = Math.cos(a0); }
@@ -4361,6 +4700,7 @@ class Enemy {
   }
   becomeGhost(chorus) {
     if (this.ghost) return;
+    if (H.coop) { if (this.ghostHp == null) this.ghostHp = 180; return; }   // in co-op only the photograph makes ghosts
     this.ghost = true; this.ghostT = 0; this.stagger = 0; this.frozen = chorus ? 0.3 : 0;
     H.ghosts++; H.firstShot = true;
     if (this.ghostHp == null) this.ghostHp = this.boss ? 2600 : 1400;
@@ -4930,6 +5270,7 @@ function showScreen(id) { for (const s of ['menu', 'pause', 'result']) $(s).hidd
 // opts (co-op): { seed, ex: [extract ids], players, slot, puppet, diff }
 function startRaid(opts = {}) {
   initAudio(); sfxUI();
+  hauntReset(opts);
   if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
   const seed = opts.seed ?? ((Math.random() * 2 ** 31) | 0);
   RAID_DIFF = DIFF[opts.diff] ? opts.diff : SETTINGS.difficulty;
@@ -5445,7 +5786,7 @@ function gameUpdate(dt) {
   STATE.timeLeft -= dt;
   if (STATE.timeLeft <= 0 && P.alive) { endRaid('mia'); return; }
   playerUpdate(dt);
-  if (BLADE.on) bladeUpdate(dt); else weaponUpdate(dt);
+  if (CURSE.me) WEAPON.root.visible = false; else if (BLADE.on) bladeUpdate(dt); else weaponUpdate(dt);
   hauntTick(dt);
   for (const e of ENEMIES) e.update(dt);
   lootTick(dt);
@@ -5464,10 +5805,10 @@ function gameUpdate(dt) {
   let inZone = null;
   for (const e of STATE.extracts) { if (Math.hypot(P.pos.x - e.x, P.pos.z - e.z) < 4.5 && Math.abs(P.pos.y - e.y) < 2) inZone = e; }
   const pg = $('progress');
-  if (inZone && P.alive && H.t < 300) {
+  if (inZone && P.alive && (H.t < 300 || CURSE.me)) {
     pg.hidden = false; STATE.extractT = 0;
     const left = Math.ceil(300 - H.t);
-    pg.querySelector('.label').textContent = `撤离点没有回应…… 还要坚持 ${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}`;
+    pg.querySelector('.label').textContent = CURSE.me ? '「它」离不开这里' : `撤离点没有回应…… 还要坚持 ${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}`;
     pg.querySelector('i').style.width = Math.min(100, H.t / 300 * 100) + '%';
   } else if (inZone && P.alive) {
     if (!H.finale) {   // the moment you start extracting, every one of them knows
@@ -5577,7 +5918,7 @@ async function init() {
   frame();
 }
 init().catch((err) => { console.error(err); $('loadText').textContent = '加载失败：' + (err && err.message ? err.message : err); });
-window.__ashfall = { renderContracts, stash, get RAID_DIFF() { return RAID_DIFF; }, startRaid, endRaid, getGear, saveGear, store, applyLoadout, usePlate, useMed, PLAYER, ENEMIES, STATE, CONTAINERS, WEAPON, camera, openLoot, BAG, get NET() { return NET; }, netEvent: (...a) => netEvent(...a), takeItem: (c, i) => takeItem(c, i) };
+window.__ashfall = { PUFF, GEAR, H, CURSE, PHANTOM, renderContracts, stash, get RAID_DIFF() { return RAID_DIFF; }, startRaid, endRaid, getGear, saveGear, store, applyLoadout, usePlate, useMed, PLAYER, ENEMIES, STATE, CONTAINERS, WEAPON, camera, openLoot, BAG, get NET() { return NET; }, netEvent: (...a) => netEvent(...a), takeItem: (c, i) => takeItem(c, i) };
 
 // ================= co-op (up to 3) over the artifact `room` capability =================
 // Everything travels in each player's room *presence* (works for every viewer, any share level):
@@ -5641,6 +5982,7 @@ class Remote {
   update(dt) {
     const show = NET.inRaid && this.run === NET.startedRun && (this.st === 'play' || this.st === 'dead');
     this.root.visible = show;
+    if (this.gm) this.gm.g.visible = false;
     if (!show) return;
     const px = this.pos.x, pz = this.pos.z;
     if (this.pos.distanceTo(this.npos) > 8) this.pos.copy(this.npos);
@@ -5651,12 +5993,22 @@ class Remote {
     this.h = lerp(1.75, 1.15, this.crouch);
     this.eye.set(this.pos.x, this.pos.y + lerp(1.62, 1.05, this.crouch), this.pos.z);
     this.root.position.copy(this.pos); this.root.rotation.y = this.yaw;
+    if (H.coop && CURSE.holder === this.peer) {
+      if (!this.gm) { this.gm = buildGhostMesh(); scene.add(this.gm.g); }
+      this.root.visible = false; this.ghT = (this.ghT || 0) + dt;
+      const G = this.gm; G.g.visible = Math.random() > 0.03;
+      G.g.position.copy(this.pos); G.g.rotation.y = this.yaw + Math.PI;
+      animateGhost(G, this.ghT, dt, 'run', this.speed);
+      G.g.scale.set(GS, GS * (1.12 + Math.sin(this.ghT * 2) * 0.02), GS);
+      if (Math.random() < dt * 0.5) hauntCroak(this.pos, 0.6);
+      return;
+    }
     if (!this.alive) { this.deathT += dt; animateDeath(this.s, smooth(0, 0.7, this.deathT), 1, this.pos.y); if (this.tag) this.tag.visible = false; return; }
     this.root.rotation.x = 0;
     if (this.tag) this.tag.visible = true;
     animateSoldier(this.s, dt, this.vel.x, this.vel.z, this.yaw, this.crouch, -this.pitch, this.sprint ? 0.5 : 0);
   }
-  dispose() { scene.remove(this.root); }
+  dispose() { scene.remove(this.root); if (this.gm) scene.remove(this.gm.g); }
 }
 function clearRemotes() { for (const r of NET.remotes.values()) r.dispose(); NET.remotes.clear(); NET.lastSeq.clear(); }
 
@@ -5677,8 +6029,8 @@ function loadScript(src) { return new Promise((res, rej) => { const s = document
 //  - relay: when a direct WebRTC link can't be made (strict NAT, school/office Wi-Fi, mobile data),
 //    game traffic is forwarded through the broker instead. Slower, but it connects.
 // =====================================================================
-const MQTT_URLS = ['wss://broker.emqx.io:8084/mqtt', 'wss://broker.hivemq.com:8884/mqtt', 'wss://test.mosquitto.org:8081/mqtt'];
-const RT = 'ashfallharbor/v1';
+const MQTT_URLS = ['wss://broker.emqx.io:8084/mqtt', 'wss://broker.hivemq.com:8884/mqtt', 'wss://test.mosquitto.org:8081/mqtt', 'wss://mqtt.eclipseprojects.io:443/mqtt'];
+const RT = 'ashfallharbor/haunt1';
 const RELAY = {
   clients: [], ready: null, lobby: new Map(), handlers: new Map(), me: 'r' + Math.random().toString(36).slice(2, 10),
   pub(bi, topic, obj, retain = false) {
@@ -5944,7 +6296,7 @@ function p2pJoin(name, asHost, preferBi) {
 }
 
 // ---------- connecting ----------
-async function netInit() { NET.available = false; return;
+async function netInit() {
   $('nick').value = NET.nick;
   const m = /^#r-([a-z0-9]{4,8})$/i.exec(location.hash || '');
   if (m) NET.invite = m[1].toLowerCase();
@@ -6019,7 +6371,7 @@ async function netJoin(code, host) {
   let rm, lastErr = null;
   for (let attempt = 0; attempt < (host ? 1 : 3) && !rm; attempt++) {
     if (attempt) { NET.msg = `正在重试加入 ${code.toUpperCase()}（第 ${attempt + 1} 次）…`; renderCoopUI(); await new Promise((r) => setTimeout(r, 1200)); }
-    try { rm = await NET.room.join('ash-' + code, host, listed ? listed.bi : undefined); }
+    try { rm = await NET.room.join('ashh-' + code, host, listed ? listed.bi : undefined); }
     catch (e) {
       lastErr = e;
       if (e && (e.code === 'taken' || e.code === 'not_permitted' || e.code === 'full')) break;
@@ -6121,6 +6473,7 @@ function hostInfo(pr) {
     }
   }
   if (ph === 'lobby' && NET.inRaid && STATE.mode !== 'playing') NET.inRaid = false;
+  if (NET.inRaid && run === NET.startedRun && Array.isArray(pr.cu) && Number.isFinite(pr.cu[0])) curseApply(pr.cu[0] | 0, typeof pr.cu[1] === 'string' ? pr.cu[1] : null);
   // enemy snapshot
   if (NET.inRaid && run === NET.startedRun && Array.isArray(pr.en)) {
     for (let i = 0; i < pr.en.length && i < ENEMIES.length; i++) {
@@ -6192,6 +6545,16 @@ function handleEvent(peer, r, e) {
       if (_nb.distanceTo(camera.position) < 50) fxImpact(_nb.x, _nb.y, _nb.z, -dir.x, -dir.y, -dir.z, 'concrete');
       break;
     }
+    case 'cu': { // someone touched the photograph (host decides who was first)
+      if (!NET.hosting || !NET.inRaid || CURSE.holder || (n(2) | 0) !== CURSE.n || r.st !== 'play') break;
+      curseApply(CURSE.n, peer);
+      break;
+    }
+    case 'jc': { // the cursed one touched someone
+      if (!NET.inRaid || e[2] !== NET.me || peer !== CURSE.holder) break;
+      curseScared(peer);
+      break;
+    }
     case 't': { // someone took an item
       const c = containerByKey(String(e[2])); if (!c) break;
       const it = c.items[n(3) | 0];
@@ -6213,6 +6576,7 @@ function netSendPresence() {
   };
   if (NET.hosting) {
     Object.assign(pr, { ph: NET.phase, run: NET.run, seed: NET.seed, ex: NET.ex, diff: NET.diff, t0: NET.t0, np: NET.np });
+    if (NET.phase === 'raid') pr.cu = [CURSE.n, CURSE.holder || ''];
     if (NET.phase === 'raid') pr.en = ENEMIES.map((e) => [r2(e.pos.x), r2(e.pos.y), r2(e.pos.z), r2(e.yaw), (e.dead ? 3 : e.state === 'combat' ? 2 : e.state === 'investigate' ? 1 : 0) | (e.crouch > 0.5 ? 4 : 0), r2(e.aimPitch)]);
   }
   // stay well inside the 4 KiB presence limit: shed the oldest events first
