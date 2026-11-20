@@ -1993,8 +1993,80 @@ function seenByPlayer(e) {
   return losClear(camera.position.x, camera.position.y, camera.position.z, e.pos.x, e.pos.y + 1.4, e.pos.z);
 }
 function state_shake() { if (typeof FEEL !== 'undefined') { FEEL.shake = 1; FEEL.fovK = 3; } }
+// ---------- ammunition: caches across the map (they restock) + boxes dropped by the dead ----------
+const AMMO = { list: [], geo: null, mat: null, beamGeo: null, beamMat: null };
+function ammoMeshes() {
+  if (AMMO.geo) return;
+  AMMO.geo = new THREE.BoxGeometry(0.62, 0.34, 0.4);
+  AMMO.mat = new THREE.MeshLambertMaterial({ color: 0x3f5a2a, emissive: 0x2f7a2a, emissiveIntensity: 0.6 });
+  AMMO.lidMat = new THREE.MeshLambertMaterial({ color: 0xd6c34a, emissive: 0x6a5a10 });
+  AMMO.beamGeo = new THREE.CylinderGeometry(0.06, 0.25, 7, 8, 1, true); AMMO.beamGeo.translate(0, 3.5, 0);
+  AMMO.beamMat = new THREE.MeshBasicMaterial({ color: 0x7dff9a, transparent: true, opacity: 0.16, depthWrite: false, side: THREE.DoubleSide, fog: false });
+}
+function addAmmo(x, z, opts = {}) {
+  ammoMeshes();
+  const g = new THREE.Group(); g.position.set(x, groundAt(x, z, 2), z);
+  const box = new THREE.Mesh(AMMO.geo, AMMO.mat); box.position.y = 0.17; box.castShadow = true; g.add(box);
+  const lid = new THREE.Mesh(new THREE.BoxGeometry(0.64, 0.05, 0.42), AMMO.lidMat); lid.position.y = 0.36; g.add(lid);
+  const beam = new THREE.Mesh(AMMO.beamGeo, AMMO.beamMat); g.add(beam);
+  scene.add(g);
+  const a = { g, box, beam, x, z, mags: opts.mags || 2, respawn: opts.respawn === undefined ? 45 : opts.respawn, down: 0, drop: !!opts.drop };
+  AMMO.list.push(a); return a;
+}
+function ammoTick(dt) {
+  const P = PLAYER;
+  for (const a of AMMO.list) {
+    if (a.down > 0) { a.down -= dt; if (a.down <= 0) { a.g.visible = true; } continue; }
+    if (!a.g.visible) continue;
+    a.box.rotation.y += dt * 0.8; a.box.position.y = 0.2 + Math.sin(TIME * 2.4 + a.x) * 0.05;
+    a.beam.material.opacity = 0.12 + Math.sin(TIME * 3 + a.z) * 0.05;
+    if (Math.hypot(P.pos.x - a.x, P.pos.z - a.z) < 1.5 && Math.abs(P.pos.y - a.g.position.y) < 2 && P.alive) {
+      let got = 0;
+      for (const w of WEAPON.list) { const add = Math.round(w.def.mag * a.mags); const cap = w.def.reserve * 4; const before = w.reserve; w.reserve = Math.min(cap, w.reserve + add); got += w.reserve - before; }
+      if (got > 0) {
+        sfxPickup(1); toast(a.drop ? `捡到弹药 +${got}` : `弹药补给 +${got}`, '#7dff9a');
+        if (a.respawn > 0) { a.g.visible = false; a.down = a.respawn; } else { a.g.visible = false; a.gone = true; }
+      }
+    }
+  }
+  AMMO.list = AMMO.list.filter((a) => !a.gone);
+}
+function placeAmmoCaches(n) {
+  const P = PLAYER; let placed = 0;
+  // one close to where you start, the rest spread over the map
+  for (let i = 0; i < 400 && placed < n; i++) {
+    const near = placed === 0, r = near ? rnd(6, 14) : 0;
+    const a0 = Math.random() * Math.PI * 2;
+    const x = near ? P.pos.x + Math.cos(a0) * r : rnd(MAP_X0 + 8, MAP_X1 - 8), z = near ? P.pos.z + Math.sin(a0) * r : rnd(MAP_Z0 + 8, MAP_Z1 - 8);
+    if (x > SEA_X - 2 || !spotFree(x, z, 1.2, 0.05, 2.5)) continue;
+    if (AMMO.list.some((o) => Math.hypot(o.x - x, o.z - z) < 30)) continue;
+    addAmmo(x, z); placed++;
+  }
+}
+function hauntRelocate(e, r0, r1) {
+  // put it somewhere at r0..r1 metres from you that you are not looking at
+  const P = PLAYER;
+  for (let i = 0; i < 24; i++) {
+    const back = P.yaw + (Math.random() - 0.5) * 2.4, r = rnd(r0, r1);
+    const x = clamp(P.pos.x + Math.sin(back) * r, MAP_X0 + 4, MAP_X1 - 4), z = clamp(P.pos.z + Math.cos(back) * r, MAP_Z0 + 4, MAP_Z1 - 4);
+    if (x > SEA_X - 1) continue;
+    if (!spotFree(x, z, 0.6)) continue;
+    e.pos.set(x, groundAt(x, z, 1), z); e.vel.set(0, 0, 0); e.root.position.copy(e.pos);
+    if (e.lastProg) e.lastProg.copy(e.pos);
+    return true;
+  }
+  return false;
+}
 function hauntTick(dt) {
   if (H.over) return;
+  if (!H.started) {
+    H.started = true;
+    // nobody starts right on top of you; and you will need the ammunition
+    for (const e of ENEMIES) if (!e.dead && e.pos.distanceTo(PLAYER.pos) < 35) hauntRelocate(e, 45, 70);
+    for (const w of WEAPON.list) w.reserve *= 2;
+    placeAmmoCaches(12);
+  }
+  ammoTick(dt);
   H.t += dt;
   const P = PLAYER, k = clamp(H.t / 300, 0, 1);        // 0 → 1 over the five minutes you must survive
   // dusk falls far too fast: the sun sinks, the light turns red, then almost nothing
@@ -2026,7 +2098,7 @@ function hauntTick(dt) {
   // something screams far away now and then
   H.scrT = (H.scrT == null ? 70 : H.scrT) - dt;
   if (H.scrT <= 0) { H.scrT = rnd(35, 70) * (1 - k * 0.4); const a = Math.random() * 6.28; hauntShriek(_hv.set(P.pos.x + Math.cos(a) * 45, 1.6, P.pos.z + Math.sin(a) * 45)); }
-  const msgs = [[3, '无线电：所有撤离点信号中断。坚持住，等信号恢复。', '#9ca3af'], [40, '他们为什么不开枪？', '#e5e7eb'], [100, '不要让他们靠近你', '#fca5a5'], [170, '别回头', '#ef4444'], [240, '天怎么黑了', '#ef4444'], [300, '撤离信号恢复了。快走。', '#6fe2a8']];
+  const msgs = [[3, '无线电：所有撤离点信号中断。坚持住，等信号恢复。', '#9ca3af'], [9, '绿色光柱是弹药补给。打倒它们也会掉弹药。', '#7dff9a'], [40, '他们为什么不开枪？', '#e5e7eb'], [100, '不要让他们靠近你', '#fca5a5'], [170, '别回头', '#ef4444'], [240, '天怎么黑了', '#ef4444'], [300, '撤离信号恢复了。快走。', '#6fe2a8']];
   while (H.msgs < msgs.length && H.t > msgs[H.msgs][0]) { toast(msgs[H.msgs][1], msgs[H.msgs][2]); if (H.msgs >= 2 && H.msgs < 5) hauntWhisper(); H.msgs++; }
   if (Math.random() < dt * 0.04) { document.title = Math.random() < 0.5 ? 'うしろ' : '别回头'; setTimeout(() => { document.title = '灰烬港区'; }, 900); }
 }
@@ -3787,6 +3859,7 @@ class Enemy {
     if (shooter === LOCALT) { showHitmarker(part === 'head', gk); sfxHit(part === 'head', gk); }
     if (gk) {
       hauntShriek(this.pos, true); H.ghosts = Math.max(0, H.ghosts - 1);
+      if (this.pos.x < SEA_X - 1) addAmmo(this.pos.x, this.pos.z, { mags: 1.5, respawn: 0, drop: true });
       const G = this.gm, t0 = performance.now();
       this.die(part === 'head', shooter); this.root.visible = true;
       for (const k of ['thL', 'thR', 'upper']) this.s[k].visible = false;
@@ -4062,19 +4135,30 @@ class Enemy {
       // it has to actually reach you
       if (dist < 0.95 && Math.abs(P.pos.y - this.pos.y) < 1.6 && P.alive && !H.over) { hauntCaught(this); return; }
     } else {
-      // a soldier on patrol, at a normal pace. It never raises its rifle.
-      const sees = dist < 70 && losClear(this.pos.x, this.pos.y + 1.6, this.pos.z, camera.position.x, camera.position.y, camera.position.z);
-      if (dist < 20 && H.t > 5 && P.alive && (sees || dist < 9)) { this.becomeGhost(false); }
-      else if (sees && dist < 45 && (this.stareT || 0) < 6) {
-        this.stareT = (this.stareT || 0) + dt; this.yawT = face;     // stops and watches you for a while
-      } else {
-        if (!sees) this.stareT = Math.max(0, (this.stareT || 0) - dt * 0.5);
-        const p = this.pts[this.pi % this.pts.length];
-        const stalk = H.t > 60 && dist < 70 && !seenByPlayer(this);   // later on they drift toward you when unseen
-        const tx = stalk ? P.pos.x : p[0], tz = stalk ? P.pos.z : p[1];
-        const ddx = tx - this.pos.x, ddz = tz - this.pos.z, dd = Math.hypot(ddx, ddz);
-        if (dd > 1.2 && (this.wait || 0) <= 0) { mvx = ddx / dd; mvz = ddz / dd; spd = stalk ? 2.2 : 1.6; this.yawT = Math.atan2(-ddx, -ddz); }
-        else if (!stalk) { this.wait = (this.wait || 0) - dt; if (this.wait <= -0.01 && dd <= 1.2) { this.pi++; this.wait = rnd(1.5, 4); } }
+      // every one of them walks toward you. Slowly. Looking at you the whole way.
+      this.losT = (this.losT || 0) - dt;
+      if (this.losT <= 0) {
+        this.losT = 0.2 + Math.random() * 0.1;
+        this.sees = dist < 70 && losClear(this.pos.x, this.pos.y + 1.6, this.pos.z, camera.position.x, camera.position.y, camera.position.z);
+        this.seen = dist < 90 && seenByPlayer(this);
+      }
+      const k = clamp(H.t / 300, 0, 1);
+      if (dist < 20 && H.t > 5 && P.alive && (this.sees || dist < 9)) { this.becomeGhost(false); }
+      else if (P.alive) {
+        let ax = dx / Math.max(dist, 0.01), az = dz / Math.max(dist, 0.01);
+        if (this.detourT > 0) { this.detourT -= dt; const a0 = Math.atan2(ax, az) + this.detourDir * 1.25; ax = Math.sin(a0); az = Math.cos(a0); }
+        mvx = ax; mvz = az;
+        spd = this.seen ? lerp(0.55, 1.0, k) : lerp(1.15, 2.1, k);          // they hurry when you look away
+        this.yawT = face;
+        this.stareT = this.seen ? (this.stareT || 0) + dt : 0;
+        // walled off: step sideways; walled off for long and unseen: be somewhere else instead
+        this.prog = (this.prog || 0) + dt;
+        if (this.prog > 1.5) {
+          const moved = this.lastProg ? this.pos.distanceTo(this.lastProg) : 9;
+          if (moved < 0.5) { this.stuckN = (this.stuckN || 0) + 1; this.detourT = rnd(1.2, 2.4); this.detourDir = Math.random() < 0.5 ? -1 : 1; } else this.stuckN = 0;
+          if (this.stuckN >= 3 && !this.seen && dist > 35) { hauntRelocate(this, 32, 48); this.stuckN = 0; }
+          this.lastProg = (this.lastProg || new THREE.Vector3()).copy(this.pos); this.prog = 0;
+        }
       }
     }
     const ml = Math.hypot(mvx, mvz);
@@ -4219,6 +4303,7 @@ function spawnEnemies(rng = Math.random, players = 1, puppet = false) {
     if (D === 'easy' && n > 1 && r1 < 0.5) n--;
     if (D === 'hard' && !g.boss && !g.guard && r2v < 0.4) n++;
     if (players > 1 && !g.boss && !g.guard && r3 < 0.25 * (players - 1)) n++;
+    if (!g.boss && !g.guard) n = n * 2 + 1;   // the harbour is far more crowded than it should be
     for (let i = 0; i < n; i++) {
       const p = g.pts[(i * 2) % g.pts.length];
       const e = new Enemy(p[0] + (rng() - 0.5) * 1.6, g.y || 0, p[1] + (rng() - 0.5) * 1.6, g, { pi: (i * 2 + 1) % g.pts.length, boss: g.boss && i === 0, guard: g.guard, yaw: rng() * 6.28, armorRoll: rng(), hpMul: players > 1 ? 1 + 0.15 * (players - 1) : 1 });
