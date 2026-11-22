@@ -3672,9 +3672,11 @@ function gunMats() {
   if (GM.body) return;
   const env = gunEnv(), v2 = (k) => new THREE.Vector2(k, k);
   const S = (o) => new THREE.MeshStandardMaterial(Object.assign({ envMap: env, envMapIntensity: 0.9 }, o));
-  GM.body = new THREE.MeshPhysicalMaterial({ envMap: env, envMapIntensity: 1.5, color: 0x33363b, metalness: 0.35, roughness: 0.56, clearcoat: 0.3, clearcoatRoughness: 0.4, map: TEX.gunwear.map, roughnessMap: TEX.gunwear.rough, normalMap: TEX.gunwear.normal, normalScale: v2(0.25) });
-  GM.furn = S({ color: 0x26282b, metalness: 0.0, roughness: 0.56, normalMap: TEX.fabric.normal, normalScale: v2(0.16), envMapIntensity: 1.1 });
-  GM.steel = S({ color: 0x5b6066, metalness: 0.85, roughness: 0.3, envMapIntensity: 1.2 });
+  GM.body = new THREE.MeshPhysicalMaterial({ envMap: env, envMapIntensity: 1.9, color: 0x303338, metalness: 0.45, roughness: 0.52, clearcoat: 0.35, clearcoatRoughness: 0.35, map: TEX.gunwear.map, roughnessMap: TEX.gunwear.rough, normalMap: TEX.gunwear.normal, normalScale: v2(0.25) });
+  if (!TEX.stipple) TEX.stipple = makeSet(256, (u, v, o) => { const a = vnoise(u * 96, v * 96, 96, 9101), b = vnoise(u * 40, v * 40, 40, 9111); o.h = a * 0.7 + b * 0.3; const c = 0.9 + (a - 0.5) * 0.12; o.r = c; o.g = c; o.b = c; o.ro = 0.8 + (a - 0.5) * 0.2; }, 3);
+  const stip = TEX.stipple.normal.clone(); stip.repeat.set(3, 3); stip.needsUpdate = true;
+  GM.furn = S({ color: 0x24262a, metalness: 0.0, roughness: 0.62, normalMap: stip, normalScale: v2(0.55), envMapIntensity: 1.25 });
+  GM.steel = S({ color: 0x4a4e53, metalness: 0.8, roughness: 0.42, map: TEX.gunwear.map, roughnessMap: TEX.gunwear.rough, envMapIntensity: 1.35 });
   GM.bright = S({ color: 0xbfc4c8, metalness: 1, roughness: 0.16, envMapIntensity: 1.3 });
   GM.dark = S({ color: 0x0b0c0d, metalness: 0.1, roughness: 0.6, envMapIntensity: 0.4 });
   GM.rubber = S({ color: 0x1a1b1c, metalness: 0, roughness: 0.9, envMapIntensity: 0.5 });
@@ -3701,6 +3703,25 @@ function boxes(list) { // [[w,h,d,x,y,z,rx?]...] merged into one geometry
   return mergeGeometries(gs);
 }
 const P = (g, geo, m, x = 0, y = 0, z = 0, rx = 0, ry = 0, rz = 0) => vmMesh(g, geo, m, x, y, z, rx, ry, rz);
+// laser-engraved receiver markings (canvas text on a decal plane); side = +1 right, -1 left
+const _engr = new Map();
+function engrave(g, lines, x, y, z, w, h, side = -1, color = '#c9ccce') {
+  const key = lines.join('|') + color + w + h;
+  let mat = _engr.get(key);
+  if (!mat) {
+    const W = 512, H = Math.max(32, Math.round(512 * h / w));
+    const t = canvasTex(W, H, (c, cw, ch) => {
+      c.clearRect(0, 0, cw, ch); c.fillStyle = color; c.textBaseline = 'middle';
+      const n = lines.length, fs = Math.floor(ch / n * 0.62);
+      lines.forEach((ln, i) => { c.font = `600 ${fs}px "Chakra Petch", "Noto Sans SC", sans-serif`; let s = fs; while (c.measureText(ln).width > cw * 0.96 && s > 8) { s -= 2; c.font = `600 ${s}px "Chakra Petch", "Noto Sans SC", sans-serif`; } c.fillText(ln, cw * 0.02, ch * (i + 0.5) / n); });
+    });
+    mat = new THREE.MeshStandardMaterial({ map: t, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4, metalness: 0.6, roughness: 0.4, envMap: gunEnv(), envMapIntensity: 1.2 });
+    _engr.set(key, mat);
+  }
+  const m = P(g, new THREE.PlaneGeometry(w, h), mat, x, y, z, 0, side * Math.PI / 2, 0); m.renderOrder = 3; return m;
+}
+function pins(g, list, r = 0.0042, mat = GM.steel) { for (const [x, y, z] of list) P(g, CY(r, r, 0.0024, 14), mat, x, y, z, 0, Math.PI / 2, 0); }
+function rivets(g, list, r = 0.0028) { for (const [x, y, z] of list) P(g, new THREE.SphereGeometry(r, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2), GM.steel, x, y, z, 0, 0, x > 0 ? -Math.PI / 2 : Math.PI / 2); }
 // picatinny rail with teeth; top surface at yTop, from z0 (rear, larger) to z1 (front)
 function rail(g, z0, z1, yTop, x = 0, rotZ = 0) {
   const len = z0 - z1, mid = (z0 + z1) / 2, grp = new THREE.Group(); grp.position.set(x, 0, 0); grp.rotation.z = rotZ; g.add(grp);
@@ -3762,6 +3783,11 @@ function stockCTR(g, z, y, mat = GM.furn) {
   P(g, RB(0.046, 0.098, 0.022, 0.007), GM.rubber, 0, y - 0.024, z + 0.283);
   P(g, RB(0.012, 0.016, 0.03, 0.003), GM.body, 0, y - 0.064, z + 0.16);
   P(g, new THREE.TorusGeometry(0.009, 0.0022, 6, 14), GM.steel, 0.024, y - 0.02, z + 0.24, 0, Math.PI / 2, 0);
+  for (let i = 0; i < 6; i++) { const a = i / 6 * Math.PI * 2; P(g, RB(0.004, 0.004, 0.013, 0.001), GM.dark, Math.cos(a) * 0.0188, y + Math.sin(a) * 0.0188, z + 0.006); }
+  P(g, RB(0.044, 0.05, 0.004, 0.002), GM.steel, 0, y - 0.006, z - 0.002);                      // end plate
+  P(g, new THREE.TorusGeometry(0.006, 0.0016, 6, 12), GM.steel, -0.024, y - 0.012, z + 0.002, 0, Math.PI / 2, 0);
+  for (let i = 0; i < 6; i++) P(g, CY(0.0025, 0.0025, 0.004, 8), GM.dark, 0, y - 0.0145, z + 0.05 + i * 0.025, Math.PI / 2);
+  P(g, RB(0.008, 0.006, 0.03, 0.002), GM.body, 0, y - 0.062, z + 0.17);
 }
 function stockFold(g, z, y, mat = GM.furn) { // skeletal folding stock
   P(g, RB(0.03, 0.05, 0.035, 0.006), GM.body, 0, y, z + 0.018);
@@ -3781,6 +3807,7 @@ function magStanag(mat = GM.furn, n = 6, curve = 0.035, w = 0.027) {
   }
   P(grp, RB(w + 0.006, 0.01, 0.074, 0.003), mat === GM.trans ? GM.dark : GM.rubber, 0, y - 0.006, z, a);
   P(grp, RB(w * 0.7, 0.006, 0.05, 0.002), GM.brass, 0, 0.002, 0);
+  if (mat !== GM.trans) for (let i = 1; i < Math.min(n, 5); i++) P(grp, CY(0.0022, 0.0022, w + 0.003, 8), GM.dark, 0, -0.017 - i * 0.031, -0.024 - i * 0.003, 0, 0, Math.PI / 2);
   return grp;
 }
 function magBox(w, h, d, mat = GM.steel) {
@@ -3792,30 +3819,91 @@ function magBox(w, h, d, mat = GM.steel) {
   return grp;
 }
 // optics. each returns the aim height above its rail top and the z of its sight plane
+const SCOPE = { rt: null, cam: new THREE.PerspectiveCamera(20, 1, 0.08, 900), mat: null };
+SCOPE.cam.layers.set(0);
+function lensMat() {
+  if (SCOPE.mat) return SCOPE.mat;
+  SCOPE.rt = new THREE.WebGLRenderTarget(256, 256, { type: THREE.HalfFloatType });
+  SCOPE.mat = new THREE.ShaderMaterial({
+    uniforms: { tRT: { value: SCOPE.rt.texture }, uRes: { value: new THREE.Vector2(1, 1) }, uKind: { value: 0 }, uOn: { value: 0 } },
+    vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
+    fragmentShader: `uniform sampler2D tRT; uniform vec2 uRes; uniform float uKind, uOn; varying vec2 vUv;
+      void main(){
+        float r = length(vUv - 0.5) * 2.0;
+        vec2 s = gl_FragCoord.xy / uRes;
+        vec3 c = texture2D(tRT, s).rgb;
+        if (any(isnan(c)) || any(isinf(c))) c = vec3(0.0);
+        c = min(c, vec3(32.0));
+        vec3 glass = vec3(0.012, 0.018, 0.028) + vec3(0.05, 0.09, 0.12) * pow(r, 3.0);
+        c = mix(glass, c * (0.95 - 0.08 * r), uOn);
+        c *= smoothstep(1.0, 0.86, r);
+        vec2 p = (gl_FragCoord.xy - uRes * 0.5) / uRes.y;
+        float on = uOn;
+        if (uKind < 0.5) {
+          float tri = (p.y < 0.0 && p.y > -0.016 && abs(p.x) < -p.y * 0.62) ? 1.0 : 0.0;
+          float inner = (p.y < -0.006 && p.y > -0.016 && abs(p.x) < (-p.y - 0.006) * 0.62 - 0.0015) ? 1.0 : 0.0;
+          float chev = tri * (1.0 - inner);
+          float stad = (abs(p.x) < 0.0009 && p.y < -0.02 && p.y > -0.14) ? 1.0 : 0.0;
+          for (int i = 1; i < 5; i++) { float yy = -0.02 - float(i) * 0.028; float w = 0.03 - float(i) * 0.005; stad = max(stad, (abs(p.y - yy) < 0.0009 && abs(p.x) < w) ? 1.0 : 0.0); }
+          c = mix(c, vec3(0.0), stad * on * 0.85);
+          c = mix(c, vec3(9.0, 0.6, 0.15), chev * on);
+        } else {
+          float lin = (abs(p.x) < 0.0008 || abs(p.y) < 0.0008) ? 1.0 : 0.0;
+          float post = ((abs(p.x) < 0.0045 && abs(p.y) > 0.11) || (abs(p.y) < 0.0045 && abs(p.x) > 0.11)) ? 1.0 : 0.0;
+          float mil = 0.0;
+          for (int i = 1; i < 6; i++) { float d = float(i) * 0.018; mil = max(mil, max(step(length(vec2(abs(p.x) - d, p.y)), 0.0022), step(length(vec2(p.x, abs(p.y) - d)), 0.0022))); }
+          c = mix(c, vec3(0.0), max(max(lin, post), mil) * on);
+          c = mix(c, vec3(9.0, 0.4, 0.2), (1.0 - smoothstep(0.0012, 0.002, length(p))) * on);
+        }
+        gl_FragColor = vec4(c, 1.0);
+      }`,
+  });
+  return SCOPE.mat;
+}
+function lensMesh(o, r, y, z) { const m = P(o, new THREE.CircleGeometry(r, 40), lensMat(), 0, y, z); m.renderOrder = 2; return m; }
+function updateScopeRT() {
+  if (!SCOPE.mat || !composer) return;
+  const def = WEAPON.cur && WEAPON.cur.def;
+  const on = !!(def && def.scope && WEAPON.adsT > 0.04 && WEAPON.root.visible);
+  SCOPE.mat.uniforms.uOn.value = on ? Math.min(1, WEAPON.adsT * 1.6) : 0;
+  if (!on) return;
+  const rb = composer.readBuffer; SCOPE.mat.uniforms.uRes.value.set(rb.width, rb.height);
+  SCOPE.mat.uniforms.uKind.value = def.scope === 'acog' ? 0 : 1;
+  const k = Q === QUALITY.low ? 0.45 : 0.65, w = Math.max(128, Math.round(rb.width * k)), h = Math.max(128, Math.round(rb.height * k));
+  if (SCOPE.rt.width !== w || SCOPE.rt.height !== h) SCOPE.rt.setSize(w, h);
+  const c = SCOPE.cam; c.position.copy(camera.position); c.quaternion.copy(camera.quaternion); c.aspect = camera.aspect;
+  c.fov = def.lensFov || 20; c.updateProjectionMatrix(); c.updateMatrixWorld();
+  const sa = renderer.shadowMap.autoUpdate; renderer.shadowMap.autoUpdate = false;
+  renderer.setRenderTarget(SCOPE.rt); renderer.clear(); renderer.render(scene, c); renderer.setRenderTarget(null);
+  renderer.shadowMap.autoUpdate = sa;
+}
 const OPT = {
   holo(g, y, z) {
     const o = new THREE.Group(); o.position.set(0, y, z); g.add(o);
     P(o, RB(0.036, 0.012, 0.078, 0.003), GM.body, 0, 0.005, 0.005);
-    P(o, RB(0.03, 0.022, 0.045, 0.004), GM.body, 0, 0.016, 0.03);
+    P(o, RB(0.03, 0.016, 0.045, 0.004), GM.body, 0, 0.012, 0.03);
     for (const sx of [-1, 1]) { P(o, RB(0.006, 0.046, 0.042, 0.0025), GM.body, sx * 0.0235, 0.028, -0.008); P(o, RB(0.003, 0.006, 0.012, 0.001), GM.dark, sx * 0.0275, 0.02, 0.03); }
     P(o, RB(0.053, 0.007, 0.042, 0.0025), GM.body, 0, 0.0525, -0.008);
     P(o, boxes([[0.008, 0.004, 0.006, -0.008, 0.029, 0.054], [0.008, 0.004, 0.006, 0.008, 0.029, 0.054]]), GM.rubber);
     P(o, RB(0.012, 0.008, 0.01, 0.002), GM.steel, 0.022, 0.004, 0.0);
     const gl = P(o, new THREE.PlaneGeometry(0.041, 0.034), GM.optic, 0, 0.026, -0.026); gl.renderOrder = 10;
     const gl2 = P(o, new THREE.PlaneGeometry(0.041, 0.034), GM.glass, 0, 0.026, -0.027); gl2.material = gl2.material.clone(); gl2.material.transparent = true; gl2.material.opacity = 0.18; gl2.renderOrder = 9;
-    const ring = P(o, new THREE.TorusGeometry(0.0052, 0.00045, 4, 24), GM.dot, 0, 0.026, -0.0262); ring.renderOrder = 11;
-    const dot = P(o, new THREE.SphereGeometry(0.00085, 8, 6), GM.dot, 0, 0.026, -0.0263); dot.renderOrder = 11;
+    const ring = P(o, new THREE.TorusGeometry(0.0062, 0.0006, 4, 32), GM.dot, 0, 0.026, -0.0262); ring.renderOrder = 11;
+    const dot = P(o, new THREE.SphereGeometry(0.0011, 10, 8), GM.dot, 0, 0.026, -0.0263); dot.renderOrder = 11;
     return { o, aim: 0.026, az: -0.026 };
   },
   rdot(g, y, z) {
     const o = new THREE.Group(); o.position.set(0, y, z); g.add(o);
     P(o, RB(0.024, 0.012, 0.034, 0.003), GM.body, 0, 0.005, 0);
     P(o, RB(0.02, 0.012, 0.03, 0.003), GM.body, 0, 0.012, 0);
-    P(o, CY(0.0145, 0.0145, 0.036, 24), GM.body, 0, 0.026, 0);
-    P(o, CY(0.016, 0.016, 0.006, 24), GM.steel, 0, 0.026, -0.016); P(o, CY(0.016, 0.016, 0.006, 24), GM.steel, 0, 0.026, 0.016);
+    const tubeM = GM.tube || (GM.tube = Object.assign(GM.body.clone(), { side: THREE.DoubleSide }));
+    const OT = (r, l) => { const t = new THREE.CylinderGeometry(r, r, l, 28, 1, true); t.rotateX(Math.PI / 2); return t; };
+    P(o, OT(0.0145, 0.036), tubeM, 0, 0.026, 0);
+    P(o, OT(0.016, 0.006), tubeM, 0, 0.026, -0.016); P(o, OT(0.016, 0.006), tubeM, 0, 0.026, 0.016);
+    P(o, new THREE.RingGeometry(0.0122, 0.016, 28), GM.steel, 0, 0.026, 0.019); const fr = P(o, new THREE.RingGeometry(0.0122, 0.016, 28), GM.steel, 0, 0.026, -0.019); fr.rotation.y = Math.PI;
     P(o, CY(0.006, 0.006, 0.01, 12), GM.body, 0.017, 0.026, 0, 0, 0, Math.PI / 2); P(o, CY(0.006, 0.006, 0.01, 12), GM.body, 0, 0.042, 0, Math.PI / 2);
     const gl = P(o, new THREE.CircleGeometry(0.0125, 24), GM.glass, 0, 0.026, -0.019); gl.material = gl.material.clone(); gl.material.transparent = true; gl.material.opacity = 0.2; gl.renderOrder = 9;
-    const dot = P(o, new THREE.SphereGeometry(0.0007, 8, 6), GM.dot, 0, 0.026, -0.02); dot.renderOrder = 11;
+    const dot = P(o, new THREE.SphereGeometry(0.0017, 10, 8), GM.dot, 0, 0.026, -0.02); dot.renderOrder = 11;
     return { o, aim: 0.026, az: -0.02 };
   },
   acog(g, y, z) {
@@ -3824,7 +3912,7 @@ const OPT = {
     P(o, RB(0.034, 0.034, 0.096, 0.008, 3), GM.body, 0, 0.03, 0);
     P(o, CY(0.019, 0.021, 0.032, 24), GM.body, 0, 0.03, -0.062); P(o, CY(0.017, 0.016, 0.03, 24), GM.body, 0, 0.03, 0.06);
     P(o, CY(0.0035, 0.0035, 0.07, 8), GM.fiber, 0, 0.05, -0.005);
-    P(o, CY(0.016, 0.016, 0.002, 24), GM.glass, 0, 0.03, -0.079); P(o, CY(0.014, 0.014, 0.002, 24), GM.glass, 0, 0.03, 0.076);
+    P(o, CY(0.016, 0.016, 0.002, 24), GM.glass, 0, 0.03, -0.079); lensMesh(o, 0.0142, 0.03, 0.0757);
     P(o, RB(0.04, 0.008, 0.016, 0.002), GM.steel, 0, 0.007, 0.02); P(o, RB(0.04, 0.008, 0.016, 0.002), GM.steel, 0, 0.007, -0.025);
     return { o, aim: 0.03, az: 0.076, scope: 'acog' };
   },
@@ -3837,8 +3925,8 @@ const OPT = {
     P(o, CY(0.011, 0.011, 0.026, 16), GM.body, 0, 0.06, -0.01, Math.PI / 2); P(o, CY(0.0115, 0.0115, 0.008, 16), GM.steel, 0, 0.073, -0.01, Math.PI / 2);
     P(o, CY(0.011, 0.011, 0.026, 16), GM.body, 0.026, 0.034, -0.01, 0, 0, Math.PI / 2); P(o, CY(0.0115, 0.0115, 0.008, 16), GM.steel, 0.04, 0.034, -0.01, 0, 0, Math.PI / 2);
     P(o, CY(0.008, 0.008, 0.02, 12), GM.body, -0.024, 0.034, 0.02, 0, 0, Math.PI / 2);
-    P(o, CY(0.026 * big, 0.026 * big, 0.003, 28), GM.glass, 0, 0.034, -0.01 - 0.14 * big - 0.091); P(o, CY(0.018, 0.018, 0.003, 24), GM.glass, 0, 0.034, 0.155 * big + 0.056);
-    return { o, aim: 0.034, az: 0.2, scope: 'sniper' };
+    P(o, CY(0.026 * big, 0.026 * big, 0.003, 28), GM.glass, 0, 0.034, -0.01 - 0.14 * big - 0.091); lensMesh(o, 0.0185, 0.034, 0.155 * big + 0.0565);
+    return { o, aim: 0.034, az: 0.155 * big + 0.0565, scope: 'sniper' };
   },
 };
 // a forearm from the wrist to an elbow point, with a cuff and a couple of folds
@@ -3925,10 +4013,23 @@ function gunAR(o = {}) { // K7 / V-9 / BR-17 share an AR-style receiver
   P(g, CY(0.004, 0.004, 0.006, 10), GM.steel, -0.025, -0.022, 0.02, 0, 0, Math.PI / 2); // selector
   P(g, RB(0.006, 0.016, 0.03, 0.002), GM.steel, -0.026, -0.006, -0.12, 0.1);       // bolt catch
   P(g, boxes([[0.048, 0.002, 0.002, 0, -0.012, 0.05], [0.048, 0.002, 0.002, 0, -0.012, -0.13]]), GM.dark);   // pin lines
+  // v10 detail: takedown/pivot pins, fire-control pins, selector lever, brass deflector, bolt face, mag-release fence, QD socket, markings
+  for (const s of [-1, 1]) pins(g, [[s * 0.0235, -0.03, 0.046], [s * 0.0235, -0.03, -0.122], [s * 0.0235, -0.05, 0.0], [s * 0.0235, -0.05, -0.022]], 0.0036);
+  P(g, RB(0.003, 0.0055, 0.024, 0.001), GM.steel, -0.0275, -0.022, 0.012, -0.5); P(g, CY(0.0065, 0.0065, 0.003, 16), GM.body, -0.0262, -0.022, 0.02, 0, Math.PI / 2, 0);
+  P(g, RB(0.009, 0.018, 0.02, 0.003), GM.body, 0.0275, 0.018, -0.022);                     // brass deflector
+  P(g, RB(0.012, 0.012, 0.016, 0.002), GM.bright, 0.02, 0.01, -0.065);                     // bolt carrier behind the port
+  P(g, RB(0.005, 0.02, 0.028, 0.002), GM.body, 0.0258, -0.034, -0.065);                    // mag release fence
+  P(g, CY(0.0045, 0.0045, 0.006, 12), GM.steel, 0.027, -0.034, -0.065, 0, 0, Math.PI / 2);  // mag release button
+  for (let i = 0; i < 3; i++) P(g, new THREE.TorusGeometry(0.0082, 0.0009, 4, 14), GM.steel, 0.022, 0.006, 0.01 + i * 0.008);   // forward assist knurl
+  P(g, RB(0.044, 0.004, 0.06, 0.001), GM.body, 0, -0.064, -0.025);                         // trigger guard web
+  engrave(g, ['K7 CARBINE', 'CAL 5.56 NATO', 'SER 04721'], -0.0262, -0.065, -0.1, 0.06, 0.03, -1);
+  engrave(g, ['SAFE', 'SEMI', 'AUTO'], -0.0262, -0.028, 0.035, 0.014, 0.02, -1, '#e9e1c9');
+  engrave(g, ['ASHFALL ARMS'], 0.0262, -0.03, -0.01, 0.05, 0.009, 1);
   rail(g, 0.085, -0.5 * L, 0.039);
   mlok(g, -0.17, -0.5 * L, 0.033, 0.0, o.hgMat || GM.body);
   gunBarrel(g, -0.5 * L, -0.66 * L, 0.0095);
-  P(g, CY(0.014, 0.014, 0.02, 14), GM.steel, 0, 0, -0.52 * L);                    // gas block peek
+  P(g, CY(0.014, 0.014, 0.02, 20), GM.steel, 0, 0, -0.52 * L);                    // gas block peek
+  pins(g, [[0, 0.0145, -0.515 * L], [0, 0.0145, -0.527 * L]], 0.0018);
   pistolGrip(g, 0.06, -0.06, furn); trigger(g, -0.012, -0.066);
   if (o.fold) stockFold(g, 0.09, 0.0, furn); else stockCTR(g, 0.075, 0.0, furn);
   // flip-up back-up sights
@@ -3967,6 +4068,8 @@ function gunM14() { // walnut full stock, side scope bracket, 20-round box magaz
   P(g, RB(0.003, 0.022, 0.014, 0.001), GM.steel, 0.009, 0.038, -0.6); P(g, RB(0.003, 0.022, 0.014, 0.001), GM.steel, -0.009, 0.038, -0.6);
   P(g, new THREE.TorusGeometry(0.011, 0.0022, 6, 14), GM.steel, 0, -0.064, -0.43, 0, Math.PI / 2); P(g, new THREE.TorusGeometry(0.011, 0.0022, 6, 14), GM.steel, 0, -0.118, 0.32, 0, Math.PI / 2);
   P(g, RB(0.008, 0.036, 0.13, 0.003), GM.body, -0.024, 0.028, -0.03);   // side scope bracket
+  engrave(g, ['U.S. RIFLE', '7.62-MM M14', 'SPRINGFIELD ARMORY'], 0.0182, 0.02, 0.045, 0.05, 0.026, 1);
+  pins(g, [[0.0182, -0.004, -0.02], [-0.0182, -0.004, -0.02]], 0.003);
   const m = gunKit(g, { ej: new V3(0.02, 0.03, -0.05), magAt: new V3(0, -0.046, -0.125), magRot: 0.02, mags: { std: () => magBox(0.03, 0.1, 0.072, GM.steel), ext: () => magBox(0.03, 0.15, 0.072, GM.steel) }, optics: ['iron', 'rdot', 'acog', 'scope'], iron: [0.054, -0.1], railTop: 0.062, opticZ: -0.05, muzzles: ['std', 'sup'], stdMuzzle: 'bird', muzzleZ: -0.8, gripAt: [-0.05, -0.33] });
   buildArms2(g, [0.004, -0.05, 0.09, -0.7], [0, -0.052, -0.3]); return m;
 }
@@ -3974,6 +4077,7 @@ function gunBR17() {
   const m = gunAR({ len: 1.05, furn: GM.tan, fold: true, hgMat: GM.tan, magMat: GM.steel, mags: { std: () => magBox(0.03, 0.12, 0.07, GM.steel), ext: () => magBox(0.03, 0.17, 0.07, GM.steel) }, magRot: 0.04 });
   P(m.g, RB(0.054, 0.03, 0.3, 0.006), GM.tan, 0, 0.02, -0.19);                        // monolithic upper skin
   P(m.g, RB(0.012, 0.012, 0.03, 0.003), GM.steel, -0.03, 0.015, -0.2);                // side charging handle
+  engrave(m.g, ['BR-17', 'CAL 7.62x51'], -0.0275, 0.01, -0.12, 0.05, 0.018, -1);
   buildArms2(m.g, [0.004, -0.085, 0.07], [0, -0.032, -0.4]); return m;
 }
 function gunV9() {
@@ -4000,6 +4104,11 @@ function gunAK() {
   P(g, boxes([[0.046, 0.003, 0.004, 0, 0.03, 0.03], [0.046, 0.003, 0.004, 0, 0.03, 0.0], [0.046, 0.003, 0.004, 0, 0.03, -0.12]]), GM.dark);
   P(g, RB(0.004, 0.02, 0.09, 0.001), GM.steel, 0.025, 0.01, -0.07); P(g, RB(0.006, 0.01, 0.02, 0.002), GM.steel, 0.03, 0.012, -0.11);  // charging handle
   P(g, RB(0.006, 0.04, 0.08, 0.002), GM.steel, 0.025, -0.012, 0.0, 0, 0, 0.05);   // safety lever
+  for (const s of [-1, 1]) { rivets(g, [[s * 0.0232, -0.026, -0.17], [s * 0.0232, -0.014, -0.17], [s * 0.0232, -0.026, -0.15], [s * 0.0232, -0.03, 0.035], [s * 0.0232, -0.018, 0.035], [s * 0.0232, -0.03, 0.055]]); pins(g, [[s * 0.0234, -0.022, -0.04], [s * 0.0234, -0.022, -0.015], [s * 0.0234, -0.03, 0.012]], 0.003); }
+  P(g, RB(0.002, 0.016, 0.06, 0.001), GM.dark, -0.0235, -0.02, -0.09);                       // magazine-well dimple
+  P(g, CY(0.0035, 0.0035, 0.34, 10), GM.steel, 0, -0.024, -0.5);                              // cleaning rod
+  engrave(g, ['АК-103  7,62x39', '№ 1987 4512'], 0.024, -0.028, -0.07, 0.07, 0.022, 1, '#bfc2c3');
+  engrave(g, ['АВ', 'ОД'], 0.0262, 0.0, 0.03, 0.01, 0.018, 1, '#d8d2bd');
   rail(g, 0.06, -0.15, 0.047);
   P(g, RB(0.05, 0.05, 0.2, 0.012, 3), GM.wood, 0, -0.006, -0.31);                   // lower handguard
   P(g, RB(0.036, 0.03, 0.15, 0.01, 3), GM.wood, 0, 0.032, -0.29);                   // gas tube cover
@@ -4040,7 +4149,7 @@ function gunB30() { // bullpup rifle, integral 1.5x optic, translucent mag behin
   P(g, RB(0.04, 0.03, 0.06, 0.006), GM.steel, 0, 0.02, -0.3);
   P(g, RB(0.022, 0.035, 0.04, 0.005), GM.body, 0, 0.045, -0.13); P(g, RB(0.022, 0.035, 0.04, 0.005), GM.body, 0, 0.045, -0.02);
   P(g, CY(0.017, 0.017, 0.18, 24), GM.od, 0, 0.074, -0.08); P(g, CY(0.022, 0.017, 0.04, 24), GM.od, 0, 0.074, -0.19);
-  P(g, CY(0.02, 0.02, 0.003, 24), GM.glass, 0, 0.074, -0.212); P(g, CY(0.016, 0.016, 0.003, 24), GM.glass, 0, 0.074, 0.012);
+  P(g, CY(0.02, 0.02, 0.003, 24), GM.glass, 0, 0.074, -0.212); lensMesh(g, 0.0165, 0.074, 0.0115);
   P(g, RB(0.07, 0.07, 0.06, 0.02, 3), GM.od, 0, -0.06, -0.08);                      // trigger guard housing
   pistolGrip(g, -0.07, -0.07, GM.od, -0.2); trigger(g, -0.105, -0.075);
   P(g, RB(0.064, 0.1, 0.02, 0.01), GM.rubber, 0, -0.03, 0.235);
@@ -4099,6 +4208,8 @@ function gunDMR(o = {}) { // SR-9 / M110-S: AR-10 pattern with a 6x scope
   P(g, RB(0.056, 0.058, 0.085, 0.008, 3), GM.body, 0, -0.072, -0.11);
   P(g, RB(0.003, 0.02, 0.055, 0.001), GM.dark, 0.0276, 0.01, -0.07);
   P(g, RB(0.046, 0.009, 0.035, 0.002), GM.body, 0, 0.037, 0.08);
+  for (const s of [-1, 1]) pins(g, [[s * 0.0255, -0.032, 0.05], [s * 0.0255, -0.032, -0.13], [s * 0.0255, -0.052, 0.0], [s * 0.0255, -0.052, -0.02]], 0.0036);
+  engrave(g, [o.integral ? 'M110-S' : 'SR-9 DMR', 'CAL 7.62 NATO'], -0.0257, -0.07, -0.11, 0.06, 0.022, -1);
   rail(g, 0.09, -0.55, 0.042);
   mlok(g, -0.2, -0.55, 0.036, 0.0, o.hg || GM.body);
   gunBarrel(g, -0.55, -0.86, 0.0115, 0, GM.steel);
@@ -4237,6 +4348,7 @@ function attDef(def, A, m) {
   if (A.optic === 'acog') { d.adsFov = Math.min(d.adsFov, 30); d.adsSens = Math.min(d.adsSens, 0.5); }
   if (A.optic === 'int') { d.adsFov = Math.min(d.adsFov, 40); d.adsSens = Math.min(d.adsSens, 0.6); }
   if (A.optic === 'rdot') d.adsSpeed = 1.15;
+  if (aim && d.scope) { d.lensFov = d.adsFov; d.adsFov = Math.max(d.adsFov, 48); d.adsPos = [0, -aim[0] * VM_S, -0.037 - aim[1] * VM_S]; }
   if (A.muzzle === 'sup') { d.snd = 'sup'; d.noiseR = 38; d.range = [d.range[0] * 0.9, d.range[1]]; }
   if (A.muzzle === 'comp') { d.recoilV *= 0.85; d.noiseR = 120; }
   if (A.grip === 'vert') d.recoilV *= 0.88;
@@ -4413,6 +4525,7 @@ function weaponUpdate(dt) {
   const t = WEAPON.adsT;
   const hp = def.hipPos, ap = def.adsPos;
   let x = lerp(hp[0], ap[0], t), y = lerp(hp[1], ap[1], t), z = lerp(hp[2], ap[2], t);
+  if (def.scope) { const k = clamp((t - 0.6) / 0.32, 0, 1); x = lerp(x, ap[0], k); y = lerp(y, ap[1], k); z = lerp(z, ap[2], k); }
   let rx = 0, ry = 0, rz = 0;
   // sway from look motion
   WEAPON.swayX = damp(WEAPON.swayX, clamp(-P.lookDX * 0.9, -0.06, 0.06), 10, dt);
@@ -4455,14 +4568,15 @@ function weaponUpdate(dt) {
   z += WEAPON.kickZ; rx += WEAPON.kickRot; y += WEAPON.kickY;
   WEAPON.root.position.set(x, y, z);
   WEAPON.root.rotation.set(rx, ry, rz);
+  if (window.__vmInspect) { const v = window.__vmInspect; WEAPON.root.position.set(v[0], v[1], v[2]); WEAPON.root.rotation.set(v[3], v[4], v[5]); }
   // flash
   WEAPON.flashT -= dt;
   vmFlash.visible = WEAPON.flashT > 0;
   if (WEAPON.flashT <= 0) flashLight.intensity = 0;
   // scope overlay
   const scoped = def.scope && WEAPON.adsT > 0.9;
-  WEAPON.root.visible = !scoped && P.alive;
-  UI.scope.hidden = !scoped; if (scoped) UI.scope.classList.toggle('acog', def.scope === 'acog');
+  WEAPON.root.visible = P.alive;
+  UI.scope.hidden = true;
   UI.cross.classList.toggle('hide', WEAPON.adsT > 0.5 || P.sprinting);
 }
 
@@ -6308,6 +6422,7 @@ function frame() {
   _focus.y = 0;
   if (Q.shadows) updateSunShadow(_focus);
   if (Q.refl && REFL.mesh) renderReflection();
+  updateScopeRT();
   composer.render(dt);
   // perf / dynamic resolution
   perf.fpsAcc += raw; perf.fpsN++;
