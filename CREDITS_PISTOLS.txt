@@ -1,0 +1,18 @@
+Pistol models used in Ashfall Harbor - licensed CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/)
+
+m1911: "Low-Poly M1911" by TastyTony (https://sketchfab.com/TastyTony) https://sketchfab.com/3d-models/117f542d21954ae0a59afaedadcff338 - CC Attribution
+b92: "Low-Poly Beretta 92fs" by TastyTony (https://sketchfab.com/TastyTony) https://sketchfab.com/3d-models/859943889553467eaa0203400117c595 - CC Attribution
+b93r: "Low-Poly Beretta 93R" by TastyTony (https://sketchfab.com/TastyTony) https://sketchfab.com/3d-models/22e30431f4d4455984b8e41adf59ab60 - CC Attribution
+fn57: "FN Five-seveN" by TastyTony (https://sketchfab.com/TastyTony) https://sketchfab.com/3d-models/b896f7b001864805ae09bb2280b1795a - CC Attribution
+usp: "Low-Poly HK USP" by TastyTony (https://sketchfab.com/TastyTony) https://sketchfab.com/3d-models/fea998682de9465087c108ae6bee56fc - CC Attribution
+p226: "Low-Poly Sig P226" by TastyTony (https://sketchfab.com/TastyTony) https://sketchfab.com/3d-models/0d90f858e9f74c418ce3aae61cef9f4e - CC Attribution
+hipow: "Low-Poly Browning Hi-Power" by TastyTony (https://sketchfab.com/TastyTony) https://sketchfab.com/3d-models/e9701eeba3904caa81bed0a4a0fe9eeb - CC Attribution
+mak: "Low-Poly Makarov" by TastyTony (https://sketchfab.com/TastyTony) https://sketchfab.com/3d-models/fb34fb6cb83a45a989f8b02c130de857 - CC Attribution
+luger: "Low-Poly P08 Luger" by TastyTony (https://sketchfab.com/TastyTony) https://sketchfab.com/3d-models/6cbc598f370148d3b67824539433e3f9 - CC Attribution
+c96: "Low-Poly Masuer C96" by TastyTony (https://sketchfab.com/TastyTony) https://sketchfab.com/3d-models/709bc638ee79411c9120eacc4874ea92 - CC Attribution
+saa: "Low Poly Colt Single-Action Army" by TastyTony (https://sketchfab.com/TastyTony) https://sketchfab.com/3d-models/84c4960b259e4ac9afadccd187d388ed - CC Attribution
+judge: "Low-Poly Taurus Raging Judge" by TastyTony (https://sketchfab.com/TastyTony) https://sketchfab.com/3d-models/14da356b624a4557a47a3f5b87b23084 - CC Attribution
+rsh12: "Low-Poly RSh-12" by TastyTony (https://sketchfab.com/TastyTony) https://sketchfab.com/3d-models/50567ba96a5340958aafe9b90db35e66 - CC Attribution
+k6s: "Low-Poly Kimber K6S" by TastyTony (https://sketchfab.com/TastyTony) https://sketchfab.com/3d-models/fe79d4a23da8403a88a8f0fc792737e5 - CC Attribution
+grach: "Low-Poly MP-443 Grach" by TastyTony (https://sketchfab.com/TastyTony) https://sketchfab.com/3d-models/bd652ddefb414d5c8c77de5b540ac748 - CC Attribution
+tec9: "Low-Poly Tec-9" by TastyTony (https://sketchfab.com/TastyTony) https://sketchfab.com/3d-models/9dcbde3c43c949558c69564ac17a03d9 - CC Attribution

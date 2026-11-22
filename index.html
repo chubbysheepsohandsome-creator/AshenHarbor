@@ -626,7 +626,7 @@ input[type=range]{width:100%;accent-color:var(--amber)}
       </div>
       <div class="hint" style="font-size:13px;color:var(--ink-dim);line-height:1.7">iPad / 触屏：左半屏任意位置按下出现摇杆，推到边缘自动冲刺；右半屏滑动转视角；按住开火键时也可以拖动瞄准。建议横屏并添加到主屏幕全屏游玩。</div>
       <div class="hint" style="font-size:13px;color:var(--ink-dim);line-height:1.7;margin-top:6px">纯键盘模式（设置 → 电脑操作方式）：<b>方向键</b> 转视角，<b>J</b> 射击，<b>K</b> 按住瞄准，其余按键不变；菜单里用方向键选择、回车确认、Esc 返回。</div>
-      <div class="hint" style="font-size:11.5px;color:var(--ink-dim);line-height:1.6;margin-top:8px">枪械模型：TastyTony（sketchfab.com/TastyTony）的 Low-Poly M4a1 / HK MP5 / AKM / FN P90 / Mossberg 590 / FN SCAR H / M14 / M249 SAW / Mk14 EBR / SR-25 / L118A1 / G17 / Desert Eagle / Famas F1，均以 CC BY 4.0 许可使用，游戏内对材质、比例与附件做了改动。</div>
+      <div class="hint" style="font-size:11.5px;color:var(--ink-dim);line-height:1.6;margin-top:8px">枪械模型：TastyTony（sketchfab.com/TastyTony）的 Low-Poly M4a1 / HK MP5 / AKM / FN P90 / Mossberg 590 / FN SCAR H / M14 / M249 SAW / Mk14 EBR / SR-25 / L118A1 / G17 / Desert Eagle / Famas F1 / M1911 / Beretta 92fs / Beretta 93R / FN Five-seveN / HK USP / Sig P226 / Browning Hi-Power / Makarov / P08 Luger / Mauser C96 / Colt SAA / Taurus Raging Judge / RSh-12 / Kimber K6S / MP-443 Grach / Tec-9，均以 CC BY 4.0 许可使用，游戏内对材质、比例与附件做了改动。</div>
       <div style="display:flex;justify-content:flex-end"><button class="btn primary" id="helpClose">明白</button></div>
     </div>
   </div>
@@ -4420,9 +4420,26 @@ const EXT_GUNS = {
   r338: { f: 'r338', iron: [0.065, 0.75], ownScope: [0.065, 0.75, 0.0145], grip: [0.80, -0.07], fore: [0.45, -0.045] },
   p17:  { f: 'p17',  iron: [0.105, 0.86], grip: [0.76, -0.16], pistol: true },
   hc50: { f: 'hc50', iron: [0.055, 0.83], grip: [0.80, -0.20], pistol: true },
+  m1911: { f: 'm1911', iron: [0.065, 0.85], grip: [0.824, -0.19], L: 0.216, pistol: true },
+  b92: { f: 'b92', iron: [0.057, 0.85], grip: [0.819, -0.228], L: 0.217, pistol: true },
+  b93r: { f: 'b93r', iron: [0.047, 0.85], grip: [0.845, -0.201], L: 0.24, pistol: true },
+  fn57: { f: 'fn57', iron: [0.121, 0.85], grip: [0.817, -0.19], L: 0.208, pistol: true },
+  usp: { f: 'usp', iron: [0.091, 0.85], grip: [0.816, -0.241], L: 0.2, pistol: true },
+  p226: { f: 'p226', iron: [0.068, 0.85], grip: [0.815, -0.236], L: 0.196, pistol: true },
+  hipow: { f: 'hipow', iron: [0.07, 0.85], grip: [0.816, -0.236], L: 0.197, pistol: true },
+  mak: { f: 'mak', iron: [0.083, 0.85], grip: [0.8, -0.25], L: 0.161, pistol: true },
+  luger: { f: 'luger', iron: [0.056, 0.85], grip: [0.768, -0.199], L: 0.222, pistol: true },
+  c96: { f: 'c96', iron: [0.04, 0.85], grip: [0.869, -0.213], L: 0.312, pistol: true },
+  saa: { f: 'saa', iron: [0.039, 0.85], grip: [0.89, -0.23], L: 0.26, pistol: true },
+  judge: { f: 'judge', iron: [0.044, 0.85], grip: [0.865, -0.231], L: 0.32, pistol: true },
+  rsh12: { f: 'rsh12', iron: [0.133, 0.85], grip: [0.898, -0.133], L: 0.3, pistol: true },
+  k6s: { f: 'k6s', iron: [0.075, 0.85], grip: [0.831, -0.227], L: 0.19, pistol: true },
+  grach: { f: 'grach', iron: [0.106, 0.85], grip: [0.791, -0.222], L: 0.198, pistol: true },
+  tec9: { f: 'tec9', iron: [0.082, 0.85], grip: [0.86, -0.13], L: 0.317, pistol: true },
+
   b30:  { f: 'b30',  iron: [0.078, 0.60], grip: [0.56, -0.12],  fore: [0.35, -0.045] },
 };
-const EXT = { loader: null, base: 'gun_', cache: {} };
+const EXT = { loader: null, base: 'gun_', cache: {}, pscale: 1.313 };
 const ARM_MATS = () => new Set([GM.glove, GM.knuckle, GM.sleeve, GM.watch, MAT.d_screen]);
 function extMat(name) {
   const n = (name || '').toLowerCase();
@@ -4457,7 +4474,11 @@ function fitExtGun(id, m, cfg, scn) {
   const addBox = (o) => { if (!o.isMesh || arms.has(o.material) || !o.geometry) return; if (!o.geometry.boundingBox) o.geometry.computeBoundingBox(); tmp.copy(o.geometry.boundingBox);
     const mw = new THREE.Matrix4().multiplyMatrices(inv, o.matrixWorld); for (let i = 0; i < 8; i++) { cv.set(i & 1 ? tmp.max.x : tmp.min.x, i & 2 ? tmp.max.y : tmp.min.y, i & 4 ? tmp.max.z : tmp.min.z).applyMatrix4(mw); box.expandByPoint(cv); } };
   for (const c of g.children) { if (skip.has(c)) continue; c.traverse(addBox); }
-  const zmin = box.min.z, S = box.max.z - box.min.z, boreY = m.k.boreY ?? 0;
+  let zmin = box.min.z, S = box.max.z - box.min.z, boreY = m.k.boreY ?? 0;
+  if (cfg.L) {   // real-size handguns: rescale around the grip so the hand stays put
+    const S2 = cfg.L * EXT.pscale, [gz0, gy0] = cfg.grip;
+    zmin += gz0 * (S - S2); boreY += gy0 * (S - S2); S = S2;
+  }
   const PY = (y) => boreY + y * S, PZ = (z) => zmin + z * S;
   // 2. strip the hands and the procedural receiver; keep attachment groups + muzzle/ejector anchors
   const keep = new Set([...Object.values(m.att.optic), ...Object.entries(m.att.muzzle).filter(([k]) => k !== 'std').map(([, v]) => v), ...Object.values(m.att.grip), m.muzzle, m.ejector]);
@@ -4465,6 +4486,7 @@ function fitExtGun(id, m, cfg, scn) {
   g.traverse((o) => { if (o.isMesh && arms.has(o.material)) drop.push(o); });
   for (const o of drop) o.parent.remove(o);
   for (const c of [...g.children]) { if (keep.has(c)) continue; if (c.isGroup && c.children.length === 0) { g.remove(c); continue; } c.visible = false; c.userData.procHidden = true; }
+  if (cfg.L) { m.muzzle.position.set(0, boreY, zmin - 0.004); }
   { const s0 = new THREE.Group(); s0.userData.len = (m.k.muzzleZ ?? -0.7) - zmin; g.add(s0); m.att.muzzle.std = s0; }
   // 3. the imported gun
   const root = new THREE.Group(); root.name = 'extGun'; root.position.set(0, boreY, zmin); root.scale.setScalar(S); g.add(root);
