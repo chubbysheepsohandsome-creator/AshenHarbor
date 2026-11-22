@@ -1579,7 +1579,7 @@ const SPOTS = {
     supply: [-7.6, 0, 8.6, 2.6, 'stare'], westCorner: [-5.1, 0, 15.8, 2.86, 'stare'], leftDoor: [-4.55, 0, 18.05, Math.PI / 2, 'lean'], office: [12, -30, 0, 0, 'stand'] },
   gull: { stage: [2.6, 0.7, -14.0, -0.2, 'perform'], dining: [5.0, 0, -6.4, -0.9, 'stare'], restrooms: [13.3, 0, -7.2, -0.6, 'stare'], kitchen: [12, 0, 2, 0, 'stand'],
     ventFar: [0, 2.31, 10.2, 0, 'crawl', 0.42], ventNear: [0, 2.31, 15.6, 0, 'crawl', 0.42], office: [12, -30, 0, 0, 'stand'] },
-  diver: { bay0: [-12, 0.5, -8.9, 0.15, 'sitBay'], bay1: [-12.1, 0.5, -7.9, 0.25, 'peek'], bay2: [-11.6, 0.5, -6.3, 0.4, 'lean'], bay3: [12, -30, 0, 0, 'stand'],
+  diver: { bay0: [-12.0, 0.5, -8.2, 0.12, 'sitBay'], bay1: [-12.1, 0.5, -7.9, 0.25, 'peek'], bay2: [-11.6, 0.5, -6.3, 0.4, 'lean'], bay3: [12, -30, 0, 0, 'stand'],
     run: [-4.75, 0, 8, 0, 'run'], leftDoor: [-4.55, 0, 18.05, Math.PI / 2, 'reach'] },
 };
 function placeAnim(k) {
@@ -1590,7 +1590,7 @@ function placeAnim(k) {
   R.root.position.set(s[0], s[1], s[2]); R.root.rotation.set(0, s[3], 0); R.root.scale.setScalar(s[5] || 1);
   applyPose(R, s[4]); R.root.visible = s[1] > -10;
   setEyes(R, k === 'diver' ? 2.2 : 0.0);
-  if (k === 'diver') { const st = a.stage; BAYCUR.l.position.x = -13.0 - (st >= 1 ? 0.5 : 0) - (st >= 2 ? 0.6 : 0); BAYCUR.r.position.x = -11.0 + (st >= 1 ? 0.35 : 0) + (st >= 2 ? 0.7 : 0); BAYCUR.l.scale.x = st >= 2 ? 0.55 : st >= 1 ? 0.8 : 1; BAYCUR.r.scale.x = st >= 2 ? 0.55 : st >= 1 ? 0.85 : 1; }
+  if (k === 'diver') { const st = a.stage; BAYCUR.l.position.x = -13.09 - (st >= 1 ? 0.5 : 0) - (st >= 2 ? 0.6 : 0); BAYCUR.r.position.x = -10.91 + (st >= 1 ? 0.35 : 0) + (st >= 2 ? 0.7 : 0); BAYCUR.l.scale.x = st >= 2 ? 0.55 : st >= 1 ? 0.8 : 1; BAYCUR.r.scale.x = st >= 2 ? 0.55 : st >= 1 ? 0.85 : 1; }
 }
 
 
@@ -1914,7 +1914,7 @@ function setupScare(k) {
   S.yaw = { crab: 0.62, diver: 0.62, gull: 0.0, captain: G.out ? 0.62 : -0.62 }[k]; S.pitch = k === 'gull' ? 0.18 : 0.0;
   for (const [n, A] of Object.entries(ANIMS)) if (n !== k) A.root.visible = false;
   R.root.visible = true; R.root.scale.setScalar(1); applyPose(R, 'scare'); show('hud', false); show('cam', false); $('subs').innerHTML = ''; $('hint').style.opacity = 0; setEyes(R, 4.5, k === 'captain' ? 0xff3010 : undefined);
-  S.R = R; S.dur = 1.35;
+  S.R = R; S.dur = 1.65;
 }
 function scareTick(dt) {
   const S = G.scare; S.t += dt; const R = S.R, k = S.who;
@@ -1938,7 +1938,7 @@ function scareTick(dt) {
   const pl2 = LP.points[2]; pl2.position.set(camera.position.x, camera.position.y + 0.6, camera.position.z); pl2.color.set(0xd8e0ff); pl2.intensity = Math.random() < 0.6 ? 2.5 : 0.3; pl2.distance = 3;
   const U = finalMat.uniforms;
   U.uShake.value.set(rand(-1, 1) * 0.012, rand(-1, 1) * 0.012).multiplyScalar(SETTINGS.flash ? 1 : 0.25);
-  U.uGlitch.value = 0.45; U.uRed.value = 0.05 + Math.random() * 0.06; U.uStatic.value = S.t > 1.0 ? (S.t - 1.0) * 2.2 : 0.0; U.uFlash.value = S.t < 0.06 && SETTINGS.flash ? 0.25 : 0;
+  U.uGlitch.value = 0.45; U.uRed.value = 0.05 + Math.random() * 0.06; U.uStatic.value = S.t > 1.25 ? (S.t - 1.25) * 2.4 : 0.0; U.uFlash.value = S.t < 0.06 && SETTINGS.flash ? 0.25 : 0;
   if (S.t >= S.dur) { G.scare = null; R.root.visible = false; finalMat.uniforms.uRed.value = 0; die(k); }
 }
 
@@ -2021,7 +2021,7 @@ function renderNight(dt) {
     OFFICE.userData.bulb.material.emissiveIntensity = 0; for (const s of OFFICE.userData.screens) s.material.emissiveIntensity = 0;
   } else {
     const fl = Math.random() < (G.night >= 4 ? 0.025 : 0.01) ? rand(0.2, 0.6) : 1;
-    applyLights(V, 1); LP.spots[0].intensity *= fl; OFFICE.userData.bulb.material.emissiveIntensity = 3 * fl;
+    applyLights(V, 1); LP.spots[0].intensity *= fl; U.uExpo.value = 1.3; OFFICE.userData.bulb.material.emissiveIntensity = 3 * fl;
     for (const s of OFFICE.userData.screens) s.material.emissiveIntensity = 1.0 + Math.random() * 0.3;
     const s1 = LP.spots[1];
     if (G.light.L || G.light.R) { const x = G.light.L ? -4.75 : 4.75; s1.position.set(x, 3.05, 18.2); s1.target.position.set(x * 0.98, 0, 18.0); s1.target.updateMatrixWorld(); s1.color.set(0xfff4dc); s1.intensity = 32 * (Math.random() < 0.06 ? 0.4 : 1); s1.angle = 0.95; s1.penumbra = 0.5; s1.distance = 8; }
@@ -2047,7 +2047,7 @@ function renderTitle(dt) {
   if (UI.titleG < 0) { UI.titleG = rand(5, 11); UI.titleFx = 0.25; const w = pick(['captain', 'crab', 'gull']); UI.titleWho = w; if (AU.ctx) play('static', { vol: 0.15, dur: 0.3 }); }
   if (UI.titleFx > 0) { UI.titleFx -= dt; U.uGlitch.value = 1; U.uStatic.value = 0.35; setEyes(ANIMS[UI.titleWho], 5, 0xff2010); if (ANIMS[UI.titleWho].jaw) ANIMS[UI.titleWho].jaw.rotation.x = 0.6; }
   else for (const k of ['captain', 'crab', 'gull']) { setEyes(ANIMS[k], 0); if (ANIMS[k].jaw) ANIMS[k].jaw.rotation.x = 0; }
-  U.uStatic.value = Math.max(U.uStatic.value, 0.08 + Math.random() * 0.04); U.uVig.value = 0.8; U.uBloom.value = 1.2; U.uExpo.value = 1.05;
+  U.uStatic.value = Math.max(U.uStatic.value, 0.025 + Math.random() * 0.02); U.uVig.value = 0.8; U.uBloom.value = 1.2; U.uExpo.value = 1.05;
   renderPost();
 }
 
