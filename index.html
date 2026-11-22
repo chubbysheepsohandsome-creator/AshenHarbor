@@ -223,7 +223,7 @@ input[type=range]{width:100%;accent-color:var(--amber)}
 .armBal{display:flex;align-items:baseline;gap:8px;padding:6px 12px;border:1px solid rgba(255,178,63,.35);background:rgba(255,178,63,.08)}
 .armBal small{font-size:11px;letter-spacing:.14em;color:var(--ink-dim)}
 .armBal b{font-family:var(--f-mono);font-size:20px;color:var(--amber);font-weight:400}
-.armLoadout{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.armLoadout{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
 @media (max-width:680px){.armLoadout{grid-template-columns:repeat(2,1fr)}}
 .armSlot{padding:8px 10px;border:1px solid var(--line);background:rgba(255,255,255,.03)}
 .armSlot small{display:block;font-size:10.5px;letter-spacing:.12em;color:var(--ink-dim)}
@@ -244,6 +244,14 @@ input[type=range]{width:100%;accent-color:var(--amber)}
 .smCamo .sw{height:42px;border-radius:6px;background-size:cover}
 @media (max-width:700px){.smTop{grid-template-columns:1fr}}
 .armGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px;overflow-y:auto;padding-right:2px}
+.armLoadout[hidden],.armTabs[hidden]{display:none!important}
+.menuBtnRow{display:grid;grid-template-columns:1fr 1fr;gap:8px}.menuBtnRow .btn{min-width:0}
+.loSlots{grid-column:1/-1;display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.loSlot{all:unset;cursor:pointer;display:flex;flex-direction:column;gap:3px;padding:10px 12px;border:1px solid var(--line,#33373d);border-radius:10px;background:rgba(255,255,255,.03);min-width:0}
+.loSlot small{color:var(--ink-dim);font-size:11px;letter-spacing:.06em}.loSlot b{font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.loSlot em{font-style:normal;color:var(--ink-dim);font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.loSlot.on{border-color:#ffb23f;background:rgba(255,178,63,.09);box-shadow:0 0 0 1px rgba(255,178,63,.35) inset}
+.loHint{grid-column:1/-1;font-size:12px;color:var(--ink-dim);display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+@media (max-width:760px){.loSlots{grid-template-columns:repeat(3,1fr)}}
 .armCard{border:1px solid var(--line);border-left:3px solid var(--ac,var(--line));background:rgba(255,255,255,.03);padding:12px;display:flex;flex-direction:column;gap:7px}
 .armCard.equipped{border-color:rgba(255,178,63,.55);background:rgba(255,178,63,.06)}
 .armCard.activePerk{border-color:rgba(111,226,168,.5);background:rgba(111,226,168,.05)}
@@ -496,6 +504,7 @@ input[type=range]{width:100%;accent-color:var(--amber)}
       <div class="menuBtns">
         <button class="btn primary" id="btnDeploy">开始行动 <em>DEPLOY</em></button>
         <button class="btn amberOutline" id="btnArmory">军需整备库 <em id="armoryTag">ARMORY</em></button>
+        <div class="menuBtnRow"><button class="btn" id="btnLoadout">出战装备 <em>LOADOUT</em></button><button class="btn" id="btnSmith">军械工坊 <em>GUNSMITH</em></button></div>
         <button class="btn" id="btnSettings">画质与操作 <em>SETTINGS</em></button>
         <button class="btn" id="btnHelp">操作说明 <em>CONTROLS</em></button>
       </div>
@@ -526,19 +535,19 @@ input[type=range]{width:100%;accent-color:var(--amber)}
     <div class="dialog">
       <div class="armHead">
         <div>
-          <h2>军需整备库 · ARMORY</h2>
-          <div class="sub" style="color:var(--ink-dim);font-size:12.5px">使用撤离变现的资金解锁新武器、高阶防具、永久战术改装与出战补给</div>
+          <h2 id="armTitle">军需整备库 · ARMORY</h2>
+          <div class="sub" id="armSub" style="color:var(--ink-dim);font-size:12.5px">使用撤离变现的资金解锁新武器、高阶防具、永久战术改装与出战补给</div>
         </div>
         <div class="armBal"><small>可用资金</small><b id="armBalance">¥0</b></div>
       </div>
       <div class="armLoadout" id="armLoadout"></div>
       <div class="seg" id="armTabs">
-        <button class="on" data-tab="weapons">武器军械</button>
+        <button class="on" data-tab="weapons">主武器</button>
+        <button data-tab="pistols">手枪</button>
         <button data-tab="protection">护甲与背包</button>
         <button data-tab="perks">战术改装（永久）</button>
         <button data-tab="supplies">战备补给（单局）</button>
         <button data-tab="hideout">藏身处</button>
-        <button data-tab="smith">军械工坊</button>
         <button data-tab="mods">武器改装</button>
         <button data-tab="codex">收藏图鉴</button>
       </div>
@@ -649,7 +658,7 @@ input[type=range]{width:100%;accent-color:var(--amber)}
   <div id="rotateHint">横屏体验更佳 · 请旋转设备</div>
 </div>
 
-<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"}}</script>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/","three-mesh-bvh":"https://cdn.jsdelivr.net/npm/three-mesh-bvh@0.8.3/build/index.module.js"}}</script>
 <script type="module">
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
@@ -710,20 +719,36 @@ const DIFF = {
 // ================= armory / gear catalog & persistence =================
 const ARMORY_CATALOG = {
   weapons: [
-    { id: 'k7', slot: 'primary', name: 'K7 突击步枪', short: 'K7', price: 0, tag: '1号位 · 突击步枪', stats: ['伤害 34', '射速 720', '弹匣 30'], desc: '模块化 5.56mm 卡宾枪，配备全息瞄准镜，中近距离稳定可靠。' },
-    { id: 'mp5', slot: 'primary', name: 'V-9 战术冲锋枪', short: 'V-9', price: 28000, tag: '1号位 · 冲锋枪', stats: ['伤害 26', '射速 920', '弹匣 35', '机动 +8%'], desc: '超高射速近战利器，腰射散布极小，携带时提升移动速度。' },
-    { id: 'akm', slot: 'primary', name: 'AK-103 重型步枪', short: 'AK-103', price: 85000, tag: '1号位 · 重型步枪', stats: ['伤害 46', '射速 600', '弹匣 30'], desc: '7.62mm 大口径步枪，单发停止力极强，适合穿透重甲目标。' },
-    { id: 'px50', slot: 'primary', name: 'PX-50 单兵自卫武器', short: 'PX-50', price: 46000, tag: '1号位 · 冲锋枪', stats: ['伤害 24', '射速 900', '弹匣 50', '机动 +7%'], desc: '无托结构、顶置透明弹匣，50 发持续火力让你在楼道里永远比对手多打几枪。' },
-    { id: 'sg12', slot: 'primary', name: 'SG-12 泵动霰弹枪', short: 'SG-12', price: 38000, tag: '1号位 · 霰弹枪', stats: ['9 弹丸 × 19', '射速 72', '弹仓 7'], desc: '12 号口径泵动霰弹枪。十米内一枪定生死，超过二十米弹丸就散得没有意义。' },
-    { id: 'b30', slot: 'primary', name: 'B-30 无托步枪', short: 'B-30', price: 95000, tag: '1号位 · 突击步枪', stats: ['伤害 35', '射速 700', '一体 1.5 倍镜'], desc: '无托布局，枪身短而枪管长；自带 1.5 倍光学镜，中距离点射极稳。' },
-    { id: 'br17', slot: 'primary', name: 'BR-17 战斗步枪', short: 'BR-17', price: 125000, tag: '1号位 · 战斗步枪', stats: ['伤害 52', '射速 560', '弹匣 20'], desc: '7.62 全威力弹，三发撂倒重甲；后坐力也是全威力的。' },
-    { id: 'm14', slot: 'primary', name: 'M-14 经典战斗步枪', short: 'M-14', price: 112000, tag: '1号位 · 战斗步枪', stats: ['伤害 56', '射速 450', '弹匣 20'], desc: '胡桃木整体枪托的老兵器。7.62 全威力弹，中远距离两到三发解决问题，可换 4 倍镜或 6 倍镜。' },
-    { id: 'mg4', slot: 'primary', name: 'MG-4 轻机枪', short: 'MG-4', price: 155000, tag: '1号位 · 轻机枪', stats: ['伤害 37', '射速 780', '弹链 100', '机动 -12%'], desc: '百发弹链盒，压制火力的代名词。换弹要五秒多，打之前想清楚。' },
-    { id: 'sr9', slot: 'secondary', name: 'SR-9 精确射手步枪', short: 'SR-9', price: 0, tag: '2号位 · 射手步枪', stats: ['伤害 76', '射速 260', '高倍镜'], desc: '半自动精确步枪，配备高倍光学瞄准镜，擅长远程点杀。' },
-    { id: 'm110', slot: 'secondary', name: 'M110-S 消音狙击步枪', short: 'M110-S', price: 160000, tag: '2号位 · 消音狙击', stats: ['伤害 92', '射速 300', '一体消音'], desc: '特种消音狙击系统，枪声传播范围骤减 60%，暗杀敌方哨兵而不惊动全区。' },
-    { id: 'r338', slot: 'secondary', name: 'R-338 栓动狙击步枪', short: 'R-338', price: 260000, tag: '2号位 · 栓动狙击', stats: ['伤害 165', '射速 42', '11 倍镜'], desc: '.338 拉普阿马格南。命中躯干基本就结束了，但每一枪之后都要拉一次枪栓。' },
-    { id: 'p17', slot: 'secondary', name: 'P-17 手枪', short: 'P-17', price: 9000, tag: '2号位 · 手枪', stats: ['伤害 30', '弹匣 17', '机动 +10%'], desc: '聚合物框架手枪。切枪最快，主武器打空时救命用。' },
-    { id: 'hc50', slot: 'secondary', name: 'HC-50 手炮', short: 'HC-50', price: 68000, tag: '2号位 · 手炮', stats: ['伤害 74', '弹匣 7', '一发入魂'], desc: '.50 口径半自动手炮。两发躯干放倒无甲目标，后坐力会把你的手腕掀起来。' },
+    { id: 'k7', slot: 'primary', name: 'K7 突击步枪', short: 'K7', price: 0, tag: '主武器 · 突击步枪', stats: ['伤害 34', '射速 720', '弹匣 30'], desc: '模块化 5.56mm 卡宾枪，配备全息瞄准镜，中近距离稳定可靠。' },
+    { id: 'mp5', slot: 'primary', name: 'V-9 战术冲锋枪', short: 'V-9', price: 28000, tag: '主武器 · 冲锋枪', stats: ['伤害 26', '射速 920', '弹匣 35', '机动 +8%'], desc: '超高射速近战利器，腰射散布极小，携带时提升移动速度。' },
+    { id: 'akm', slot: 'primary', name: 'AK-103 重型步枪', short: 'AK-103', price: 85000, tag: '主武器 · 重型步枪', stats: ['伤害 46', '射速 600', '弹匣 30'], desc: '7.62mm 大口径步枪，单发停止力极强，适合穿透重甲目标。' },
+    { id: 'px50', slot: 'primary', name: 'PX-50 单兵自卫武器', short: 'PX-50', price: 46000, tag: '主武器 · 冲锋枪', stats: ['伤害 24', '射速 900', '弹匣 50', '机动 +7%'], desc: '无托结构、顶置透明弹匣，50 发持续火力让你在楼道里永远比对手多打几枪。' },
+    { id: 'sg12', slot: 'primary', name: 'SG-12 泵动霰弹枪', short: 'SG-12', price: 38000, tag: '主武器 · 霰弹枪', stats: ['9 弹丸 × 19', '射速 72', '弹仓 7'], desc: '12 号口径泵动霰弹枪。十米内一枪定生死，超过二十米弹丸就散得没有意义。' },
+    { id: 'b30', slot: 'primary', name: 'B-30 无托步枪', short: 'B-30', price: 95000, tag: '主武器 · 突击步枪', stats: ['伤害 35', '射速 700', '一体 1.5 倍镜'], desc: '无托布局，枪身短而枪管长；自带 1.5 倍光学镜，中距离点射极稳。' },
+    { id: 'br17', slot: 'primary', name: 'BR-17 战斗步枪', short: 'BR-17', price: 125000, tag: '主武器 · 战斗步枪', stats: ['伤害 52', '射速 560', '弹匣 20'], desc: '7.62 全威力弹，三发撂倒重甲；后坐力也是全威力的。' },
+    { id: 'm14', slot: 'primary', name: 'M-14 经典战斗步枪', short: 'M-14', price: 112000, tag: '主武器 · 战斗步枪', stats: ['伤害 56', '射速 450', '弹匣 20'], desc: '胡桃木整体枪托的老兵器。7.62 全威力弹，中远距离两到三发解决问题，可换 4 倍镜或 6 倍镜。' },
+    { id: 'mg4', slot: 'primary', name: 'MG-4 轻机枪', short: 'MG-4', price: 155000, tag: '主武器 · 轻机枪', stats: ['伤害 37', '射速 780', '弹链 100', '机动 -12%'], desc: '百发弹链盒，压制火力的代名词。换弹要五秒多，打之前想清楚。' },
+    { id: 'sr9', slot: 'primary', name: 'SR-9 精确射手步枪', short: 'SR-9', price: 0, tag: '主武器 · 射手步枪', stats: ['伤害 76', '射速 260', '高倍镜'], desc: '半自动精确步枪，配备高倍光学瞄准镜，擅长远程点杀。' },
+    { id: 'm110', slot: 'primary', name: 'M110-S 消音狙击步枪', short: 'M110-S', price: 160000, tag: '主武器 · 消音狙击', stats: ['伤害 92', '射速 300', '一体消音'], desc: '特种消音狙击系统，枪声传播范围骤减 60%，暗杀敌方哨兵而不惊动全区。' },
+    { id: 'r338', slot: 'primary', name: 'R-338 栓动狙击步枪', short: 'R-338', price: 260000, tag: '主武器 · 栓动狙击', stats: ['伤害 165', '射速 42', '11 倍镜'], desc: '.338 拉普阿马格南。命中躯干基本就结束了，但每一枪之后都要拉一次枪栓。' },
+    { id: 'p17', slot: 'pistol', name: 'P-17 手枪', short: 'P-17', price: 0, tag: '手枪 · 制式', stats: ['伤害 30', '弹匣 17', '机动 +10%'], desc: '聚合物框架手枪。切枪最快，主武器打空时救命用。' },
+    { id: 'm1911', slot: 'pistol', name: 'M1911A1 手枪', short: 'M1911', price: 22000, tag: '手枪 · M1911', stats: ['伤害 40', '弹匣 7', '.45 ACP'], desc: '百年老枪，.45 大口径停止作用依旧可靠，弹匣只有 7 发。' },
+    { id: 'b92', slot: 'pistol', name: 'M9 / 92FS 手枪', short: '92FS', price: 14000, tag: '手枪 · 92FS', stats: ['伤害 28', '弹匣 15', '后坐小'], desc: '开放式套筒的经典军用手枪，后坐温和，适合连续点射。' },
+    { id: 'b93r', slot: 'pistol', name: '93R 冲锋手枪', short: '93R', price: 58000, tag: '手枪 · 93R', stats: ['伤害 24', '射速 1100', '可全自动'], desc: '带折叠前握的冲锋手枪，切到全自动能在近距离瞬间倾泻 20 发。' },
+    { id: 'fn57', slot: 'pistol', name: 'Five-seveN 手枪', short: 'Five-seveN', price: 36000, tag: '手枪 · Five-seveN', stats: ['伤害 26', '弹匣 20', '高初速'], desc: '5.7mm 高初速小口径弹，远距离掉伤很少，弹匣 20 发。' },
+    { id: 'usp', slot: 'pistol', name: 'USP .45 手枪', short: 'USP', price: 26000, tag: '手枪 · USP', stats: ['伤害 36', '弹匣 12', '耐用'], desc: '以可靠著称的 .45 手枪，磨损比别的手枪慢一半。' },
+    { id: 'p226', slot: 'pistol', name: 'P226 手枪', short: 'P226', price: 20000, tag: '手枪 · P226', stats: ['伤害 30', '弹匣 15', '均衡'], desc: '特种部队常用的 9mm 全尺寸手枪，各项均衡。' },
+    { id: 'hipow', slot: 'pistol', name: 'Hi-Power 手枪', short: 'Hi-Power', price: 16000, tag: '手枪 · Hi-Power', stats: ['伤害 30', '弹匣 13', '经典'], desc: '第一把大容量双排弹匣手枪，二战老兵的最爱。' },
+    { id: 'mak', slot: 'pistol', name: '马卡洛夫 PM', short: 'PM', price: 5000, tag: '手枪 · PM', stats: ['伤害 24', '弹匣 8', '机动 +12%'], desc: '小巧便宜的苏式警用手枪，揣着它跑得更快。' },
+    { id: 'luger', slot: 'pistol', name: 'P08 鲁格手枪', short: 'P08', price: 30000, tag: '手枪 · P08', stats: ['伤害 29', '弹匣 8', '肘节式枪机'], desc: '独特的肘节式枪机，扳机清脆，收藏级的老式手枪。' },
+    { id: 'c96', slot: 'pistol', name: 'C96 毛瑟手枪', short: 'C96', price: 48000, tag: '手枪 · C96', stats: ['伤害 30', '可全自动', '弹仓 10'], desc: '“扫把柄”毛瑟，速射型可以全自动，但用桥夹装填很慢。' },
+    { id: 'saa', slot: 'pistol', name: 'SAA 单动左轮', short: 'SAA', price: 34000, tag: '手枪 · SAA', stats: ['伤害 58', '弹巢 6', '西部经典'], desc: '.45 Colt 单动左轮。伤害可观，但每一发都要扳击锤，换弹很慢。' },
+    { id: 'judge', slot: 'pistol', name: 'Raging Judge 霰弹左轮', short: 'Judge', price: 52000, tag: '手枪 · Judge', stats: ['伤害 12×6', '弹巢 5', '近战霰弹'], desc: '能发射 .410 霰弹的大框左轮，贴脸一发顶一把霰弹枪。' },
+    { id: 'rsh12', slot: 'pistol', name: 'RSh-12 重型左轮', short: 'RSh-12', price: 98000, tag: '手枪 · RSh-12', stats: ['伤害 95', '弹巢 5', '12.7mm'], desc: '发射 12.7mm 步枪级弹药的突击左轮，两发撂倒重甲目标，后坐极大。' },
+    { id: 'k6s', slot: 'pistol', name: 'K6S .357 左轮', short: 'K6S', price: 40000, tag: '手枪 · K6S', stats: ['伤害 50', '弹巢 6', '.357 马格南'], desc: '小巧的不锈钢 .357 左轮，双动扳机，射速比单动快得多。' },
+    { id: 'grach', slot: 'pistol', name: 'MP-443 乌鸦手枪', short: 'Grach', price: 18000, tag: '手枪 · Grach', stats: ['伤害 30', '弹匣 18', '大容量'], desc: '俄军制式 9mm 手枪，18 发大弹匣。' },
+    { id: 'tec9', slot: 'pistol', name: 'TEC-9 冲锋手枪', short: 'TEC-9', price: 26000, tag: '手枪 · TEC-9', stats: ['伤害 21', '射速 850', '弹匣 32'], desc: '廉价的全自动手枪，精度一般，但 32 发弹匣压制力惊人。' },
+    { id: 'hc50', slot: 'pistol', name: 'HC-50 手炮', short: 'HC-50', price: 68000, tag: '手枪 · 手炮', stats: ['伤害 74', '弹匣 7', '一发入魂'], desc: '.50 口径半自动手炮。两发躯干放倒无甲目标，后坐力会把你的手腕掀起来。' },
   ],
   protection: [
     { id: 'armor_1', kind: 'armor', name: '标准防弹背心 (II级)', price: 0, tag: '基础护甲', maxArmor: 100, startArmor: 80, mit: 0.55, headMit: 0, stats: ['初始护甲 80', '上限 100', '减伤 55%'], desc: '常规凯夫拉防弹衣，可抵御普通手枪与流弹伤害。' },
@@ -756,9 +781,7 @@ const ARMORY_CATALOG = {
 function getGear() {
   const saved = store.get('gear', {});
   return {
-    unlocked: Array.isArray(saved.unlocked) ? saved.unlocked : ['k7', 'sr9', 'armor_1', 'bag_1'],
-    primary: saved.primary || 'k7',
-    secondary: saved.secondary || 'sr9',
+    ...gearSlots(saved),
     armor: saved.armor || 'armor_1',
     bag: saved.bag || 'bag_1',
     perks: Array.isArray(saved.perks) ? saved.perks : [],
@@ -766,7 +789,22 @@ function getGear() {
     att: saved.att || {}, attOwn: saved.attOwn || {}, dur: saved.dur || {},
   };
 }
-function saveGear(g) { store.set('gear', g); }
+function gearSlots(saved) {
+  const unlocked = Array.isArray(saved.unlocked) ? saved.unlocked.slice() : ['k7', 'sr9', 'p17', 'armor_1', 'bag_1'];
+  if (!unlocked.includes('p17')) unlocked.push('p17');
+  const slotOf = (id) => (ARMORY_CATALOG.weapons.find((w) => w.id === id) || {}).slot;
+  let primary = saved.primary || 'k7', primary2 = saved.primary2, pistol = saved.pistol;
+  if (slotOf(primary) !== 'primary') primary = 'k7';
+  if (primary2 === undefined) {
+    const s = saved.secondary;
+    primary2 = s && slotOf(s) === 'primary' ? s : unlocked.includes('sr9') && primary !== 'sr9' ? 'sr9' : null;
+    if (!pistol) pistol = s && slotOf(s) === 'pistol' ? s : 'p17';
+  }
+  if (primary2 && (primary2 === primary || slotOf(primary2) !== 'primary' || !unlocked.includes(primary2))) primary2 = null;
+  if (!pistol || slotOf(pistol) !== 'pistol' || !unlocked.includes(pistol)) pistol = 'p17';
+  return { unlocked, primary, primary2, pistol };
+}
+function saveGear(g) { delete g.secondary; store.set('gear', g); }
 function getEquippedArmor() {
   const g = getGear();
   return ARMORY_CATALOG.protection.find((x) => x.id === g.armor) || ARMORY_CATALOG.protection[0];
@@ -799,7 +837,7 @@ const SAFE_N = [0, 1, 2, 4], GEN_PAY = [0, 3000, 8000, 18000], RANGE_XP = [1, 1.
 const MAX_LVL = 60;
 const xpNeed = (l) => 1200 + l * 800;
 const MOD_COST = [25000, 70000, 160000];
-const MOD_TIER = { m14: 1.6, k7: 1, sr9: 1, mp5: 1.2, akm: 1.5, m110: 1.8, px50: 1.3, sg12: 1.2, b30: 1.5, br17: 1.7, mg4: 1.8, r338: 2.2, p17: 0.6, hc50: 1.2 };
+const MOD_TIER = { m1911: 0.72, b92: 0.64, b93r: 1.08, fn57: 0.86, usp: 0.76, p226: 0.7, hipow: 0.66, mak: 0.55, luger: 0.8, c96: 0.98, saa: 0.84, judge: 1.02, rsh12: 1.48, k6s: 0.9, grach: 0.68, tec9: 0.76, m14: 1.6, k7: 1, sr9: 1, mp5: 1.2, akm: 1.5, m110: 1.8, px50: 1.3, sg12: 1.2, b30: 1.5, br17: 1.7, mg4: 1.8, r338: 2.2, p17: 0.6, hc50: 1.2 };
 const MOD_NAMES = ['出厂', 'I 级改装', 'II 级改装', 'III 级大师改装'];
 function getProg() {
   const p = store.get('prog', {});
@@ -1304,6 +1342,17 @@ const PATROLS = [];
 const MAP_X0 = -122, MAP_X1 = 109, MAP_Z0 = -122, MAP_Z1 = 122;
 const SEA_X = MAP_ID === 'desert' ? 1e9 : MAP_X1; // x beyond which there is water
 
+function addRotCollider(cx, cz, w, d, y0, h, rot, flags) {
+  const c = Math.cos(rot), s = Math.sin(rot), ac = Math.abs(c), as = Math.abs(s);
+  if (as < 0.06 || ac < 0.06) { const sw = as < 0.06 ? w : d, sd = as < 0.06 ? d : w; addCollider(cx - sw / 2, y0, cz - sd / 2, cx + sw / 2, y0 + h, cz + sd / 2, flags); return; }
+  const long = Math.max(w, d), short = Math.min(w, d), alongW = w >= d;
+  const n = clamp(Math.round(long / Math.max(short * 0.8, 0.35)), 2, 14), seg = long / n;
+  // unit vector of the long axis in world xz (local x rotated by -rot about y, matching three's rotation.y)
+  const lx = alongW ? c : s, lz = alongW ? -s : c;
+  const sw = alongW ? seg : short, sd = alongW ? short : seg;
+  const hw = (sw * ac + sd * as) / 2 * 0.86, hd = (sw * as + sd * ac) / 2 * 0.86;
+  for (let i = 0; i < n; i++) { const t = -long / 2 + seg * (i + 0.5), px = cx + lx * t, pz = cz + lz * t; addCollider(px - hw, y0, pz - hd, px + hw, y0 + h, pz + hd, flags); }
+}
 function addCollider(x0, y0, z0, x1, y1, z1, flags) {
   const c = { x0: Math.min(x0, x1), y0: Math.min(y0, y1), z0: Math.min(z0, z1), x1: Math.max(x0, x1), y1: Math.max(y0, y1), z1: Math.max(z0, z1) };
   if (flags) Object.assign(c, flags);
@@ -1341,11 +1390,8 @@ function addBox(cx, cz, w, d, h, y0, matName, o = {}) {
   worldUV(g, MATSCALE[matName] || 3, o.uo || 0, o.vo || 0);
   pushStatic(g, matName, o);
   if (o.collide !== false) {
-    if (o.rotY) {
-      const c = Math.abs(Math.cos(o.rotY)), s = Math.abs(Math.sin(o.rotY));
-      const hw = (w * c + d * s) / 2, hd = (w * s + d * c) / 2;
-      addCollider(cx - hw, y0, cz - hd, cx + hw, y0 + h, cz + hd, { mat: matName, ...o.cf });
-    } else addCollider(cx - w / 2, y0, cz - d / 2, cx + w / 2, y0 + h, cz + d / 2, { mat: matName, ...o.cf });
+    if (o.rotY) addRotCollider(cx, cz, w, d, y0, h, o.rotY, { mat: matName, ...o.cf });
+    else addCollider(cx - w / 2, y0, cz - d / 2, cx + w / 2, y0 + h, cz + d / 2, { mat: matName, ...o.cf });
   }
 }
 function boxMM(x0, y0, z0, x1, y1, z1, matName, o) { addBox((x0 + x1) / 2, (z0 + z1) / 2, Math.abs(x1 - x0), Math.abs(z1 - z0), Math.abs(y1 - y0), Math.min(y0, y1), matName, o); }
@@ -1759,7 +1805,7 @@ function rubble(x, z, r = 1.6, o = {}) {
     const g = new THREE.CylinderGeometry(0.012, 0.012, rd(0.8, 1.6), 5); g.rotateZ(rd(0.4, 1.2)); g.rotateY(rd(0, 6));
     g.translate(x + rd(-r, r) * 0.5, rd(0.2, r * 0.35), z + rd(-r, r) * 0.5); sgeo(g, 'steel', [0.42, 0.25, 0.16], { uv: false, shadow: false });
   }
-  if (o.collide !== false) addCollider(x - r * 0.55, 0, z - r * 0.55, x + r * 0.55, r * 0.34, z + r * 0.55, { mat: 'concrete' });
+  if (o.collide !== false) { addCollider(x - r * 0.42, 0, z - r * 0.42, x + r * 0.42, r * 0.3, z + r * 0.42, { mat: 'concrete' }); addCollider(x - r * 0.2, r * 0.3, z - r * 0.2, x + r * 0.2, r * 0.42, z + r * 0.2, { mat: 'concrete' }); }
 }
 // sedan wreck (burnt or abandoned)
 const RB1 = (w, h, d, r = 0.02) => RB(w, h, d, r, 1);
@@ -1789,8 +1835,8 @@ function carWreck(cx, cz, rot, o = {}) {
   for (const s of [-1, 1]) { P(RB1(0.06, 0.12, 0.34, 0.02), 'paint', burnt ? dk : [0.95, 0.93, 0.86], 2.16, lift + 0.44, s * 0.6); P(RB1(0.06, 0.12, 0.3, 0.02), 'paint', burnt ? dk : [0.7, 0.08, 0.06], -2.16, lift + 0.46, s * 0.62); }
   P(RB1(0.03, 0.12, 0.42, 0.01), 'paint', [0.9, 0.9, 0.88], -2.23, lift + 0.24, 0);
   if (burnt) for (let i = 0; i < 4; i++) P(new THREE.DodecahedronGeometry(rd(0.12, 0.25), 0), 'paint', [0.1, 0.09, 0.08], rd(-1.8, 1.8), 0.05, rd(-1.2, 1.2));
-  const [hw, hd] = rotAABB(cx, cz, 4.4, 1.85, rot);
-  addCollider(cx - hw, 0, cz - hd, cx + hw, lift + 1.2, cz + hd, { mat: 'metal' });
+  addRotCollider(cx, cz, 4.3, 1.8, 0, lift + 0.75, rot, { mat: 'metal' });
+  addRotCollider(cx - Math.cos(rot) * 0.25, cz + Math.sin(rot) * 0.25, 2.3, 1.5, lift + 0.75, 0.5, rot, { mat: 'metal' });
 }
 function woodBarrel(x, z, y0 = 0, s = 1) {
   const pts = []; for (let i = 0; i <= 8; i++) { const t = i / 8; pts.push(new THREE.Vector2((0.27 + Math.sin(t * Math.PI) * 0.045) * s, t * 0.86 * s)); }
@@ -2151,7 +2197,7 @@ function rock(x, z, s = 1) {
   const col0 = [0.66 + R() * 0.08, 0.5 + R() * 0.06, 0.37 + R() * 0.05], col = [0.92, 0.82, 0.72].map((k) => k * (0.74 + (col0[0] - 0.66) * 2.5));
   const r1 = rr(0, 3), ox = rr(-0.6, 0.6) * s, oz = rr(-0.5, 0.5) * s, r2 = rr(0, 3), third = R() < 0.5;
   const seed = (Math.abs(Math.round(x * 31 + z * 17)) % 997) + 1;
-  const box = (cx, cz, w, d, y0, h, r) => { const [hw, hd] = rotAABB(cx, cz, w, d, r); addCollider(cx - hw, y0, cz - hd, cx + hw, y0 + h, cz + hd, { mat: 'concrete' }); };
+  const box = (cx, cz, w, d, y0, h, r) => addRotCollider(cx, cz, w * 0.9, d * 0.9, y0, h, r, { mat: 'concrete' });
   rockPart(x, 0.42 * s - 0.1, z, 1.4 * s, 1.08 * s, 1.1 * s, r1, col, seed); box(x, z, 2.6 * s, 2.0 * s, 0, 1.5 * s, r1);
   rockPart(x + ox * 0.6, 1.25 * s, z + oz * 0.6, 0.95 * s, 0.75 * s, 0.85 * s, r2, col.map((c) => c * 0.95), seed + 1); box(x + ox, z + oz, 1.7 * s, 1.5 * s, 1.4 * s, 1.0 * s, r2);
   if (third) { const tz = rr(-1, 1) * s, r3 = rr(0, 3); rockPart(x + 1.6 * s, 0.22 * s - 0.05, z + tz, 0.64 * s, 0.56 * s, 0.6 * s, r3, col.map((c) => c * 1.04), seed + 2); box(x + 1.6 * s, z + tz, 1.2 * s, 1.1 * s, 0, 0.8 * s, r3); }
@@ -2524,6 +2570,41 @@ function rayBox(ox, oy, oz, ix, iy, iz, c, tmax) {
   return tn < 0 ? 0 : tn;
 }
 let RAXIS = 0;
+// Bullet hits are tested against the actual rendered static meshes (three-mesh-bvh). The AABB colliders stay for
+// movement / AI, but bullets skip every collider that has a mesh in HITSET — so no more holes in thin air.
+let BVH = null; const BVHP = import('three-mesh-bvh').then((m) => (BVH = m)).catch((e) => { console.warn('bvh unavailable', e); return null; });
+const HITSET = [], HITKIND = new Map(); let HITREADY = false;
+const _rc = new THREE.Raycaster(), _rcO = new THREE.Vector3(), _rcD = new THREE.Vector3(), _rcN = new THREE.Vector3();
+const HIT_SKIP = new Set(['palm', 'foliage', 'chain', 'cable', 'glass', 'lamp', 'heli', 'water']);
+function matKind(name) { return name === 'container' || name === 'siding' || name === 'steel' || name === 'paint' || name === 'metal' || name === 'prop' ? 'metal' : name === 'wood' ? 'wood' : 'concrete'; }
+async function buildHitset() {
+  await BVHP; if (!BVH) return;
+  THREE.Mesh.prototype.raycast = BVH.acceleratedRaycast;
+  THREE.BufferGeometry.prototype.computeBoundsTree = BVH.computeBoundsTree;
+  const names = new Map(Object.entries(MAT).map(([k, v]) => [v, k]));
+  const add = (m, kind) => { if (!m.geometry.boundsTree) m.geometry.computeBoundsTree({ maxLeafTris: 8 }); m.updateMatrixWorld(true); HITSET.push(m); HITKIND.set(m, kind); };
+  for (const m of STATIC_MESHES) { const n = names.get(m.material); if (!n || HIT_SKIP.has(n)) continue; add(m, matKind(n)); }
+  for (const d of DECOR) d.traverse((m) => { if (!m.isMesh) return; const n = names.get(m.material); if (n && HIT_SKIP.has(n)) return; if (m.material && m.material.transparent) return; add(m, n ? matKind(n) : 'concrete'); });
+  scene.traverse((m) => { if (m.isMesh && m.material === PROP_MAT) add(m, 'metal'); });
+  _rc.firstHitOnly = true;
+  for (const c of COLLIDERS) if (!c.ground && !c.dyn) c.vis = true;   // these all have rendered geometry now covered by HITSET
+  HITREADY = true;
+}
+// bullet ray: rendered geometry + any collider without a mesh (+ ground plane & sea). Sets HIT like raycast().
+function bulletcast(ox, oy, oz, dx, dy, dz, tmax) {
+  const t0 = raycast(ox, oy, oz, dx, dy, dz, tmax, true);
+  if (!HITREADY) return t0;
+  let best = t0, bc = HIT.c, nx = HIT.nx, ny = HIT.ny, nz = HIT.nz;
+  _rcO.set(ox, oy, oz); _rcD.set(dx, dy, dz); _rc.set(_rcO, _rcD); _rc.far = best === Infinity ? tmax : best;
+  const hits = _rc.intersectObjects(HITSET, false);
+  let h = null; for (const x of hits) if (!h || x.distance < h.distance) h = x;
+  if (h && h.distance < (best === Infinity ? tmax : best)) {
+    best = h.distance; bc = { mat: HITKIND.get(h.object) || 'concrete', mesh: true };
+    if (h.face) { _rcN.copy(h.face.normal).transformDirection(h.object.matrixWorld); if (_rcN.dot(_rcD) > 0) _rcN.negate(); nx = _rcN.x; ny = _rcN.y; nz = _rcN.z; }
+  }
+  HIT.t = best; HIT.c = bc; HIT.nx = nx; HIT.ny = ny; HIT.nz = nz;
+  return bc ? best : Infinity;
+}
 function raycast(ox, oy, oz, dx, dy, dz, tmax, bullet = false) {
   const ix = 1 / (Math.abs(dx) < 1e-9 ? 1e-9 : dx), iy = 1 / (Math.abs(dy) < 1e-9 ? 1e-9 : dy), iz = 1 / (Math.abs(dz) < 1e-9 ? 1e-9 : dz);
   const ex = ox + dx * tmax, ez = oz + dz * tmax;
@@ -2532,7 +2613,7 @@ function raycast(ox, oy, oz, dx, dy, dz, tmax, bullet = false) {
   let best = tmax, bc = null, bax = 0;
   for (let i = 0; i < _cand.length; i++) {
     const c = _cand[i];
-    if (bullet && c.pass) continue;
+    if (bullet && (c.pass || (HITREADY && c.vis))) continue;
     const t = rayBox(ox, oy, oz, ix, iy, iz, c, best);
     if (t < best) { best = t; bc = c; bax = RAXIS; }
   }
@@ -2544,7 +2625,8 @@ function raycast(ox, oy, oz, dx, dy, dz, tmax, bullet = false) {
 function losClear(ax, ay, az, bx, by, bz) {
   const dx = bx - ax, dy = by - ay, dz = bz - az, L = Math.hypot(dx, dy, dz);
   if (L < 0.01) return true;
-  return raycast(ax, ay, az, dx / L, dy / L, dz / L, L - 0.05, true) === Infinity;
+  const R = HITREADY; HITREADY = false;   // AI sight uses the cheap boxes
+  const r = raycast(ax, ay, az, dx / L, dy / L, dz / L, L - 0.05, true) === Infinity; HITREADY = R; return r;
 }
 
 // ================= sky visibility bake =================
@@ -3635,9 +3717,25 @@ const WDEFS = [
   { id: 'b30', name: 'B-30 无托步枪', short: 'B-30', rpm: 700, dmg: 35, mag: 30, reserve: 150, reload: 2.4, modes: ['全自动', '单发'], hip: 0.028, ads: 0.0026, recoilV: 0.0095, recoilH: 0.0048, adsFov: 44, adsSens: 0.62, hipPos: [0.12, -0.12, -0.25], adsPos: [0, -0.044, -0.1], range: [55, 0.8], bloomAdd: 0.1, ammoBox: 60, wear: 0.02 },
   { id: 'r338', name: 'R-338 栓动狙击步枪', short: 'R-338', rpm: 42, dmg: 165, mag: 5, reserve: 25, reload: 3.4, modes: ['栓动'], hip: 0.06, ads: 0.0002, recoilV: 0.06, recoilH: 0.01, adsFov: 11, adsSens: 0.25, scope: true, hipPos: [0.12, -0.135, -0.3], adsPos: [0, -0.04, -0.1], range: [220, 0.92], bloomAdd: 0.6, big: true, snd: 'dmr', speedMul: 0.93, ammoBox: 10, cycle: 'bolt', wear: 0.07 },
   { id: 'p17', name: 'P-17 手枪', short: 'P-17', rpm: 420, dmg: 30, mag: 17, reserve: 85, reload: 1.5, modes: ['半自动'], hip: 0.02, ads: 0.006, recoilV: 0.012, recoilH: 0.006, adsFov: 64, adsSens: 0.85, hipPos: [0.1, -0.11, -0.25], adsPos: [0, -0.0234, -0.21], range: [22, 0.6], bloomAdd: 0.12, speedMul: 1.1, pistol: true, ammoBox: 34, snd: 'pistol', cycle: 'slide', wear: 0.02 },
+  { id: 'm1911', name: 'M1911A1 手枪', short: 'M1911', modes: ['半自动'], hip: 0.022, ads: 0.006, adsFov: 64, adsSens: 0.85, hipPos: [0.1, -0.11, -0.25], adsPos: [0, -0.0234, -0.21], speedMul: 1.08, pistol: true, ammoBox: 34, wear: 0.02, rpm: 360, dmg: 40, mag: 7, reserve: 49, reload: 1.7, recoilV: 0.02, recoilH: 0.008, range: [24, 0.6], bloomAdd: 0.18, snd: 'pistol', cycle: 'slide' },
+  { id: 'b92', name: 'M9 / 92FS 手枪', short: '92FS', modes: ['半自动'], hip: 0.022, ads: 0.006, adsFov: 64, adsSens: 0.85, hipPos: [0.1, -0.11, -0.25], adsPos: [0, -0.0234, -0.21], speedMul: 1.08, pistol: true, ammoBox: 34, wear: 0.02, rpm: 450, dmg: 28, mag: 15, reserve: 90, reload: 1.6, recoilV: 0.011, recoilH: 0.005, range: [22, 0.6], bloomAdd: 0.11, snd: 'pistol', cycle: 'slide' },
+  { id: 'b93r', name: '93R 冲锋手枪', short: '93R', modes: ['半自动'], hip: 0.022, ads: 0.006, adsFov: 64, adsSens: 0.85, hipPos: [0.1, -0.11, -0.25], adsPos: [0, -0.0234, -0.21], speedMul: 1.08, pistol: true, ammoBox: 34, wear: 0.02, rpm: 1100, dmg: 24, mag: 20, reserve: 100, reload: 1.8, modes: ['半自动', '全自动'], hip: 0.028, recoilV: 0.013, recoilH: 0.009, range: [18, 0.55], bloomAdd: 0.09, snd: 'pistol', cycle: 'slide' },
+  { id: 'fn57', name: 'Five-seveN 手枪', short: 'Five-seveN', modes: ['半自动'], hip: 0.022, ads: 0.006, adsFov: 64, adsSens: 0.85, hipPos: [0.1, -0.11, -0.25], adsPos: [0, -0.0234, -0.21], speedMul: 1.08, pistol: true, ammoBox: 34, wear: 0.02, rpm: 480, dmg: 26, mag: 20, reserve: 100, reload: 1.6, recoilV: 0.009, recoilH: 0.004, range: [42, 0.82], bloomAdd: 0.1, snd: 'pistol', cycle: 'slide' },
+  { id: 'usp', name: 'USP .45 手枪', short: 'USP', modes: ['半自动'], hip: 0.022, ads: 0.006, adsFov: 64, adsSens: 0.85, hipPos: [0.1, -0.11, -0.25], adsPos: [0, -0.0234, -0.21], speedMul: 1.08, pistol: true, ammoBox: 34, wear: 0.02, rpm: 400, dmg: 36, mag: 12, reserve: 72, reload: 1.6, recoilV: 0.016, recoilH: 0.007, range: [24, 0.6], bloomAdd: 0.14, snd: 'pistol', cycle: 'slide', wear: 0.01 },
+  { id: 'p226', name: 'P226 手枪', short: 'P226', modes: ['半自动'], hip: 0.022, ads: 0.006, adsFov: 64, adsSens: 0.85, hipPos: [0.1, -0.11, -0.25], adsPos: [0, -0.0234, -0.21], speedMul: 1.08, pistol: true, ammoBox: 34, wear: 0.02, rpm: 440, dmg: 30, mag: 15, reserve: 90, reload: 1.55, recoilV: 0.012, recoilH: 0.006, range: [23, 0.6], bloomAdd: 0.12, snd: 'pistol', cycle: 'slide' },
+  { id: 'hipow', name: 'Hi-Power 手枪', short: 'Hi-Power', modes: ['半自动'], hip: 0.022, ads: 0.006, adsFov: 64, adsSens: 0.85, hipPos: [0.1, -0.11, -0.25], adsPos: [0, -0.0234, -0.21], speedMul: 1.08, pistol: true, ammoBox: 34, wear: 0.02, rpm: 420, dmg: 30, mag: 13, reserve: 78, reload: 1.6, recoilV: 0.012, recoilH: 0.006, range: [22, 0.6], bloomAdd: 0.12, snd: 'pistol', cycle: 'slide' },
+  { id: 'mak', name: '马卡洛夫 PM', short: 'PM', modes: ['半自动'], hip: 0.022, ads: 0.006, adsFov: 64, adsSens: 0.85, hipPos: [0.1, -0.11, -0.25], adsPos: [0, -0.0234, -0.21], speedMul: 1.08, pistol: true, ammoBox: 34, wear: 0.02, rpm: 400, dmg: 24, mag: 8, reserve: 64, reload: 1.4, recoilV: 0.011, recoilH: 0.006, range: [18, 0.55], bloomAdd: 0.12, speedMul: 1.12, snd: 'pistol', cycle: 'slide' },
+  { id: 'luger', name: 'P08 鲁格手枪', short: 'P08', modes: ['半自动'], hip: 0.022, ads: 0.006, adsFov: 64, adsSens: 0.85, hipPos: [0.1, -0.11, -0.25], adsPos: [0, -0.0234, -0.21], speedMul: 1.08, pistol: true, ammoBox: 34, wear: 0.02, rpm: 420, dmg: 29, mag: 8, reserve: 56, reload: 1.8, recoilV: 0.011, recoilH: 0.005, range: [24, 0.62], bloomAdd: 0.11, snd: 'pistol', cycle: 'slide' },
+  { id: 'c96', name: 'C96 毛瑟手枪', short: 'C96', modes: ['半自动'], hip: 0.022, ads: 0.006, adsFov: 64, adsSens: 0.85, hipPos: [0.1, -0.11, -0.25], adsPos: [0, -0.0234, -0.21], speedMul: 1.08, pistol: true, ammoBox: 34, wear: 0.02, rpm: 900, dmg: 30, mag: 10, reserve: 60, reload: 2.6, modes: ['半自动', '全自动'], hip: 0.026, recoilV: 0.016, recoilH: 0.009, range: [28, 0.65], bloomAdd: 0.12, snd: 'pistol', cycle: 'slide' },
+  { id: 'saa', name: 'SAA 单动左轮', short: 'SAA', modes: ['半自动'], hip: 0.022, ads: 0.006, adsFov: 64, adsSens: 0.85, hipPos: [0.1, -0.11, -0.25], adsPos: [0, -0.0234, -0.21], speedMul: 1.08, pistol: true, ammoBox: 34, wear: 0.02, rpm: 150, dmg: 58, mag: 6, reserve: 36, reload: 3.2, recoilV: 0.04, recoilH: 0.012, range: [28, 0.65], bloomAdd: 0.3, big: true, snd: 'dmr', cycle: 'slide' },
+  { id: 'judge', name: 'Raging Judge 霰弹左轮', short: 'Judge', modes: ['半自动'], hip: 0.022, ads: 0.006, adsFov: 64, adsSens: 0.85, hipPos: [0.1, -0.11, -0.25], adsPos: [0, -0.0234, -0.21], speedMul: 1.08, pistol: true, ammoBox: 34, wear: 0.02, rpm: 160, dmg: 12, pellets: 6, pelletSpread: 0.045, mag: 5, reserve: 30, reload: 3.0, hip: 0.02, ads: 0.012, recoilV: 0.05, recoilH: 0.014, range: [10, 0.4], bloomAdd: 0.3, big: true, snd: 'sg', cycle: 'slide' },
+  { id: 'rsh12', name: 'RSh-12 重型左轮', short: 'RSh-12', modes: ['半自动'], hip: 0.022, ads: 0.006, adsFov: 64, adsSens: 0.85, hipPos: [0.1, -0.11, -0.25], adsPos: [0, -0.0234, -0.21], speedMul: 1.08, pistol: true, ammoBox: 34, wear: 0.02, rpm: 110, dmg: 95, mag: 5, reserve: 25, reload: 3.4, recoilV: 0.065, recoilH: 0.018, range: [40, 0.75], bloomAdd: 0.5, big: true, snd: 'dmr', cycle: 'slide' },
+  { id: 'k6s', name: 'K6S .357 左轮', short: 'K6S', modes: ['半自动'], hip: 0.022, ads: 0.006, adsFov: 64, adsSens: 0.85, hipPos: [0.1, -0.11, -0.25], adsPos: [0, -0.0234, -0.21], speedMul: 1.08, pistol: true, ammoBox: 34, wear: 0.02, rpm: 210, dmg: 50, mag: 6, reserve: 36, reload: 2.8, recoilV: 0.032, recoilH: 0.01, range: [26, 0.65], bloomAdd: 0.24, big: true, snd: 'dmr', cycle: 'slide' },
+  { id: 'grach', name: 'MP-443 乌鸦手枪', short: 'Grach', modes: ['半自动'], hip: 0.022, ads: 0.006, adsFov: 64, adsSens: 0.85, hipPos: [0.1, -0.11, -0.25], adsPos: [0, -0.0234, -0.21], speedMul: 1.08, pistol: true, ammoBox: 34, wear: 0.02, rpm: 430, dmg: 30, mag: 18, reserve: 90, reload: 1.6, recoilV: 0.012, recoilH: 0.006, range: [22, 0.6], bloomAdd: 0.12, snd: 'pistol', cycle: 'slide' },
+  { id: 'tec9', name: 'TEC-9 冲锋手枪', short: 'TEC-9', modes: ['半自动'], hip: 0.022, ads: 0.006, adsFov: 64, adsSens: 0.85, hipPos: [0.1, -0.11, -0.25], adsPos: [0, -0.0234, -0.21], speedMul: 1.08, pistol: true, ammoBox: 34, wear: 0.02, rpm: 850, dmg: 21, mag: 32, reserve: 128, reload: 2.0, modes: ['全自动'], hip: 0.034, ads: 0.011, recoilV: 0.01, recoilH: 0.01, range: [16, 0.5], bloomAdd: 0.08, snd: 'pistol', cycle: 'slide' },
   { id: 'hc50', name: 'HC-50 手炮', short: 'HC-50', rpm: 150, dmg: 74, mag: 7, reserve: 35, reload: 2.0, modes: ['半自动'], hip: 0.03, ads: 0.004, recoilV: 0.045, recoilH: 0.012, adsFov: 62, adsSens: 0.8, hipPos: [0.1, -0.11, -0.25], adsPos: [0, -0.027, -0.21], range: [35, 0.7], bloomAdd: 0.45, big: true, speedMul: 1.06, pistol: true, ammoBox: 14, snd: 'dmr', cycle: 'slide', wear: 0.04 },
 ];
-const CAT2DEF = { m14: 'm14', k7: 'ar', mp5: 'smg', akm: 'akm', sr9: 'dmr', m110: 'm110', px50: 'px50', sg12: 'sg12', mg4: 'mg4', br17: 'br17', b30: 'b30', r338: 'r338', p17: 'p17', hc50: 'hc50' };
+const CAT2DEF = { m1911: 'm1911', b92: 'b92', b93r: 'b93r', fn57: 'fn57', usp: 'usp', p226: 'p226', hipow: 'hipow', mak: 'mak', luger: 'luger', c96: 'c96', saa: 'saa', judge: 'judge', rsh12: 'rsh12', k6s: 'k6s', grach: 'grach', tec9: 'tec9', m14: 'm14', k7: 'ar', mp5: 'smg', akm: 'akm', sr9: 'dmr', m110: 'm110', px50: 'px50', sg12: 'sg12', mg4: 'mg4', br17: 'br17', b30: 'b30', r338: 'r338', p17: 'p17', hc50: 'hc50' };
 const WEAPON = {
   list: [], pool: {}, idx: 0, cur: null, adsT: 0, firingT: 9, cd: 0, bloom: 0, shotN: 0,
   kickZ: 0, kickY: 0, kickRot: 0, swayX: 0, swayY: 0, switchT: 0, trigPrev: false, flashT: 0, block: 0,
@@ -4300,7 +4398,7 @@ function camoMat(id, slot) {
 
 let vmFlash;
 const VM_S = 0.72;
-const GUN_BUILD = { m14: gunM14, ar: gunK7, smg: gunV9, akm: gunAK, dmr: () => gunDMR({}), m110: () => gunDMR({ integral: true, furn: GM.tan, hg: GM.tan }), px50: gunPX50, sg12: gunSG12, mg4: gunMG4, br17: gunBR17, b30: gunB30, r338: gunR338, p17: () => gunPistol({}), hc50: () => gunPistol({ big: true, slideMat: GM.bright }) };
+const GUN_BUILD = { m1911: () => gunPistol({}), b92: () => gunPistol({}), b93r: () => gunPistol({}), fn57: () => gunPistol({}), usp: () => gunPistol({}), p226: () => gunPistol({}), hipow: () => gunPistol({}), mak: () => gunPistol({}), luger: () => gunPistol({}), c96: () => gunPistol({}), saa: () => gunPistol({ slideMat: GM.bright }), judge: () => gunPistol({ slideMat: GM.bright }), rsh12: () => gunPistol({ slideMat: GM.bright }), k6s: () => gunPistol({ slideMat: GM.bright }), grach: () => gunPistol({}), tec9: () => gunPistol({}), m14: gunM14, ar: gunK7, smg: gunV9, akm: gunAK, dmr: () => gunDMR({}), m110: () => gunDMR({ integral: true, furn: GM.tan, hg: GM.tan }), px50: gunPX50, sg12: gunSG12, mg4: gunMG4, br17: gunBR17, b30: gunB30, r338: gunR338, p17: () => gunPistol({}), hc50: () => gunPistol({ big: true, slideMat: GM.bright }) };
 function ensureGun(id) {
   const e = WEAPON.pool[id];
   if (!e.model) { const m = GUN_BUILD[id](); m.g.visible = false; WEAPON.root.add(m.g); e.model = m; loadExtGun(id, m); }
@@ -4473,8 +4571,8 @@ function attDef(def, A, m) {
 }
 function applyLoadout() {
   const G = getGear();
-  const ids = [CAT2DEF[G.primary] || 'ar', CAT2DEF[G.secondary] || 'dmr'];
-  const gids = [G.primary, G.secondary];
+  const gids = [G.primary, G.primary2, G.pistol].filter(Boolean);
+  const ids = gids.map((g) => CAT2DEF[g]);
   for (const k in WEAPON.pool) if (WEAPON.pool[k].model) WEAPON.pool[k].model.g.visible = false;
   const magMul = PLAYER.perks.has('perk_mag') ? 1.5 : 1;
   WEAPON.list = ids.map((id, k) => {
@@ -4512,7 +4610,7 @@ const _dir = new V3(), _hp = new V3(), _mz = new V3(), _ej = new V3();
 function shotRay(def, spread, o, tracer) {
   const a = Math.random() * Math.PI * 2, r = Math.sqrt(Math.random()) * spread;
   _dir.set(Math.cos(a) * r, Math.sin(a) * r, -1).normalize().applyQuaternion(camera.quaternion);
-  const tw = raycast(o.x, o.y, o.z, _dir.x, _dir.y, _dir.z, 450, true);
+  const tw = bulletcast(o.x, o.y, o.z, _dir.x, _dir.y, _dir.z, 450);
   const wc = HIT.c, wnx = HIT.nx, wny = HIT.ny, wnz = HIT.nz;
   let best = tw, be = null, bpart = null;
   for (const e of ENEMIES) { const h = e.rayHit(o, _dir, best); if (h) { best = h.t; be = e; bpart = h.part; } }
@@ -4594,7 +4692,7 @@ function coverFree(x, z, r, y0, y1) {
   return true;
 }
 function surfKind(c) {
-  const m = c && c.mat;
+  const m = c && c.mat; if (m === 'metal') return 'metal';
   if (m === 'container' || m === 'siding' || m === 'steel' || m === 'paint') return 'metal';
   if (m === 'wood') return 'wood';
   return 'concrete';
@@ -5196,7 +5294,7 @@ class Enemy {
     const sig = (0.03 + dist * 0.00055) * (1 + T.speed * 0.13) * (T.crouch > 0.5 ? 0.85 : 1) / (D.acc * (1 + Math.min(this.aimT, 3) * 0.5)) * (this.boss ? 0.7 : 1) * (1 + (this.suppress || 0) * 0.9);
     const g3 = () => (Math.random() + Math.random() + Math.random() - 1.5) * sig * 1.4;
     _ed.x += g3(); _ed.y += g3(); _ed.z += g3(); _ed.normalize();
-    const tw = raycast(mz.x, mz.y, mz.z, _ed.x, _ed.y, _ed.z, 300, true);
+    const tw = bulletcast(mz.x, mz.y, mz.z, _ed.x, _ed.y, _ed.z, 300);
     const wc = HIT.c, wn = [HIT.nx, HIT.ny, HIT.nz];
     let tp = Infinity;
     {
@@ -5350,7 +5448,7 @@ function placeContainers(seed = (Math.random() * 1e9) | 0) {
     scene.add(mesh);
     if (!s.col) {
       const r = Math.max(half[0], half[2]);
-      s.col = addCollider(s.x - r * 0.8, y, s.z - r * 0.8, s.x + r * 0.8, y + half[1] * 2, s.z + r * 0.8, { mat: 'steel', prop: true });
+      s.col = addCollider(s.x - r * 0.72, y, s.z - r * 0.72, s.x + r * 0.72, y + half[1] * 2, s.z + r * 0.72, { mat: 'steel', prop: true });
     }
     CONTAINERS.push({ key: 'c' + si, type: s.type, name: CTYPES[s.type].n, pos: new V3(s.x, y + half[1], s.z), mesh, items: rollLoot(s.type), searchT: 0 });
   }
@@ -5976,6 +6074,7 @@ addEventListener('keydown', (e) => {
       else if (e.code === 'KeyB') cycleMode();
       else if (e.code === 'Digit1') equip(0);
       else if (e.code === 'Digit2') equip(1);
+      else if (e.code === 'Digit3' && WEAPON.list.length > 2) equip(2);
       else if (e.code === 'KeyC') P.crouchWant = !P.crouchWant;
   }
 });
@@ -5997,7 +6096,7 @@ renderer.domElement.addEventListener('mousedown', (e) => {
 });
 addEventListener('mouseup', (e) => { if (e.button === 0) INPUT.mouseFire = false; if (e.button === 2) INPUT.mouseAds = false; });
 addEventListener('contextmenu', (e) => e.preventDefault());
-addEventListener('wheel', (e) => { if (STATE.mode === 'playing' && !UI.panelOpen && PLAYER.alive) equip(WEAPON.idx === 0 ? 1 : 0); }, { passive: true });
+addEventListener('wheel', (e) => { if (STATE.mode === 'playing' && !UI.panelOpen && PLAYER.alive) { const n = WEAPON.list.length; equip((WEAPON.idx + (e.deltaY < 0 ? n - 1 : 1)) % n); } }, { passive: true });
 document.addEventListener('gesturestart', (e) => e.preventDefault());
 document.addEventListener('dblclick', (e) => e.preventDefault());
 
@@ -6062,7 +6161,7 @@ tapBtn('tAds', () => { INPUT.tAds = !INPUT.tAds; $('tAds').classList.toggle('on'
 tapBtn('tJump', () => { INPUT.tJump = true; PLAYER.crouchWant = false; INPUT.tCrouch = false; $('tCrouch').classList.remove('on'); });
 tapBtn('tCrouch', () => { INPUT.tCrouch = !INPUT.tCrouch; $('tCrouch').classList.toggle('on', INPUT.tCrouch); });
 tapBtn('tReload', () => startReload());
-tapBtn('tSwap', () => equip(WEAPON.idx === 0 ? 1 : 0));
+tapBtn('tSwap', () => equip((WEAPON.idx + 1) % WEAPON.list.length));
 tapBtn('tHeal', () => useMed());
 tapBtn('tPlate', () => usePlate());
 tapBtn('tBand', () => useBandage());
@@ -6149,25 +6248,31 @@ function applyGearToPlayer(P) {
   BAG.cap = bag.cap;
   saveGear(G);
 }
-const ARM = { tab: 'weapons' };
+const ARM = { tab: 'weapons', mode: 'shop', lslot: 'p1' };
 const allArm = () => [...ARMORY_CATALOG.weapons, ...ARMORY_CATALOG.protection, ...ARMORY_CATALOG.perks, ...ARMORY_CATALOG.supplies];
 const armName = (id) => (allArm().find((x) => x.id === id) || {}).name || id;
 function renderMenuLoadout() {
   const G = getGear(), arm = getEquippedArmor(), bag = getEquippedBag();
   const sh = (id) => (ARMORY_CATALOG.weapons.find((x) => x.id === id) || {}).short || id;
   const sup = Object.values(G.stock).reduce((a, b) => a + b, 0);
-  $('menuLoadout').innerHTML = `<span>主武器 <b>${sh(G.primary)}</b></span><span>副武器 <b>${sh(G.secondary)}</b></span><span>护甲 <b>${arm.maxArmor}</b></span><span>背包 <b>${bag.cap} 格</b></span><span>改装 <b>${G.perks.length}</b></span><span>补给 <b>${sup}</b></span>`;
+  $('menuLoadout').innerHTML = `<span>主武器 <b>${sh(G.primary)}${G.primary2 ? ' / ' + sh(G.primary2) : ''}</b></span><span>手枪 <b>${sh(G.pistol)}</b></span><span>护甲 <b>${arm.maxArmor}</b></span><span>背包 <b>${bag.cap} 格</b></span><span>改装 <b>${G.perks.length}</b></span><span>补给 <b>${sup}</b></span>`;
 }
 function renderArmory() {
   const G = getGear(), bal = stash().value;
   $('armBalance').textContent = fmtMoney(bal);
-  $('armLoadout').innerHTML = [['主武器', G.primary], ['副武器', G.secondary], ['护甲', G.armor], ['背包', G.bag]].map(([k, id]) => `<div class="armSlot"><small>${k}</small><b>${armName(id)}</b></div>`).join('');
+  $('armLoadout').innerHTML = [['主武器一', G.primary], ['主武器二', G.primary2], ['手枪', G.pistol], ['护甲', G.armor], ['背包', G.bag]].map(([k, id]) => `<div class="armSlot"><small>${k}</small><b>${armName(id)}</b></div>`).join('');
+  const T = { shop: ['军需整备库 · ARMORY', '使用撤离变现的资金解锁新武器、高阶防具、永久战术改装与出战补给'], loadout: ['出战装备 · LOADOUT', '两把主武器 + 一把手枪，外加护甲与背包。按 1 / 2 / 3 切换'], smith: ['军械工坊 · GUNSMITH', '为任意已拥有的武器更换瞄具、枪口、握把、弹匣与涂装，维修磨损'] }[ARM.mode];
+  $('armTitle').textContent = T[0]; $('armSub').textContent = T[1];
+  $('armTabs').hidden = ARM.mode !== 'shop'; $('armLoadout').hidden = ARM.mode === 'loadout';
+  if (ARM.tab === 'smith') ARM.tab = 'weapons';
   for (const b of $('armTabs').children) b.classList.toggle('on', b.dataset.tab === ARM.tab);
-  if (ARM.tab === 'smith') { renderSmith(G, bal); return; }
+  if (ARM.mode === 'smith') { renderSmith(G, bal); return; }
+  if (ARM.mode === 'loadout') { renderLoadoutPage(G, bal); return; }
   if (ARM.tab === 'hideout' || ARM.tab === 'mods' || ARM.tab === 'codex') { renderProgTab(G, bal); return; }
-  const colors = { weapons: '#ffb23f', protection: '#4c9bff', perks: '#6fe2a8', supplies: '#b46bff' };
-  const equippedIds = [G.primary, G.secondary, G.armor, G.bag];
-  $('armGrid').innerHTML = ARMORY_CATALOG[ARM.tab].map((it) => {
+  const colors = { weapons: '#ffb23f', pistols: '#ff8a5c', protection: '#4c9bff', perks: '#6fe2a8', supplies: '#b46bff' };
+  const equippedIds = [G.primary, G.primary2, G.pistol, G.armor, G.bag];
+  const armList = ARM.tab === 'weapons' ? ARMORY_CATALOG.weapons.filter((w) => w.slot === 'primary') : ARM.tab === 'pistols' ? ARMORY_CATALOG.weapons.filter((w) => w.slot === 'pistol') : ARMORY_CATALOG[ARM.tab];
+  $('armGrid').innerHTML = armList.map((it) => {
     const perk = ARM.tab === 'perks', sup = ARM.tab === 'supplies';
     const owned = perk ? G.perks.includes(it.id) : G.unlocked.includes(it.id);
     const equipped = equippedIds.includes(it.id);
@@ -6219,12 +6324,36 @@ function renderProgTab(G, bal) {
   }
   $('armGrid').innerHTML = html;
 }
-function equipGear(G, it) {
-  if (it.slot === 'primary') G.primary = it.id; else if (it.slot === 'secondary') G.secondary = it.id;
+function equipGear(G, it, slot) {
+  if (it.slot === 'primary') {
+    if (slot === 'p2') { if (G.primary === it.id) { G.primary = G.primary2 || G.primary; } G.primary2 = it.id; if (G.primary === G.primary2) G.primary2 = null; }
+    else { if (G.primary2 === it.id) G.primary2 = G.primary; G.primary = it.id; }
+  } else if (it.slot === 'pistol') G.pistol = it.id;
   else if (it.kind === 'armor') G.armor = it.id; else if (it.kind === 'bag') G.bag = it.id;
+}
+function renderLoadoutPage(G, bal) {
+  const W = ARMORY_CATALOG.weapons, PR = ARMORY_CATALOG.protection, find = (id) => [...W, ...PR].find((x) => x.id === id);
+  const slots = [['p1', '主武器一 [1]', G.primary, 'primary'], ['p2', '主武器二 [2]', G.primary2, 'primary'], ['pi', '手枪 [3]', G.pistol, 'pistol'], ['ar', '护甲', G.armor, 'armor'], ['bg', '背包', G.bag, 'bag']];
+  if (!slots.some((s) => s[0] === ARM.lslot)) ARM.lslot = 'p1';
+  const cur = slots.find((s) => s[0] === ARM.lslot);
+  const head = `<div class="loSlots">${slots.map(([k, n, id]) => { const it = find(id); return `<button class="loSlot${k === ARM.lslot ? ' on' : ''}" data-act="lslot" data-id="${k}"><small>${n}</small><b>${it ? it.name : '— 空 —'}</b><em>${it ? (it.stats || []).slice(0, 3).join(' · ') : '点击选择'}</em></button>`; }).join('')}</div>`;
+  const kind = cur[3], pool = kind === 'armor' || kind === 'bag' ? PR.filter((x) => x.kind === kind && G.unlocked.includes(x.id)) : W.filter((x) => x.slot === kind && G.unlocked.includes(x.id));
+  const other = cur[0] === 'p1' ? G.primary2 : cur[0] === 'p2' ? G.primary : null;
+  const locked = W.filter((x) => x.slot === kind && !G.unlocked.includes(x.id)).length;
+  const hint = `<div class="loHint">${kind === 'primary' || kind === 'pistol' ? `已拥有 ${pool.length} 把${locked ? `，另有 ${locked} 把可在「军需整备库」购买` : ''}。配件、涂装与维修请到「军械工坊」。` : '在「军需整备库」购买更高级的护甲与背包。'}${cur[0] === 'p2' && G.primary2 ? ' <button class="btn" data-act="lclear">清空主武器二</button>' : ''}</div>`;
+  const cards = pool.map((it) => { const on = it.id === cur[2], dur = (G.dur || {})[it.id];
+    return `<div class="armCard${on ? ' equipped' : ''}" style="--ac:${kind === 'pistol' ? '#6fe2a8' : kind === 'primary' ? '#ffb23f' : '#4c9bff'}"><div class="armCardTop"><span class="title">${it.name}</span><span class="tag">${it.tag}</span></div><div class="armStats">${(it.stats || []).map((s) => `<span>${s}</span>`).join('')}${dur !== undefined && dur < 100 ? `<span>耐久 ${dur.toFixed(0)}%</span>` : ''}</div><div class="armDesc">${it.desc || ''}</div><div class="armFoot"><span class="armPrice owned">${it.id === other ? '在另一主武器位 · 会互换' : '已拥有'}</span>${on ? '<button class="btn" disabled>当前装备</button>' : `<button class="btn signal" data-act="lequip" data-id="${it.id}">装备到此位</button>`}</div></div>`; }).join('');
+  $('armGrid').innerHTML = head + hint + cards;
 }
 $('armGrid').addEventListener('click', (e) => {
   const b = e.target.closest('button[data-act]'); if (!b || b.disabled) return;
+  if (b.dataset.act === 'lslot') { ARM.lslot = b.dataset.id; sfxUI(); renderArmory(); return; }
+  if (b.dataset.act === 'lequip' || b.dataset.act === 'lclear') {
+    const G = getGear();
+    if (b.dataset.act === 'lclear') G.primary2 = null;
+    else { const it = allArm().find((x) => x.id === b.dataset.id); if (it) { if (it.kind === 'armor') G.armor = it.id; else if (it.kind === 'bag') G.bag = it.id; else equipGear(G, it, ARM.lslot); } }
+    saveGear(G); sfxUI(); renderArmory(); refreshMenu(); return;
+  }
   if (['sgun', 'att', 'camo', 'repair', 'repairArm'].includes(b.dataset.act)) { smithAct(b); return; }
   if (b.dataset.act === 'hide' || b.dataset.act === 'mod') {
     const p = getProg(), s = stash(), id = b.dataset.id;
@@ -6253,10 +6382,12 @@ $('armGrid').addEventListener('click', (e) => {
   renderArmory(); refreshMenu();
 });
 $('armTabs').addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; ARM.tab = b.dataset.tab; sfxUI(); renderArmory(); });
-function openArmory() { initAudio(); renderArmory(); $('armoryPanel').hidden = false; sfxUI(); }
-$('btnArmory').addEventListener('click', openArmory);
+function openArmory(mode) { initAudio(); ARM.mode = typeof mode === 'string' ? mode : 'shop'; $('armGrid').scrollTop = 0; renderArmory(); $('armoryPanel').hidden = false; sfxUI(); }
+$('btnArmory').addEventListener('click', () => openArmory('shop'));
+$('btnLoadout').addEventListener('click', () => openArmory('loadout'));
+$('btnSmith').addEventListener('click', () => openArmory('smith'));
 $('armoryClose').addEventListener('click', () => { $('armoryPanel').hidden = true; refreshMenu(); sfxUI(); });
-$('resArmory').addEventListener('click', () => { $('resBack').click(); openArmory(); });
+$('resArmory').addEventListener('click', () => { $('resBack').click(); openArmory('shop'); });
 
 
 // ================= gunsmith: attachments, camo, repairs, with a live 3D preview =================
@@ -6291,7 +6422,7 @@ function smithShow(gid) {
   SMITH.model = wrap;
 }
 function smithLoop() {
-  if ($('armoryPanel').hidden || ARM.tab !== 'smith') { SMITH.raf = 0; return; }
+  if ($('armoryPanel').hidden || ARM.mode !== 'smith') { SMITH.raf = 0; return; }
   SMITH.raf = requestAnimationFrame(smithLoop);
   const cv = $('smCv'); if (!cv || !SMITH.model) return;
   SMITH.ang += 0.01;
@@ -6570,7 +6701,7 @@ async function init() {
   await bakeSkyMap(); lap('skymap');
   await bakeStatic(); lap('bake');
   setLoad(0.87, '合并几何体、构建光照…'); await yieldUI();
-  mergeStatic(); buildSky(); buildLamps(); buildShafts(); if (MAP_ID !== 'desert') buildPuddles();
+  mergeStatic(); buildHitset(); buildSky(); buildLamps(); buildShafts(); if (MAP_ID !== 'desert') buildPuddles();
   FX_ADD = makeParticleSystem(500, true); FX_SMOKE = makeParticleSystem(420, false);
   buildAtmos();
   buildTracers(); buildDecals(); buildShells(); buildEnemyFlashes(); buildWeapons(); buildMapBase();
@@ -6591,6 +6722,7 @@ async function init() {
   frame();
 }
 init().catch((err) => { console.error(err); $('loadText').textContent = '加载失败：' + (err && err.message ? err.message : err); });
+window.__hit = { bulletcast, raycast, HIT, get ready() { return HITREADY; }, HITSET, COLLIDERS };
 window.__ashfall = { THREE, MAT, COLLIDERS, POI, get renderer() { return renderer; }, renderContracts, stash, get RAID_DIFF() { return RAID_DIFF; }, startRaid, endRaid, getGear, saveGear, store, applyLoadout, usePlate, useMed, PLAYER, ENEMIES, STATE, CONTAINERS, WEAPON, camera, openLoot, BAG, get NET() { return NET; }, netEvent: (...a) => netEvent(...a), takeItem: (c, i) => takeItem(c, i) };
 
 // ================= co-op (up to 3) over the artifact `room` capability =================
@@ -7163,7 +7295,7 @@ function handleEvent(peer, r, e) {
     case 's': { // teammate fired
       if (!NET.inRaid) break;
       _na.set(n(2), n(3), n(4)); _nb.set(n(5), n(6), n(7));
-      const snd = ['ar', 'dmr', 'smg', 'akm', 'sup'].includes(e[9]) ? e[9] : (n(8) === 1 ? 'dmr' : 'ar');
+      const snd = ['ar', 'dmr', 'smg', 'akm', 'sup', 'pistol', 'sg'].includes(e[9]) ? e[9] : (n(8) === 1 ? 'dmr' : 'ar');
       spawnTracer(_na, _nb, 520, 0.018); if (snd !== 'sup') enemyFlash(_na); sfxGun(snd, _na);
       if (_nb.distanceTo(camera.position) < 50) { const d = _tmpV.subVectors(_na, _nb).normalize(); fxImpact(_nb.x, _nb.y, _nb.z, d.x, d.y, d.z, 'concrete'); }
       if (NET.hosting) noiseEvent(_na, snd === 'sup' ? 38 : 95);
